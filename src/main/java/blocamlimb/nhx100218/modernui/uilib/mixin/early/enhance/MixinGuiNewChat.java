@@ -15,7 +15,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import blocamlimb.nhx100218.modernui.enhance.vanilla.ChatConfig;
-import blocamlimb.nhx100218.modernui.enhance.vanilla.ChatScrollSmooth;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
@@ -69,11 +68,6 @@ public class MixinGuiNewChat {
                 ? blocamlimb.nhx100218.modernui.enhance.emoji.EmojiShortcodes.replace(text)
                 : text;
         return font.drawStringWithShadow(shown, drawX, y, color);
-    }
-
-    @Inject(method = "printChatMessage", at = @At("RETURN"))
-    private void modernui$newMessage(net.minecraft.util.IChatComponent component, CallbackInfo ci) {
-        ChatScrollSmooth.onNewMessage();
     }
 
     private static String modernui$sender(ChatLine line, String text) {
