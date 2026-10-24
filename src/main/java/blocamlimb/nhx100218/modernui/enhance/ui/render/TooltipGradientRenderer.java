@@ -2,6 +2,8 @@ package blocamlimb.nhx100218.modernui.enhance.ui.render;
 
 import org.lwjgl.opengl.GL11;
 
+import blocamlimb.nhx100218.modernui.uilib.util.GlStateDiagnostics;
+
 
 /**
  * 立即模式圆角四角渐变填充器。
@@ -22,7 +24,7 @@ public final class TooltipGradientRenderer {
 
     /** 压入 attrib 并设置本渲染器所需的固定管线状态。 */
     public static void begin() {
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
+        GlStateDiagnostics.pushAttrib(GL11.GL_ALL_ATTRIB_BITS, "TooltipGradientRenderer");
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
@@ -36,7 +38,7 @@ public final class TooltipGradientRenderer {
 
     /** 弹出 attrib，恢复调用前状态。 */
     public static void end() {
-        GL11.glPopAttrib();
+        GlStateDiagnostics.popAttrib("TooltipGradientRenderer");
     }
 
     /**

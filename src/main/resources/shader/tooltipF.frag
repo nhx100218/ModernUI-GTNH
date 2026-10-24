@@ -1,19 +1,19 @@
 #version 120
 
-// SDF 圆角矩形：抗锯齿外缘 + 四角渐变边框环 + 四角渐变填充。输出预乘 alpha。
+//
 varying vec2 vLocal;
 
 uniform vec2 uHalfSize;
 uniform float uRadius;
 uniform float uBorderWidth;
-uniform vec4 uF0; // 填充 左上
-uniform vec4 uF1; // 填充 右上
-uniform vec4 uF2; // 填充 右下
-uniform vec4 uF3; // 填充 左下
-uniform vec4 uC0; // 边框 左上
-uniform vec4 uC1; // 边框 右上
-uniform vec4 uC2; // 边框 右下
-uniform vec4 uC3; // 边框 左下
+uniform vec4 uF0;
+uniform vec4 uF1;
+uniform vec4 uF2;
+uniform vec4 uF3;
+uniform vec4 uC0;
+uniform vec4 uC1;
+uniform vec4 uC2;
+uniform vec4 uC3;
 
 float sdRoundBox(vec2 p, vec2 b, float r) {
     vec2 q = abs(p) - b + vec2(r);
@@ -40,3 +40,4 @@ void main() {
     vec4 borderP = vec4(border.rgb, 1.0) * border.a * ring;
     gl_FragColor = fillP + borderP;
 }
+

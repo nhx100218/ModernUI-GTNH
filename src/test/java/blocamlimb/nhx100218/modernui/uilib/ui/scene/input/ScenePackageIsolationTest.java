@@ -83,7 +83,7 @@ public class ScenePackageIsolationTest {
     @Test
     public void shouldHaveNoForbiddenImports() throws IOException {
         // 源文件所在目录（相对于项目根目录）
-        Path inputDir = Paths.get("src", "main", "java", "club", "heiqi", "uilib", "ui", "scene", "input");
+        Path inputDir = Paths.get("src", "main", "java", "blocamlimb", "nhx100218", "modernui", "uilib", "ui", "scene", "input");
 
         Assert.assertTrue("input 源文件目录应存在", Files.isDirectory(inputDir));
 
@@ -121,10 +121,10 @@ public class ScenePackageIsolationTest {
      */
     @Test
     public void layoutAndPaintCoreShouldNotReferenceRenderOrPlatform() throws IOException {
-        Path layoutDir = Paths.get("src", "main", "java", "club", "heiqi", "uilib", "ui", "scene", "layout");
-        Path paintDir = Paths.get("src", "main", "java", "club", "heiqi", "uilib", "ui", "scene", "paint");
-        Path nodeDir = Paths.get("src", "main", "java", "club", "heiqi", "uilib", "ui", "scene", "node");
-        Path overlayDir = Paths.get("src", "main", "java", "club", "heiqi", "uilib", "ui", "scene", "overlay");
+        Path layoutDir = Paths.get("src", "main", "java", "blocamlimb", "nhx100218", "modernui", "uilib", "ui", "scene", "layout");
+        Path paintDir = Paths.get("src", "main", "java", "blocamlimb", "nhx100218", "modernui", "uilib", "ui", "scene", "paint");
+        Path nodeDir = Paths.get("src", "main", "java", "blocamlimb", "nhx100218", "modernui", "uilib", "ui", "scene", "node");
+        Path overlayDir = Paths.get("src", "main", "java", "blocamlimb", "nhx100218", "modernui", "uilib", "ui", "scene", "overlay");
 
         Assert.assertTrue("layout 源文件目录应存在", Files.isDirectory(layoutDir));
         Assert.assertTrue("paint 源文件目录应存在", Files.isDirectory(paintDir));
@@ -170,7 +170,7 @@ public class ScenePackageIsolationTest {
     @Test
     public void replayerShouldDependOnRenderBackendInterfaceNotConcreteClass() throws IOException {
         Path replayerSrc = Paths.get("src", "main", "java",
-                "club", "heiqi", "uilib", "ui", "scene", "paint", "ScenePaintReplayer.java");
+                "blocamlimb", "nhx100218", "modernui", "uilib", "ui", "scene", "paint", "ScenePaintReplayer.java");
         Assert.assertTrue("ScenePaintReplayer.java 源文件应存在", Files.isRegularFile(replayerSrc));
 
         boolean importsBackendInterface = false;
@@ -207,7 +207,7 @@ public class ScenePackageIsolationTest {
      */
     @Test
     public void sceneCoreTopLevelShouldNotReferenceConcreteRenderBackend() throws IOException {
-        Path sceneTopDir = Paths.get("src", "main", "java", "club", "heiqi", "uilib", "ui", "scene");
+        Path sceneTopDir = Paths.get("src", "main", "java", "blocamlimb", "nhx100218", "modernui", "uilib", "ui", "scene");
         Assert.assertTrue("ui.scene 顶层源文件目录应存在", Files.isDirectory(sceneTopDir));
 
         List<Path> topLevelFiles;
@@ -238,8 +238,8 @@ public class ScenePackageIsolationTest {
      */
     @Test
     public void renderAndHostShouldNotReachIntoSceneAssemblyRuntime() throws IOException {
-        Path renderDir = Paths.get("src", "main", "java", "club", "heiqi", "uilib", "ui", "render");
-        Path hostDir = Paths.get("src", "main", "java", "club", "heiqi", "uilib", "ui", "host");
+        Path renderDir = Paths.get("src", "main", "java", "blocamlimb", "nhx100218", "modernui", "uilib", "ui", "render");
+        Path hostDir = Paths.get("src", "main", "java", "blocamlimb", "nhx100218", "modernui", "uilib", "ui", "host");
         Assert.assertTrue("ui/render 源文件目录应存在", Files.isDirectory(renderDir));
         Assert.assertTrue("ui/host 源文件目录应存在", Files.isDirectory(hostDir));
 

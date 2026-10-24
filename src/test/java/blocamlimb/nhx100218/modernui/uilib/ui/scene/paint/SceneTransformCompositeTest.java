@@ -186,7 +186,7 @@ public class SceneTransformCompositeTest {
     public void t5_replayerShouldNotImportTransformOrSceneNode() throws IOException {
         String userDir = System.getProperty("user.dir");
         Path src = Paths.get(userDir, "src", "main", "java",
-                "club", "heiqi", "uilib", "ui", "scene", "paint", "ScenePaintReplayer.java");
+                "blocamlimb", "nhx100218", "modernui", "uilib", "ui", "scene", "paint", "ScenePaintReplayer.java");
         List<String> lines = Files.readAllLines(src);
 
         for (String line : lines) {

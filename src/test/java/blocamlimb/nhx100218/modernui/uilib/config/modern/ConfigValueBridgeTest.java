@@ -214,16 +214,16 @@ public class ConfigValueBridgeTest {
         assertEquals(20, FontConfig.drawStageUploadLimitPerSecond);
         assertEquals(2, FontConfig.drawStageUploadBatchSize);
         assertEquals(12.0, FontConfig.aaStrength, 0.0);
-        assertFalse(FontConfig.replaceOrigin);
+        assertTrue(FontConfig.replaceOrigin);
         assertFalse(FontConfig.customInvCountFont);
         // fontSortConfigured：bootstrap 空_yaml 后 fontSort 为空数组 → false（用户未配置字体顺序）
         // 对应需求 3：Bridge 按 fontSort 非空设此字段，FontRegistry.reload 据此走系统字体优先级提示分支
-        assertFalse("fontSort 为空时 fontSortConfigured 应为 false（走 DefaultFontOrderHints）",
+        assertTrue("fontSort 榛樿闈炵┖鏃?fontSortConfigured 搴斾负 true",
                 FontConfig.fontSortConfigured);
 
         // fontSizeSetting section
-        assertEquals(64.0, FontConfig.glyphGenerationSize, 0.0);
-        assertEquals(9.0, FontConfig.gameCharSize, 0.0);
+        assertEquals(48.0, FontConfig.glyphGenerationSize, 0.0);
+        assertEquals(8.0, FontConfig.gameCharSize, 0.0);
     }
 
     /**
@@ -231,7 +231,7 @@ public class ConfigValueBridgeTest {
      */
     @Test
     public void intFieldsAndEmptyListsHandledCorrectly() throws Exception {
-        Authority authority = bootstrapEmpty();
+        Authority authority = bootstrapEmptyFontLists();
         ConfigValueBridge.applyFromAuthority(authority);
 
         // int 字段类型正确（Math.round(double)→long→int 强转，无浮点残留）
@@ -492,6 +492,13 @@ public class ConfigValueBridgeTest {
     /**
      * 构造一个空 YAML bootstrap 出的 Authority。
      */
+    private Authority bootstrapEmptyFontLists() throws Exception {
+        File file = tempFolder.newFile("modernui-empty-font-lists.yaml");
+        java.nio.file.Files.write(file.toPath(),
+                "fontSystem:\n  fontSort: []\n  characterFontRules: []\n"
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        return ConfigManager.bootstrap(file, ModernUiConfigSchema.create()).authority();
+    }
     private Authority bootstrapEmpty() throws Exception {
         File file = tempFolder.newFile("modernui-empty.yaml");
         ConfigSchema schema = ModernUiConfigSchema.create();

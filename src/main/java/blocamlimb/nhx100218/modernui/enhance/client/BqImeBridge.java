@@ -1,6 +1,10 @@
 package blocamlimb.nhx100218.modernui.enhance.client;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 import blocamlimb.nhx100218.modernui.enhance.MyMod;
 
@@ -9,43 +13,47 @@ import betterquesting.api2.client.gui.controls.PanelTextField;
 import net.minecraft.client.Minecraft;
 
 /**
- * 让 BQ 的自绘文本框（{@code PanelTextField}）接入 lwjgl3ify 的输入法（IME）通道。
+ * Bridges BQ's {@code PanelTextField} text input to lwjgl3ify's IME events.
  *
- * <p>lwjgl3ify 只为原版 {@code GuiTextField} 屏启用文本输入（{@code MixinGuiTextInput} 仅挂在
- * 少数原版屏上），IME 组合文字也只投递给输入事件监听器。BQ 的搜索框既不是原版
- * {@code GuiTextField}、也不会触发 {@code beginTextInput}，因此输入法既不弹出也收不到中文。
- * 这里在 BQ 屏开/关时开关文本输入，并注册一个监听器把 IME 文本写入当前聚焦的 BQ 文本框。</p>
+ * <p>lwjgl3ify is optional. All API access is reflective so the class can load
+ * and run when lwjgl3ify is absent.</p>
  */
 public final class BqImeBridge {
+
+    private static final String INPUT_EVENTS = "me.eigenraven.lwjgl3ify.api.InputEvents";
 
     private static WeakReference<PanelTextField<?>> focused = new WeakReference<PanelTextField<?>>(null);
     private static boolean hooked;
     private static boolean hookReady;
     private static boolean begun;
 
+    private static Class<?> textEventClass;
+    private static Method beginTextInput;
+    private static Method endTextInput;
+
     private BqImeBridge() {}
 
-    /** 由文本框绘制时调用，记录当前聚焦的 BQ 文本框（仅聚焦时记录）。 */
+    /** Records the currently focused BQ text field. */
     public static void trackFocus(PanelTextField<?> field) {
         if (field != null && field.isFocused()) {
             focused = new WeakReference<PanelTextField<?>>(field);
         }
     }
 
-    /** BQ 屏打开：启用文本输入（弹出输入法）。 */
+    /** Starts text input mode while a BQ screen is open. */
     public static void begin() {
         if (!ensureHook() || begun) {
             return;
         }
         try {
-            me.eigenraven.lwjgl3ify.api.InputEvents.beginTextInput();
+            beginTextInput.invoke(null);
             begun = true;
         } catch (Throwable t) {
-            MyMod.LOG.warn("[BQ] 启用输入法失败", t);
+            MyMod.LOG.warn("[BQ] failed to begin IME input", t);
         }
     }
 
-    /** BQ 屏关闭：关闭文本输入。 */
+    /** Ends text input mode when the BQ screen closes. */
     public static void end() {
         if (!begun) {
             return;
@@ -53,9 +61,9 @@ public final class BqImeBridge {
         begun = false;
         focused = new WeakReference<PanelTextField<?>>(null);
         try {
-            me.eigenraven.lwjgl3ify.api.InputEvents.endTextInput();
+            endTextInput.invoke(null);
         } catch (Throwable t) {
-            MyMod.LOG.warn("[BQ] 关闭输入法失败", t);
+            MyMod.LOG.warn("[BQ] failed to end IME input", t);
         }
     }
 
@@ -65,28 +73,70 @@ public final class BqImeBridge {
         }
         hooked = true;
         try {
-            me.eigenraven.lwjgl3ify.api.InputEvents.addKeyboardListener(
-                    new me.eigenraven.lwjgl3ify.api.InputEvents.KeyboardListener() {
+            Class<?> inputEventsClass = Class.forName(INPUT_EVENTS);
+            Class<?> keyboardListenerClass = Class.forName(INPUT_EVENTS + "$KeyboardListener");
+            textEventClass = Class.forName(INPUT_EVENTS + "$TextEvent");
+            beginTextInput = inputEventsClass.getMethod("beginTextInput");
+            endTextInput = inputEventsClass.getMethod("endTextInput");
+            Method addKeyboardListener = inputEventsClass.getMethod("addKeyboardListener", keyboardListenerClass);
+
+            Object listener = Proxy.newProxyInstance(
+                    keyboardListenerClass.getClassLoader(),
+                    new Class<?>[] { keyboardListenerClass },
+                    new InvocationHandler() {
 
                         @Override
-                        public void onTextEvent(me.eigenraven.lwjgl3ify.api.InputEvents.TextEvent event) {
-                            deliver(event == null ? null : event.text);
+                        public Object invoke(Object proxy, Method method, Object[] args) {
+                            String name = method.getName();
+                            if ("onTextEvent".equals(name)) {
+                                Object event = args == null || args.length == 0 ? null : args[0];
+                                deliver(readText(event));
+                                return null;
+                            }
+                            if ("equals".equals(name)) {
+                                return Boolean.valueOf(args != null && args.length == 1 && proxy == args[0]);
+                            }
+                            if ("hashCode".equals(name)) {
+                                return Integer.valueOf(System.identityHashCode(proxy));
+                            }
+                            if ("toString".equals(name)) {
+                                return "BqImeBridgeListener";
+                            }
+                            return null;
                         }
                     });
+            addKeyboardListener.invoke(null, listener);
             hookReady = true;
         } catch (Throwable t) {
             hookReady = false;
-            MyMod.LOG.warn("[BQ] 注册输入法监听失败（lwjgl3ify 缺失？）", t);
+            MyMod.LOG.warn("[BQ] failed to register IME listener; lwjgl3ify is probably absent", t);
         }
         return hookReady;
+    }
+
+    private static String readText(Object event) {
+        if (event == null || textEventClass == null) {
+            return null;
+        }
+        try {
+            Field field = textEventClass.getField("text");
+            return (String) field.get(event);
+        } catch (Throwable ignored) {
+            try {
+                Field field = textEventClass.getDeclaredField("text");
+                field.setAccessible(true);
+                return (String) field.get(event);
+            } catch (Throwable ignoredAgain) {
+                return null;
+            }
+        }
     }
 
     private static void deliver(String text) {
         if (text == null || text.isEmpty()) {
             return;
         }
-        // 只桥接 BQ 自身按键处理会丢弃的字符（中文等非白名单字符）。
-        // 白名单内的 ASCII 已由 onKeyTyped 写入，若这里再写一次会变成双份（"a"→"aa"）。
+        // Only bridge characters that BQ's onKeyTyped would reject; ASCII is already handled there.
         if (!modernui$needsBridge(text)) {
             return;
         }
@@ -101,7 +151,7 @@ public final class BqImeBridge {
         field.writeText(text);
     }
 
-    /** 文本中是否含有原版字符白名单之外的字符（即 BQ 的 onKeyTyped 不会写入的字符）。 */
+    /** Returns true when the text contains a character BQ's onKeyTyped path will not write. */
     private static boolean modernui$needsBridge(String text) {
         for (int i = 0; i < text.length(); i++) {
             if (!net.minecraft.util.ChatAllowedCharacters.isAllowedCharacter(text.charAt(i))) {

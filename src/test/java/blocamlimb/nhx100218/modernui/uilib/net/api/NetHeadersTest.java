@@ -10,10 +10,10 @@ public class NetHeadersTest {
 
     @Test
     public void shouldNormalizeHeaderNamesAsCaseInsensitiveTokens() {
-        NetMessage message = NetMessage.text("hello").withHeader("X-Qz-Trace", "abc");
+        NetMessage message = NetMessage.text("hello").withHeader("X-ModernUI-Trace", "abc");
 
         Assert.assertEquals("abc", message.getHeader("x-modernui-trace"));
-        Assert.assertEquals("abc", message.getHeader("X-QZ-TRACE"));
+        Assert.assertEquals("abc", message.getHeader("X-MODERNUI-TRACE"));
         Assert.assertTrue(message.getHeaders().containsKey("x-modernui-trace"));
     }
 

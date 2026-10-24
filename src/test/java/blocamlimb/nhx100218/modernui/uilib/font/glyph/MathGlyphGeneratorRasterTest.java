@@ -61,7 +61,7 @@ public class MathGlyphGeneratorRasterTest {
     public void realStixGlyphUsesRequestedPhysicalGlyphAndFreezesPixels() throws Exception {
         Font font;
         try (InputStream input = getClass().getResourceAsStream(
-                "/assets/modernuigtnh/fonts/math/stix-two/STIXTwoMath-Regular.otf")) {
+                "/assets/modernui/fonts/math/stix-two/STIXTwoMath-Regular.otf")) {
             Assert.assertNotNull(input);
             font = Font.createFont(Font.TRUETYPE_FONT, input).deriveFont(32f);
         }

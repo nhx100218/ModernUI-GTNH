@@ -272,7 +272,7 @@ public class ChatCompletionEngineTest {
     public void noNetworkSlashFallsBackToLocalCommands() {
         FakeHost host = new FakeHost();
         host.network = false;
-        host.text = "/qzu";
+        host.text = "/mod";
         host.localCommands.add("/modernui");
         ChatCompletionEngine engine = engine(host);
 

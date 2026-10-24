@@ -11,6 +11,7 @@ import org.lwjgl.opengl.GL11;
 import blocamlimb.nhx100218.modernui.enhance.MyMod;
 import blocamlimb.nhx100218.modernui.enhance.tooltip.TooltipShaderProgram;
 
+import blocamlimb.nhx100218.modernui.uilib.util.GlStateDiagnostics;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 
@@ -57,7 +58,7 @@ public final class PreloadService {
 
     private static void run(Minecraft mc) {
         long start = System.currentTimeMillis();
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
+        GlStateDiagnostics.pushAttrib(GL11.GL_ALL_ATTRIB_BITS, "PreloadService");
         GL11.glPushMatrix();
         try {
             // 1) tooltip 圆角着色器：提前编译/链接。
@@ -75,7 +76,7 @@ public final class PreloadService {
             MyMod.LOG.warn("预热失败", failure);
         } finally {
             GL11.glPopMatrix();
-            GL11.glPopAttrib();
+            GlStateDiagnostics.popAttrib("PreloadService");
         }
         MyMod.LOG.info("界面/字体预热完成，用时 {} ms", Long.valueOf(System.currentTimeMillis() - start));
     }

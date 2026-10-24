@@ -85,7 +85,7 @@ public class LatexPublicSurfaceSnapshotTest {
     };
 
     private static final String RESOURCE = "latex-public-surface.snapshot";
-    private static final Path RESOURCE_PATH = Paths.get("src", "test", "resources", "club", "heiqi",
+    private static final Path RESOURCE_PATH = Paths.get("src", "test", "resources", "blocamlimb", "nhx100218", "modernui",
             "uilib", "font", "latex", RESOURCE);
 
     @Test

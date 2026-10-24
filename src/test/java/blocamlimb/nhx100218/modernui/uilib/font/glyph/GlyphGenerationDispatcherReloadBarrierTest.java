@@ -962,7 +962,7 @@ public class GlyphGenerationDispatcherReloadBarrierTest {
      * 测试以"多出一个 A"的形式偶发失败，看着像产品竞态。按队列内容停车与调用次数无关。</p>
      */
     /** 字体 worker 线程名前缀（由 FontWorkerThreadFactory 决定），用于区分"选择读表"与"提交读表"。 */
-    private static final String FONT_WORKER_THREAD_PREFIX = "QzFontWorker";
+    private static final String FONT_WORKER_THREAD_PREFIX = "ModernUIFontWorker";
 
     private static final class LastCandidateSelectionClock implements LongSupplier {
 
