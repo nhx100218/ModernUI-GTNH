@@ -20,7 +20,6 @@ import blocamlimb.nhx100218.modernui.uilib.util.UiNumbers;
  * {@code general.pickerDensity} → {@link PickerDensityPreferences}、
  * {@code general.backdropQuality} → {@link BackdropQualityService}、
  * {@code general.configPageTheme} → {@link ConfigThemePreference}、
- * {@code general.chatFrame} → {@link ChatFrameConfig}（再经它写 internal.chat3 的接管开关）。
  *
  * <p>解决阶段 C P0 缺口：新栈 {@code ConfigManager} 保存后值只落 Authority Map + YAML，
  * 从不写 {@code FontConfig.xxx} / {@code Config.xxx} 静态字段；而运行时读取者
@@ -107,7 +106,6 @@ public final class ConfigValueBridge {
     /**
      * 回灌 general section（Config.useDebug / uiDebug / fontRuntimeDebug / netTransport
      * + 进程级偏好信号 {@link PickerDensityPreferences} / {@link BackdropQualityService}
-     * / {@link ChatFrameConfig}）。
      *
      * @param authority 权威源
      */
@@ -133,7 +131,6 @@ public final class ConfigValueBridge {
         // 聊天框形态同理不是静态字段：运行态权威是 internal.chat3 的接管开关（安装器每渲染帧读它，
         // 决定接管自定义聊天框还是把原版实例写回），本回灌是「配置文件 → 运行态」的唯一通道——
         // 启动加载 / 配置页保存 / 磁盘重载三条既有入口都经本方法，故改配置即改形态。
-        ChatFrameConfig.applyConfigured(authority.getString(ChatFrameConfig.CONFIG_PATH));
     }
 
     /**
