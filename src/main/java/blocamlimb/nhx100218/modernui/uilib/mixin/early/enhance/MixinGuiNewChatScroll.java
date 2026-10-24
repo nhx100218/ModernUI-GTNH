@@ -9,7 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import blocamlimb.nhx100218.modernui.enhance.MyMod;
 import blocamlimb.nhx100218.modernui.enhance.vanilla.ChatScrollSmooth;
 import blocamlimb.nhx100218.modernui.enhance.vanilla.HudCache;
 import blocamlimb.nhx100218.modernui.enhance.vanilla.SmoothScrollConfig;
@@ -18,7 +17,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.GuiNewChat;
 
-/** 聊天栏滚轮平滑：整体按缓动残差做纵向位移。 */
+/** Applies the smoothed scroll offset while the vanilla chat is drawn. */
 @Mixin(GuiNewChat.class)
 public class MixinGuiNewChatScroll {
 
@@ -29,13 +28,6 @@ public class MixinGuiNewChatScroll {
 
     @Unique
     private boolean modernui$pushed;
-    @Unique
-    private int modernui$logTick;
-
-    @Inject(method = "scroll", at = @At("HEAD"))
-    private void modernui$onScroll(int amount, CallbackInfo ci) {
-        MyMod.LOG.info("[ChatScroll] scroll amount={}", Integer.valueOf(amount));
-    }
 
     @Inject(method = "drawChat", at = @At("HEAD"))
     private void modernui$head(int counter, CallbackInfo ci) {
@@ -45,10 +37,6 @@ public class MixinGuiNewChatScroll {
             Minecraft mc = Minecraft.getMinecraft();
             boolean open = mc.currentScreen instanceof GuiChat && SmoothScrollConfig.enabled;
             int s1 = modernui$read(1);
-            int s2 = modernui$read(2);
-            if (open && (modernui$logTick++ % 40) == 0) {
-                MyMod.LOG.info("[ChatField] f146250_j={} f146251_k={}", Integer.valueOf(s1), Integer.valueOf(s2));
-            }
             d = ChatScrollSmooth.update(s1, open);
         } catch (Throwable ignored) {
         }

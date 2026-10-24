@@ -72,23 +72,6 @@ public final class UiHudRenderListener {
     UiHudRenderListener(MinecraftHudEnvironment environment, UiEnvironment uiEnvironment) {
         this.environment = environment;
         this.uiEnvironment = uiEnvironment;
-        // 装配层接线（composition root 在 client）：chat3 命中检测读宿主权威放置盒。
-        // internal→client 为禁止方向,故经端口注入而非直引。
-        blocamlimb.nhx100218.modernui.uilib.internal.chat3.view.ChatHudWindow.setPlacementSource(
-                new blocamlimb.nhx100218.modernui.uilib.internal.chat3.view.ChatHudWindow.HudPlacementSource() {
-                    @Override
-                    public blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.AnchorRect placement(String hudId) {
-                        return host.currentPlacement(hudId);
-                    }
-                    @Override
-                    public float scaleFactor(String hudId) { return host.currentScaleFactor(hudId); }
-                    @Override
-                    public blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.AnchorRect logicalPlacement(String hudId) {
-                        return host.currentLogicalPlacement(hudId);
-                    }
-                });
-        // 打开态聊天容器与关闭态 HUD 共用同一份安全区事实（规划 P2）。
-        blocamlimb.nhx100218.modernui.uilib.internal.chat3.view.ChatHudWindow.setSafeAreaSource(host::currentSafeInsets);
         registerDebugHud();
     }
 

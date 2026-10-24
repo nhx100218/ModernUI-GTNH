@@ -8,11 +8,8 @@ import blocamlimb.nhx100218.modernui.uilib.client.MinecraftMainThreadOracle;
 import blocamlimb.nhx100218.modernui.uilib.client.UiHudRenderListener;
 import blocamlimb.nhx100218.modernui.uilib.client.UiInputTickListener;
 import blocamlimb.nhx100218.modernui.uilib.client.command.ModernUiClientCommand;
-import blocamlimb.nhx100218.modernui.uilib.config.modern.ChatFrameConfig;
 import blocamlimb.nhx100218.modernui.uilib.font.FontService;
 import blocamlimb.nhx100218.modernui.uilib.i18n.LanguageEpochService;
-import blocamlimb.nhx100218.modernui.uilib.internal.chat3.input.ChatFrameIntent;
-import blocamlimb.nhx100218.modernui.uilib.internal.chat3.input.ChatInputOpenListener;
 import blocamlimb.nhx100218.modernui.uilib.net.api.NetService;
 import blocamlimb.nhx100218.modernui.uilib.net.client.NetStoreUiBridge;
 import blocamlimb.nhx100218.modernui.uilib.net.core.MainThreadDispatcher;
@@ -38,7 +35,6 @@ public class ClientProxy extends CommonProxy {
     private final UiHudRenderListener uiHudRenderListener = new UiHudRenderListener();
     private final UiInputTickListener uiInputTickListener = new UiInputTickListener();
     private final AngelicaHudCachingSuppressor angelicaHudCachingSuppressor = new AngelicaHudCachingSuppressor();
-    private final ChatInputOpenListener chatInputOpenListener = new ChatInputOpenListener();
 
     /**
      * 客户端预初始化时注册字体渲染 Tick 监听。
@@ -65,14 +61,8 @@ public class ClientProxy extends CommonProxy {
         LanguageEpochService.getInstance().install();
         NetStoreUiBridge.getInstance().initialize();
         registerModernUICommand();
-        // 聊天框形态切换（4.10.1）：动作注册与配置持久化分居两层——internal.chat3 只发布切换语义，
-        // 写盘/回灌实现在 config.modern（internal 不反向依赖配置包），装配层在此注入两个端口：
-        // 先写盘、自定义输入屏按既有 CLOSING 动画收回去，关屏完成后才回灌运行态。
-        // 与聊天总开关无关：切回原版后动作仍留在注册表，重新接管时按钮自然回来。
-        ChatFrameIntent.install(ChatFrameConfig::persistVanilla, ChatFrameConfig::applyVanilla);
         MinecraftForge.EVENT_BUS.register(fontRenderTickListener);
         MinecraftForge.EVENT_BUS.register(uiHudRenderListener);
-        MinecraftForge.EVENT_BUS.register(chatInputOpenListener);
         FMLCommonHandler.instance().bus().register(fontRenderTickListener);
         FMLCommonHandler.instance().bus().register(uiInputTickListener);
         // 宿主兼容：Angelica 的 HUD 缓存会让 UILib 背景滤镜（液态玻璃）采样不到世界画面 ⇒ 强制停用。

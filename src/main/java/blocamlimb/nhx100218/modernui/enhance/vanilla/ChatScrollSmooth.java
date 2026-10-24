@@ -1,21 +1,23 @@
 package blocamlimb.nhx100218.modernui.enhance.vanilla;
 
 /**
- * 聊天栏平滑：
- * <ul>
- *   <li><b>滚动</b>：显示行位置向实际滚动位置做指数缓动，返回整体内容的 y 残差（px）。</li>
- *   <li><b>打开</b>：聊天栏快速从下方滑入（非线性 ease-out）。</li>
- *   <li><b>新消息</b>：新消息到达时整栏一起上滚一行（而非硬切），返回临时下移量。</li>
- * </ul>
+ * Smooth scrolling for the vanilla chat window.
+ *
+ * <p>The displayed scroll position lags behind the real scroll position by at
+ * most one line. Large jumps (fast wheel input) snap instead of animating so
+ * the whole chat cannot be translated far away from its box.</p>
  */
 public final class ChatScrollSmooth {
 
     private static final float LINE = 9.0F;
     private static final float OPEN_OFFSET = 8.0F;
+    /** Maximum visual lag in pixels; fast scrolling must not fling the chat. */
+    private static final float MAX_OFFSET_PX = LINE * 1.5F;
+    /** A target jump larger than this many lines is treated as a snap. */
+    private static final double MAX_SMOOTH_LINES = 4.0D;
 
     private static final SmoothScrollModel MODEL = new SmoothScrollModel();
     private static boolean sEngaged;
-    private static int sLastLogged = Integer.MIN_VALUE;
 
     private static boolean sWasOpen;
     private static long sOpenStart;
@@ -25,13 +27,8 @@ public final class ChatScrollSmooth {
 
     private ChatScrollSmooth() {}
 
-    /** 每帧调用：返回聊天内容应整体的 y 偏移（px）。 */
+    /** Called once per chat frame; returns the vertical pixel offset. */
     public static float update(int target, boolean open) {
-        if (open && target != sLastLogged) {
-            sLastLogged = target;
-            blocamlimb.nhx100218.modernui.enhance.MyMod.LOG.info("[ChatSmooth] update target={} open={}",
-                    Integer.valueOf(target), Boolean.valueOf(open));
-        }
         float result = newMessageOffset();
         if (!open || !SmoothScrollConfig.enabled) {
             MODEL.snap(target);
@@ -40,7 +37,10 @@ public final class ChatScrollSmooth {
             return result;
         }
         result += updateScroll(target);
-        result += updateOpening();
+        // Do not replay the open animation while the user is actively scrolling.
+        if (!sEngaged) {
+            result += updateOpening();
+        }
         return result;
     }
 
@@ -48,7 +48,7 @@ public final class ChatScrollSmooth {
         return (sEngaged && !MODEL.settled()) || sMsgActive || (sWasOpen && sOpenStart > 0L);
     }
 
-    /** 新消息到达：触发整栏上滚脉冲。 */
+    /** A new message arrived; slide it in once. */
     public static void onNewMessage() {
         if (!SmoothScrollConfig.enabled) {
             return;
@@ -63,10 +63,23 @@ public final class ChatScrollSmooth {
             sEngaged = false;
             return 0.0F;
         }
+        // Fast wheel input jumps several lines at once. Snapping here avoids a
+        // huge translation of the whole chat and the "flying chat" artifact.
+        if (Math.abs(target - MODEL.current()) > MAX_SMOOTH_LINES) {
+            MODEL.snap(target);
+            sEngaged = false;
+            return 0.0F;
+        }
         sEngaged = true;
         MODEL.setTarget(target);
         double displayed = MODEL.update(SmoothScrollConfig.smoothness(SmoothScrollConfig.chatSmoothness));
-        return (float) ((displayed - target) * LINE);
+        double offset = (displayed - target) * LINE;
+        if (offset > MAX_OFFSET_PX) {
+            offset = MAX_OFFSET_PX;
+        } else if (offset < -MAX_OFFSET_PX) {
+            offset = -MAX_OFFSET_PX;
+        }
+        return (float) offset;
     }
 
     private static float updateOpening() {
@@ -90,7 +103,6 @@ public final class ChatScrollSmooth {
         if (progress < 0.0F) {
             progress = 0.0F;
         }
-        // ease-out cubic：一开始就快速滑入。
         return OPEN_OFFSET * (1.0F - easeOutCubic(progress));
     }
 

@@ -46,7 +46,6 @@ public final class ModernConfigAssembly {
     /**
      * 新架构配置文件相对路径（相对 mcDataDir）。
      *
-     * <p>包级可见：{@link ChatFrameConfig} 的运行时写入与配置页读写同一份文件，
      * 路径字面量只此一处（避免出现第二份会漂移的拷贝）。</p>
      */
     static final String CONFIG_RELATIVE_PATH = "config/modernui.yaml";

@@ -44,16 +44,22 @@ tasks.withType<Test>().configureEach {
 // 由 ClientProxy 按「开发环境 + 类存在」双重探测择一注册。
 // ============================================================================
 val internalDevToolsPackagePath = "blocamlimb/nhx100218/modernui/uilib/internal/devtools"
+// Legacy custom chat bar (chat3) is no longer shipped; the mod uses vanilla chat
+// with the enhancement mixins. Keep the source around for reference/tests, but
+// never package it.
+val legacyChatPackagePath = "blocamlimb/nhx100218/modernui/uilib/internal/chat3"
 
 // 1) Jar 型产物统一排除（jar / shadowJar / sourcesJar / apiJar）。
 //    reobfJar 是 ReobfuscatedJar（非 Jar 子类、无 exclude），吃的是 dev jar 产物，排除随输入传播——由下面的门禁实测确认。
 tasks.withType<Jar>().configureEach {
     exclude("$internalDevToolsPackagePath/**")
+    exclude("$legacyChatPackagePath/**")
 }
 // apiJar 用的是旧类型 org.gradle.jvm.tasks.Jar（不是 bundling.Jar 的子类），必须单独排除——
 // 这一处漏排正是第一次门禁跑出来的真实缺陷（apiJar 里混进了 headless 包）。
 tasks.withType<org.gradle.jvm.tasks.Jar>().configureEach {
     exclude("$internalDevToolsPackagePath/**")
+    exclude("$legacyChatPackagePath/**")
 }
 
 // 2) 门禁：逐个打开产物断言不含该包。排除是意图，门禁才是保证；
