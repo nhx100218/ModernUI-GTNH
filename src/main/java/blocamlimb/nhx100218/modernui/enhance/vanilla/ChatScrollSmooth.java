@@ -24,7 +24,7 @@ public final class ChatScrollSmooth {
     /** Called once per chat draw; returns the vertical pixel offset. */
     public static float update(int target, boolean open) {
         float result = newMessageOffset();
-        if (!open || !SmoothScrollConfig.enabled) {
+        if (!open) {
             sWasOpen = false;
             return result;
         }
