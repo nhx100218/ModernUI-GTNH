@@ -33,6 +33,7 @@ import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneButton;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneButtonVariant;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneNavList;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneScrollbar;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneSegmented;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneEventType;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.PlatformInputSource;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.CrossAxisAlign;
@@ -119,6 +120,15 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private static final int SCROLL_MOTION_MS = ConfigTheme.MOTION_STANDARD_MS;
     /** 玻璃底座恒定启用（页壳/反馈条无禁用态），供表面绑定器判定状态档。 */
     private static final ReadableSignal<Boolean> ALWAYS_ENABLED = () -> Boolean.TRUE;
+    /** MD3 top-level pages: general, interface, advanced. */
+    private static final String[] GROUP_TITLES = {
+            "\u5e38\u89c4", "\u754c\u9762", "\u9ad8\u7ea7"
+    };
+    private static final String[][] GROUP_SECTION_IDS = {
+            {"tooltip", "waila", "chat"},
+            {"smoothscroll", "screentransition", "zoom", "ui"},
+            {"textselection", "emoji", "performance"}
+    };
 
     /** 配置管理器，保存事务入口 */
     private final ConfigManager manager;
@@ -182,6 +192,10 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private Signal<Integer> activeSectionSignal;
     /** schema section 快照，供单槽 panel 切换挂载。 */
     private List<SectionSpec> sections;
+    /** Grouped sections for the MD3 shell. */
+    private List<GroupSpec> groups;
+    /** Top tab host inside the MD3 shell. */
+    private SceneNode topTabsHost;
     /** 单 live section 的专用 Owner；每次切换严格先 dispose outgoing 再 mount incoming。 */
     private Owner sectionOwner;
     /** 当前单槽 panel 的 mount 句柄。 */
@@ -209,6 +223,14 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private final Deque<ActionRequest> actionQueue = new ArrayDeque<ActionRequest>();
     private int actionRevision;
 
+    private static final class GroupSpec {
+        private final String title;
+        private final List<Integer> sectionIndices = new ArrayList<Integer>();
+
+        private GroupSpec(String title) {
+            this.title = title;
+        }
+    }
     private enum ActionKind {
         RESTORE,
         CANCEL,
@@ -386,27 +408,35 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             pageRoot.appendChild(statusSummary);
 
             this.sections = schema.sections();
+            this.groups = createGroups(this.sections);
             this.activeSectionSignal = Signal.create(Integer.valueOf(0));
             this.displayedSectionIndex = 0;
             this.sectionOwner = uiOwner.createChild();
+
+            if (sections.size() > 1) {
+                this.topTabsHost = createTopTabs();
+                titleBar.appendChild(topTabsHost);
+                titleBar.setHitTestable(true);
+                titleBar.setPreferredHeight(ConfigTheme.TITLE_BAR_HEIGHT
+                        + ConfigTheme.BUTTON_HEIGHT + 8);
+            }
 
             this.content = createContent();
             viewport.appendChild(content);
             renderFields(sections);
             // 导航请求立即替换单槽；新 Owner 自带 layout-ready 级联，快速重选会自动取消旧序列。
             runtime.bind(activeSectionSignal, this::requestSectionTransition);
-
             // 滚动容器（ROW：viewport + scrollbar 列），承载 viewport 并在其右侧叠加滚动条。
             // navPane 与底部 actionBar 都在滚动容器外；scrollContainer 仅承载 viewport + scrollbar。
             // viewport 已由 shell.build 挂入 scrollContainer，此处不再重复 appendChild。
-            if (sections.size() > 1) {
+            if (groups.size() > 1) {
                 // Material settings page：section 数量不再改变导航模式，统一使用固定左侧导航。
                 this.bodyRow = SceneNode.row();
                 bodyRow.setFillParentHeight(true);
                 bodyRow.setFillParentWidth(true);
                 bodyRow.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
                 bodyRow.setGap(BODY_ROW_GAP);
-                this.navRoot = createSidebarNav(bodyRow, sections);
+                this.navRoot = createSidebarNav(bodyRow, groups);
                 scrollContainer.setFlexGrow(1);
                 bodyRow.appendChild(scrollContainer);
                 pageRoot.appendChild(bodyRow);
@@ -884,23 +914,30 @@ public class ConfigScreen extends AbstractSceneHostWidget {
      * @param sections section 列表
      * @return navPane 根节点（已 mount 到 parent）
      */
-    private SceneNode createSidebarNav(SceneNode parent, List<SectionSpec> sections) {
+    private SceneNode createSidebarNav(SceneNode parent, List<GroupSpec> groups) {
         List<String> titles = new ArrayList<String>();
-        for (SectionSpec s : sections) {
-            titles.add(s.title());
+        for (GroupSpec group : groups) {
+            titles.add(group.title);
         }
+        ReadableSignal<Integer> selectedGroup = Computed.create(
+                () -> Integer.valueOf(activeGroupIndex()));
         SceneNavList.Props props = new SceneNavList.Props(
-                activeSectionSignal,
+                selectedGroup,
                 titles,
-                Signal.create(Boolean.TRUE),
-                idx -> activeSectionSignal.set(Integer.valueOf(idx)),
-                null); // preferredHeight 不设，由布局链决定（NavList 高度随项数变化）
+                ALWAYS_ENABLED,
+                idx -> {
+                    int groupIndex = idx == null ? 0 : idx.intValue();
+                    if (groupIndex >= 0 && groupIndex < groups.size()) {
+                        GroupSpec group = groups.get(groupIndex);
+                        if (!group.sectionIndices.isEmpty()) {
+                            activeSectionSignal.set(group.sectionIndices.get(0));
+                        }
+                    }
+                },
+                null);
         MountHandle handle = runtime.mount(parent, SceneNavList.create(runtime, props));
         SceneNode nav = handle.getRoot();
         if (nav != null) {
-            // 只做布局：宽度/高度/内边距。表面（background/border/cornerRadius/backdrop/浮雕）
-            // 由已主题化的 SceneNavList 内部 TOOLBAR 配方独占绑定（契约 §4.1），此处不得再静态设色
-            // 竞争同一节点——G15/Shell 删除旧的 SURFACE_CONTAINER/RADIUS_LG 静态写入。
             nav.setPreferredWidth(ConfigTheme.NAV_PANE_WIDTH);
             nav.setFillParentHeight(true);
             nav.setPadding(8);
@@ -913,6 +950,104 @@ public class ConfigScreen extends AbstractSceneHostWidget {
      *
      * @return 内容节点
      */
+    private List<GroupSpec> createGroups(List<SectionSpec> sections) {
+        List<GroupSpec> result = new ArrayList<GroupSpec>();
+        for (String title : GROUP_TITLES) {
+            result.add(new GroupSpec(title));
+        }
+        int fallback = GROUP_TITLES.length - 1;
+        for (int i = 0; i < sections.size(); i++) {
+            String name = sections.get(i).name();
+            int group = groupForSection(name);
+            if (group < 0 || group >= result.size()) {
+                group = fallback;
+            }
+            result.get(group).sectionIndices.add(Integer.valueOf(i));
+        }
+        for (int i = result.size() - 1; i >= 0; i--) {
+            if (result.get(i).sectionIndices.isEmpty()) {
+                result.remove(i);
+            }
+        }
+        return result;
+    }
+
+    private static int groupForSection(String name) {
+        if (name == null) {
+            return GROUP_TITLES.length - 1;
+        }
+        for (int i = 0; i < GROUP_SECTION_IDS.length; i++) {
+            for (String id : GROUP_SECTION_IDS[i]) {
+                if (id.equals(name)) {
+                    return i;
+                }
+            }
+        }
+        return GROUP_TITLES.length - 1;
+    }
+
+    private int activeGroupIndex() {
+        if (groups == null || groups.isEmpty() || activeSectionSignal == null) {
+            return 0;
+        }
+        int section = activeSectionSignal.get().intValue();
+        for (int i = 0; i < groups.size(); i++) {
+            if (groups.get(i).sectionIndices.contains(Integer.valueOf(section))) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private int localSectionIndex(GroupSpec group) {
+        if (group == null || group.sectionIndices.isEmpty()) {
+            return 0;
+        }
+        int section = activeSectionSignal.get().intValue();
+        int local = group.sectionIndices.indexOf(Integer.valueOf(section));
+        return local < 0 ? 0 : local;
+    }
+
+    private SceneNode createTopTabs() {
+        SceneNode host = SceneNode.column();
+        host.setFillParentWidth(true);
+        host.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
+        host.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
+        for (int i = 0; i < groups.size(); i++) {
+            final int groupIndex = i;
+            rt().show(host,
+                    Computed.create(() -> Boolean.valueOf(activeGroupIndex() == groupIndex)),
+                    () -> createGroupTabs(groups.get(groupIndex)));
+        }
+        return host;
+    }
+
+    private SceneNode createGroupTabs(GroupSpec group) {
+        List<String> labels = new ArrayList<String>();
+        for (Integer index : group.sectionIndices) {
+            labels.add(sections.get(index.intValue()).title());
+        }
+        ReadableSignal<Integer> selected = Computed.create(
+                () -> Integer.valueOf(localSectionIndex(group)));
+        SceneSegmented.Props props = new SceneSegmented.Props(
+                selected,
+                labels,
+                ALWAYS_ENABLED,
+                local -> {
+                    int position = local == null ? 0 : local.intValue();
+                    if (position >= 0 && position < group.sectionIndices.size()) {
+                        activeSectionSignal.set(group.sectionIndices.get(position));
+                    }
+                });
+        SceneNode host = SceneNode.row();
+        host.setFillParentWidth(true);
+        MountHandle handle = runtime.mount(host, SceneSegmented.create(runtime, props));
+        SceneNode tabs = handle.getRoot();
+        if (tabs != null) {
+            tabs.setFillParentWidth(true);
+        }
+        return host;
+    }
     private SceneNode createContent() {
         SceneNode node = SceneNode.column();
         node.setGap(14);
