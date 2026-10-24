@@ -61,7 +61,7 @@ public class MixinWorldLoadPumpContractTest {
     public void pumpMixinIsRegisteredInClientEarlyMixins() throws IOException {
         String earlyMixins = source(EARLY_MIXINS);
 
-        assertTrue(earlyMixins.contains("mixins.add(\"uilib.mixin.early.MixinMinecraftWorldLoadPump\");"));
+        assertTrue(earlyMixins.contains("mixins.add(\"MixinMinecraftWorldLoadPump\");"));
     }
 
     private static String source(Path path) throws IOException {

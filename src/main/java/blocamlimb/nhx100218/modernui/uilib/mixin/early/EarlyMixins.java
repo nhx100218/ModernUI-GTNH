@@ -39,37 +39,37 @@ public class EarlyMixins implements IEarlyMixinLoader, IFMLLoadingPlugin {
         List<String> mixins = new ArrayList<String>();
         if (side == Side.CLIENT) {
             // Library
-            mixins.add("uilib.mixin.early.MixinFontRenderer");
-            mixins.add("uilib.mixin.early.MixinMinecraftWorldLoadPump");
-            mixins.add("uilib.mixin.early.MixinGuiScreenKeyboardIsolation");
-            mixins.add("uilib.mixin.early.network.MixinNetHandlerPlayClient");
-            mixins.add("uilib.mixin.early.nametag.MixinEntityRendererPlayerNameTagPass");
-            mixins.add("uilib.mixin.early.nametag.MixinRendererLivingEntityPlayerNameTag");
-            mixins.add("uilib.mixin.early.nametag.MixinRenderPlayerScoreboardNameTag");
+            mixins.add("MixinFontRenderer");
+            mixins.add("MixinMinecraftWorldLoadPump");
+            mixins.add("MixinGuiScreenKeyboardIsolation");
+            mixins.add("network.MixinNetHandlerPlayClient");
+            mixins.add("nametag.MixinEntityRendererPlayerNameTagPass");
+            mixins.add("nametag.MixinRendererLivingEntityPlayerNameTag");
+            mixins.add("nametag.MixinRenderPlayerScoreboardNameTag");
             if (loadedCoreMods != null && loadedCoreMods.contains(ANGELICA_TWEAKER)) {
-                mixins.add("uilib.mixin.early.nametag.MixinAngelicaPlayerNameTagReplay");
-                mixins.add("uilib.mixin.early.tesr.MixinAngelicaTesrBatchReplay");
+                mixins.add("nametag.MixinAngelicaPlayerNameTagReplay");
+                mixins.add("tesr.MixinAngelicaTesrBatchReplay");
             }
             // Merged enhancement
-            mixins.add("enhance.mixin.early.MixinGuiScreenTooltip");
-            mixins.add("enhance.mixin.early.MixinGuiSlotSmoothScroll");
-            mixins.add("enhance.mixin.early.MixinEntityRendererScreenTransition");
-            mixins.add("enhance.mixin.early.MixinEntityRendererZoom");
-            mixins.add("enhance.mixin.early.MixinGuiNewChat");
-            mixins.add("enhance.mixin.early.MixinMinecraftUnfocused");
-            mixins.add("enhance.mixin.early.MixinGameSettingsUnfocused");
-            mixins.add("enhance.mixin.early.MixinGuiTextFieldUndo");
-            mixins.add("enhance.mixin.early.MixinGuiContainerPause");
-            mixins.add("enhance.mixin.early.MixinGuiContainerCreativeSmoothScroll");
-            mixins.add("enhance.mixin.early.MixinGuiTextFieldSmoothScroll");
-            mixins.add("enhance.mixin.early.MixinGuiTextFieldSelection");
-            mixins.add("enhance.mixin.early.MixinMinecraftScreenPoke");
-            mixins.add("enhance.mixin.early.MixinGuiIngameHotbarScroll");
-            mixins.add("enhance.mixin.early.MixinGuiHotbarTexture");
-            mixins.add("enhance.mixin.early.MixinInventoryPlayerHotbar");
-            mixins.add("enhance.mixin.early.MixinGuiNewChatScroll");
+            mixins.add("enhance.MixinGuiScreenTooltip");
+            mixins.add("enhance.MixinGuiSlotSmoothScroll");
+            mixins.add("enhance.MixinEntityRendererScreenTransition");
+            mixins.add("enhance.MixinEntityRendererZoom");
+            mixins.add("enhance.MixinGuiNewChat");
+            mixins.add("enhance.MixinMinecraftUnfocused");
+            mixins.add("enhance.MixinGameSettingsUnfocused");
+            mixins.add("enhance.MixinGuiTextFieldUndo");
+            mixins.add("enhance.MixinGuiContainerPause");
+            mixins.add("enhance.MixinGuiContainerCreativeSmoothScroll");
+            mixins.add("enhance.MixinGuiTextFieldSmoothScroll");
+            mixins.add("enhance.MixinGuiTextFieldSelection");
+            mixins.add("enhance.MixinMinecraftScreenPoke");
+            mixins.add("enhance.MixinGuiIngameHotbarScroll");
+            mixins.add("enhance.MixinGuiHotbarTexture");
+            mixins.add("enhance.MixinInventoryPlayerHotbar");
+            mixins.add("enhance.MixinGuiNewChatScroll");
         }
-        mixins.add("uilib.mixin.early.network.MixinNetHandlerPlayServer");
+        mixins.add("network.MixinNetHandlerPlayServer");
         return mixins;
     }
 

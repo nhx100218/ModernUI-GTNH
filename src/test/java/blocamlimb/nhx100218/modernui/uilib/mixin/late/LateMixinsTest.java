@@ -16,7 +16,7 @@ public class LateMixinsTest {
 
     @Test
     public void clientWithAeLoadsMonitorCompatibility() {
-        assertEquals(Collections.singletonList("uilib.mixin.late.ae2.MixinAbstractPartMonitor"),
+        assertEquals(Collections.singletonList("ae2.MixinAbstractPartMonitor"),
                 LateMixins.buildMixinsForSide(Side.CLIENT, Collections.singleton("appliedenergistics2")));
         assertEquals("mixins.modernuigtnh.late.json", new LateMixins().getMixinConfig());
     }
@@ -24,13 +24,13 @@ public class LateMixinsTest {
     @Test
     public void clientWithMergedOptionalModsLoadsEnhancementMixins() {
         assertTrue(LateMixins.buildMixinsForSide(Side.CLIENT, Collections.singleton("Waila"))
-                .contains("enhance.mixin.late.waila.MixinWailaOverlayRenderer"));
+                .contains("enhance.waila.MixinWailaOverlayRenderer"));
         assertTrue(LateMixins.buildMixinsForSide(Side.CLIENT, Collections.singleton("NotEnoughItems"))
-                .contains("enhance.mixin.late.nei.MixinRecipeTooltipLineHandler"));
+                .contains("enhance.nei.MixinRecipeTooltipLineHandler"));
         assertTrue(LateMixins.buildMixinsForSide(Side.CLIENT, Collections.singleton("betterquesting"))
-                .contains("enhance.mixin.late.bq.MixinBqTooltip"));
+                .contains("enhance.bq.MixinBqTooltip"));
         assertTrue(LateMixins.buildMixinsForSide(Side.CLIENT, Collections.singleton("bogosorter"))
-                .contains("enhance.mixin.late.bogo.MixinBogoHotbarSwap"));
+                .contains("enhance.bogo.MixinBogoHotbarSwap"));
     }
 
     @Test
