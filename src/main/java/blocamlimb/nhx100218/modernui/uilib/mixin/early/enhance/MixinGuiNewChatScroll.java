@@ -11,7 +11,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import blocamlimb.nhx100218.modernui.enhance.vanilla.ChatScrollSmooth;
 import blocamlimb.nhx100218.modernui.enhance.vanilla.HudCache;
-import blocamlimb.nhx100218.modernui.enhance.vanilla.SmoothScrollConfig;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;
@@ -33,7 +32,7 @@ public class MixinGuiNewChatScroll {
         float d = 0.0F;
         try {
             Minecraft mc = Minecraft.getMinecraft();
-            boolean open = mc.currentScreen instanceof GuiChat && SmoothScrollConfig.enabled;
+            boolean open = mc.currentScreen instanceof GuiChat;
             d = ChatScrollSmooth.update(modernui$read(), open);
         } catch (Throwable ignored) {
         }
