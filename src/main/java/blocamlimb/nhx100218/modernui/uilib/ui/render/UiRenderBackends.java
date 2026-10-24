@@ -146,6 +146,13 @@ public final class UiRenderBackends {
      * 玻璃整块不渲染且无任何报错——正是本仓反复踩的"能力探测静默降级"。链可嵌套，
      * 故循环下钻。</p>
      */
+    /** Ends any pending consecutive-fill batch in the underlying UiRenderContext. */
+    public static void flushFillBatch(UiRenderBackend backend) {
+        UiRenderContext context = resolveContext(backend);
+        if (context != null) {
+            context.flushFillBatch();
+        }
+    }
     private static UiRenderContext resolveContext(UiRenderBackend backend) {
         UiRenderBackend current = backend;
         // 链长有限且极短（通常 0~1 层）；上限只为防御异常构造，不承载语义。

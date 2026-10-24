@@ -112,7 +112,11 @@ public class ScenePaintReplayer {
         } finally {
             // 批次必须无条件收尾：中途抛异常若漏掉 end，冻结的 revision 会让后续帧
             // 永远看不到新内容（玻璃停在旧背景上）。
-            blocamlimb.nhx100218.modernui.uilib.ui.render.UiRenderBackends.endBackdropBatch(ctx);
+            try {
+                blocamlimb.nhx100218.modernui.uilib.ui.render.UiRenderBackends.flushFillBatch(ctx);
+            } finally {
+                blocamlimb.nhx100218.modernui.uilib.ui.render.UiRenderBackends.endBackdropBatch(ctx);
+            }
         }
     }
 
