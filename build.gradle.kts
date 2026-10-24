@@ -22,10 +22,15 @@ plugins {
     id("com.gtnewhorizons.gtnhconvention")
 }
 
+// Fixed semantic version for CI (git-based versioning is disabled in gradle.properties).
+project.ext.set("modVersion", "1.0.0")
+
 // 测试堆 1g：headless 软件渲染验收共享一张 GlyphRuntimeTables（约 123MiB direct-index 表），
 // 512m 默认堆下与其他字体测试类同 JVM 跑会互相挤压 OOM。
 tasks.withType<Test>().configureEach {
     maxHeapSize = "1024m"
+    // Opt-in snapshot regeneration for local maintenance runs.
+    systemProperty("qz.latex.surface.update", System.getProperty("qz.latex.surface.update", "false"))
 }
 
 // ============================================================================

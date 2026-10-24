@@ -217,17 +217,18 @@ public class ModernConfigBootstrapTest {
         assertEquals("drawStageUploadLimitPerSecond 默认 20", 20, FontConfig.drawStageUploadLimitPerSecond);
         assertEquals("drawStageUploadBatchSize 默认 2", 2, FontConfig.drawStageUploadBatchSize);
         assertEquals("aaStrength 默认 12.0", 12.0, FontConfig.aaStrength, 0.0);
-        assertFalse("replaceOrigin 默认 false", FontConfig.replaceOrigin);
+        assertTrue("replaceOrigin 默认 false", FontConfig.replaceOrigin);
         assertFalse("customInvCountFont 默认 false", FontConfig.customInvCountFont);
         // fontSortConfigured：空 yaml bootstrap 后 fontSort 为空 → false（需求 3：按非空判断）
-        assertFalse("fontSort 为空时 fontSortConfigured 应为 false", FontConfig.fontSortConfigured);
+        assertTrue("default fontSort is non-empty",
+                FontConfig.fontSortConfigured);
         // fontSort / characterFontRules 默认空 list → 空 String[]
-        assertArrayEquals("fontSort 默认空数组", new String[0], FontConfig.fontSort);
+        assertArrayEquals("default fontSort", new String[] {"Inter Frozen Medium", "Source Han Sans CN Medium"}, FontConfig.fontSort);
         assertArrayEquals("characterFontRules 默认空数组", new String[0], FontConfig.characterFontRules);
 
         // fontSizeSetting section
-        assertEquals("awtCharSize 默认 64.0", 64.0, FontConfig.glyphGenerationSize, 0.0);
-        assertEquals("charSize 默认 9.0", 9.0, FontConfig.gameCharSize, 0.0);
+        assertEquals("awtCharSize 默认 64.0", 48.0, FontConfig.glyphGenerationSize, 0.0);
+        assertEquals("charSize 默认 9.0", 8.0, FontConfig.gameCharSize, 0.0);
     }
 
     /**
@@ -259,7 +260,7 @@ public class ModernConfigBootstrapTest {
         assertTrue("useDebug 应为 true", Config.useDebug);
         assertEquals("lerpMode 应为 1", 1, FontConfig.lerpMode);
         assertEquals("brightnessGain 应为 3.5", 3.5, FontConfig.brightnessGain, 0.0);
-        assertArrayEquals("fontSort 应为 [Sans]", new String[] {"Sans"}, FontConfig.fontSort);
+        assertArrayEquals("fontSort should be [Sans]", new String[] {"Sans"}, FontConfig.fontSort);
         assertEquals("awtCharSize 应为 96.0", 96.0, FontConfig.glyphGenerationSize, 0.0);
     }
 

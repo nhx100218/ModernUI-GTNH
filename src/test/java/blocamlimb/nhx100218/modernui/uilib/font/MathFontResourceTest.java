@@ -19,7 +19,7 @@ import com.google.gson.JsonParser;
 /** Resource/schema checks only: these do not exercise production glyph generation or pages. */
 public class MathFontResourceTest {
 
-    private static final String ROOT = "/assets/modernuigtnh/fonts/math/stix-two/";
+    private static final String ROOT = "/assets/modernui/fonts/math/stix-two/";
     private static final String FONT_SHA = "95bc2729e41faf93b0bcae9e96c4dc4da45855067fd0581e621e30734fe8d90b";
 
     private static byte[] resource(String name) throws Exception {

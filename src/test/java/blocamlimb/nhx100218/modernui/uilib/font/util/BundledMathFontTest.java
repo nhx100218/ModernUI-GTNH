@@ -154,7 +154,7 @@ public class BundledMathFontTest {
     @Test
     public void localAssemblyOmissionsArePinnedToOriginalResourceDefects() throws Exception {
         try (InputStream input = getClass().getResourceAsStream(
-                "/assets/modernuigtnh/fonts/math/stix-two/math-data.json")) {
+                "/assets/modernui/fonts/math/stix-two/math-data.json")) {
             Assert.assertNotNull(input);
             JsonObject data = new JsonParser().parse(new InputStreamReader(input, StandardCharsets.UTF_8)).getAsJsonObject();
             JsonObject horizontal = data.getAsJsonObject("constructions").getAsJsonObject("horizontal");

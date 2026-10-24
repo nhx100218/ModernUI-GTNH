@@ -67,8 +67,7 @@ public class LayerContractGuardTest {
      * 类型住在上层 ui.text，font 层两个文件被迫反向 import。三类型均在
      * 公共 API 稳定清单点名 ✅，换包=breaking，物理断环留 5.x 窗口。</p>
      */
-    private static final Set<String> KNOWN_FONT_TO_UITEXT_BASELINE = new TreeSet<String>(Arrays.asList(
-            "TextLayoutService.java", "DefaultFontRendererAdapter.java"));
+    private static final Set<String> KNOWN_FONT_TO_UITEXT_BASELINE = new TreeSet<String>();
 
     /**
      * 守护分层依赖方向：数据层（响应式）不得静态 import 控件层（{@code ui.control}）。

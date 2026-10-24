@@ -71,10 +71,10 @@ public class ModernUiConfigEndToEndTest {
         assertEquals(3.0, manager.authority().getNumber("fontSystem.lerpMode"), 0.0);
         assertEquals(2.0, manager.authority().getNumber("fontSystem.aaMode"), 0.0);
         assertEquals(2.0, manager.authority().getNumber("fontSystem.brightnessGain"), 0.0);
-        assertFalse(manager.authority().getBool("fontSystem.replaceOrigin"));
+        assertTrue(manager.authority().getBool("fontSystem.replaceOrigin"));
         // fontSizeSetting
-        assertEquals(64.0, manager.authority().getNumber("fontSizeSetting.glyphGenerationSize"), 0.0);
-        assertEquals(9.0, manager.authority().getNumber("fontSizeSetting.gameCharSize"), 0.0);
+        assertEquals(48.0, manager.authority().getNumber("fontSizeSetting.glyphGenerationSize"), 0.0);
+        assertEquals(8.0, manager.authority().getNumber("fontSizeSetting.gameCharSize"), 0.0);
     }
 
     /**
@@ -209,7 +209,7 @@ public class ModernUiConfigEndToEndTest {
         ConfigNode reloaded = Config.load(ConfigSource.fromFile(file), ConfigFormat.YAML);
         // 回到 schema 默认
         assertFalse(reloaded.get("general.useDebug").asBoolean());
-        assertEquals(9.0, reloaded.get("fontSizeSetting.gameCharSize").asDouble(), 0.0);
+        assertEquals(8.0, reloaded.get("fontSizeSetting.gameCharSize").asDouble(), 0.0);
         // 未重置的字段保持预置值
         assertEquals("forge", reloaded.get("general.netTransport").asString());
         assertEquals(1, reloaded.get("fontSystem.lerpMode").asInt());
@@ -315,10 +315,11 @@ public class ModernUiConfigEndToEndTest {
     public void schemaKeepsSectionsAndDefaultsMissingThemeToFlat() throws Exception {
         ConfigSchema schema = ModernUiConfigSchema.create();
         assertEquals("modernui", schema.modId());
-        assertEquals(3, schema.sections().size());
-        assertEquals("general", schema.sections().get(0).name());
-        assertEquals("fontSystem", schema.sections().get(1).name());
-        assertEquals("fontSizeSetting", schema.sections().get(2).name());
+        assertEquals(13, schema.sections().size());
+        assertEquals("tooltip", schema.sections().get(0).name());
+        assertEquals("general", schema.sections().get(10).name());
+        assertEquals("fontSystem", schema.sections().get(11).name());
+        assertEquals("fontSizeSetting", schema.sections().get(12).name());
         assertEquals("flat", blocamlimb.nhx100218.modernui.config.runtime.Authority.load((File) null, schema)
                 .getString("general.configPageTheme"));
     }

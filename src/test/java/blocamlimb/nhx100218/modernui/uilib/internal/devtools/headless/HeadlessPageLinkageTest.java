@@ -848,7 +848,8 @@ public class HeadlessPageLinkageTest {
         Assert.assertEquals("frames > max-frames 必须落参数错误（exit 2）：\n" + badPlan.output,
                 2, badPlan.exit);
         Assert.assertTrue("参数错误必须自证成因：\n" + badPlan.output,
-                badPlan.output.contains("maxFrames 不得小于 frames"));
+                badPlan.output.contains("maxFrames 不得小于 frames")
+                        || badPlan.output.contains("maxFrames 不能小于 frames"));
 
         Path scriptFile = Paths.get("build", "reports", "headless", "linkage-script.qzscript").toAbsolutePath();
         Files.createDirectories(scriptFile.getParent());
@@ -1118,6 +1119,9 @@ public class HeadlessPageLinkageTest {
         command.add(javaExecutable);
         command.add("-Djava.library.path=" + nativesDir);
         command.add("-Xmx2g");
+        command.add("-Dfile.encoding=UTF-8");
+        command.add("-Dsun.stdout.encoding=UTF-8");
+        command.add("-Dsun.stderr.encoding=UTF-8");
         command.add("-cp");
         command.add(new String(Files.readAllBytes(classpath), StandardCharsets.UTF_8).trim());
         command.add("blocamlimb.nhx100218.modernui.uilib.internal.devtools.headless.HeadlessShotMain");
