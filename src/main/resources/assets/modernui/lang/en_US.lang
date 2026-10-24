@@ -1,0 +1,161 @@
+modernui.config.title=ModernUI Enhance
+modernui.config.button=Config
+modernui.md.on=ON
+modernui.md.off=OFF
+modernui.md.done=Done
+modernui.md.back=Back
+modernui.md.hint=Select a category on the left
+modernui.md.home=Home
+modernui.md.apply=Apply
+modernui.md.cancel=Cancel
+modernui.md.home.desc=ModernUI Enhance - rounded tooltips, smooth transitions, chat, zoom and more.
+modernui.md.home.hint=Select a category from the left panel.
+
+modernui.config.cat.tooltip=Tooltip
+modernui.config.tooltip.enabled=Rounded Tooltip
+modernui.config.tooltip.enabled.tooltip=Enable rounded tooltip rendering.
+modernui.config.tooltip.rounded=Round Corners
+modernui.config.tooltip.rounded.tooltip=Use rounded corners.
+modernui.config.tooltip.centerTitle=Center Title
+modernui.config.tooltip.centerTitle.tooltip=Center the item name line.
+modernui.config.tooltip.titleBreak=Title Separator
+modernui.config.tooltip.titleBreak.tooltip=Draw a separator under the title.
+modernui.config.tooltip.adaptiveColors=Adaptive Colors
+modernui.config.tooltip.adaptiveColors.tooltip=Adapt the border color to the item name color.
+modernui.config.tooltip.borderColorCycle=Border Color Cycle
+modernui.config.tooltip.borderColorCycle.tooltip=Border color cycle in ms, 0 to disable.
+modernui.config.tooltip.borderWidth=Border Width
+modernui.config.tooltip.borderWidth.tooltip=Tooltip border width.
+modernui.config.tooltip.cornerRadius=Corner Radius
+modernui.config.tooltip.cornerRadius.tooltip=Tooltip corner radius.
+modernui.config.tooltip.modularUiMaxWidth=ModularUI Max Width
+modernui.config.tooltip.modularUiMaxWidth.tooltip=ModularUI2 tooltip max line width, 0 for auto.
+modernui.config.tooltip.modularUiNoWrap=Disable ModularUI Wrap
+modernui.config.tooltip.modularUiNoWrap.tooltip=Disable ModularUI2 automatic text wrapping.
+modernui.config.tooltip.fillColor=Fill Color
+modernui.config.tooltip.fillColor.tooltip=Background corner colors (ARGB), up to 4.
+modernui.config.tooltip.strokeColor=Border Color
+modernui.config.tooltip.strokeColor.tooltip=Border corner colors (ARGB), up to 4.
+
+modernui.config.cat.waila=Waila
+modernui.config.waila.enabled=Rounded Waila
+modernui.config.waila.enabled.tooltip=Rounded corners for the Waila HUD box.
+modernui.config.waila.cornerRadius=Waila Corner Radius
+modernui.config.waila.cornerRadius.tooltip=Waila corner radius.
+modernui.config.waila.borderWidth=Waila Border Width
+modernui.config.waila.borderWidth.tooltip=Waila border width.
+
+modernui.config.cat.smoothscroll=Smooth Scroll
+modernui.config.smoothscroll.enabled=Smooth Scrolling
+modernui.config.smoothscroll.enabled.tooltip=Smooth scrolling for vanilla lists.
+modernui.config.smoothscroll.listSmoothness=List Smoothness
+modernui.config.smoothscroll.listSmoothness.tooltip=Scroll easing for vanilla lists. 0 = off, higher = slower, 100 = no scrolling.
+modernui.config.smoothscroll.listAmount=List Scroll Amount
+modernui.config.smoothscroll.listAmount.tooltip=Pixels per wheel notch for lists, 0 = auto (half a row).
+modernui.config.smoothscroll.chatSmoothness=Chat Smoothness
+modernui.config.smoothscroll.chatSmoothness.tooltip=Scroll easing for the chat. 0 = off, higher = slower, 100 = no scrolling.
+modernui.config.smoothscroll.chatAmount=Chat Scroll Amount
+modernui.config.smoothscroll.chatAmount.tooltip=Pixels per wheel notch for chat, 0 = auto.
+modernui.config.smoothscroll.chatOpenSmoothness=Chat Opening Smoothness
+modernui.config.smoothscroll.chatOpenSmoothness.tooltip=Slide-in easing when the chat opens. 0 = off, higher = slower.
+modernui.config.smoothscroll.creativeSmoothness=Creative Smoothness
+modernui.config.smoothscroll.creativeSmoothness.tooltip=Scroll easing for the creative inventory. 0 = off, higher = slower, 100 = no scrolling.
+modernui.config.smoothscroll.creativeAmount=Creative Scroll Amount
+modernui.config.smoothscroll.creativeAmount.tooltip=Pixels per wheel notch for the creative inventory.
+modernui.config.smoothscroll.textSmoothness=Text Field Smoothness
+modernui.config.smoothscroll.textSmoothness.tooltip=Horizontal easing when the text cursor scrolls. 0 = off, higher = slower.
+modernui.config.smoothscroll.textAmount=Text Field Scroll Amount
+modernui.config.smoothscroll.textAmount.tooltip=Pixels per wheel notch in text fields.
+
+modernui.config.cat.screentransition=Screen Transition
+modernui.config.screentransition.enabled=Transition Animation
+modernui.config.screentransition.enabled.tooltip=Animate screen open/close.
+modernui.config.screentransition.durationMs=Duration
+modernui.config.screentransition.durationMs.tooltip=Transition duration in ms.
+modernui.config.screentransition.offset=Offset
+modernui.config.screentransition.offset.tooltip=Transition offset in px.
+modernui.config.screentransition.scale=Scale
+modernui.config.screentransition.scale.tooltip=Transition scale.
+
+modernui.config.cat.zoom=Zoom
+modernui.config.zoom.enabled=Enable Zoom
+modernui.config.zoom.enabled.tooltip=Hold the key to zoom.
+modernui.config.zoom.factor=Zoom Factor
+modernui.config.zoom.factor.tooltip=Zoom magnification.
+modernui.config.zoom.smooth=Smooth Zoom
+modernui.config.zoom.smooth.tooltip=Smooth zoom transition.
+modernui.config.zoom.speed=Transition Speed
+modernui.config.zoom.speed.tooltip=Zoom transition speed.
+modernui.config.zoom.sensitivity=Sensitivity Slowdown
+modernui.config.zoom.sensitivity.tooltip=Extra sensitivity slowdown while zooming (higher is slower).
+modernui.config.zoom.keyCode=Key Code
+modernui.config.zoom.keyCode.tooltip=LWJGL key code to trigger zoom (default 46=C).
+
+modernui.config.cat.chat=Chat
+modernui.config.chat.headsEnabled=Chat Heads
+modernui.config.chat.headsEnabled.tooltip=Show sender skin heads in chat.
+modernui.config.chat.headSize=Head Size
+modernui.config.chat.headSize.tooltip=Head size in px.
+modernui.config.chat.headGap=Head Gap
+modernui.config.chat.headGap.tooltip=Gap between head and text in px.
+
+modernui.config.cat.performance=Performance
+modernui.config.performance.unfocusedFramerate=Lower FPS When Unfocused
+modernui.config.performance.unfocusedFramerate.tooltip=Limit framerate when the window is unfocused.
+modernui.config.performance.unfocusedFramerateLimit=Unfocused FPS Limit
+modernui.config.performance.unfocusedFramerateLimit.tooltip=Framerate limit when unfocused.
+modernui.config.performance.unfocusedVolume=Lower Volume When Unfocused
+modernui.config.performance.unfocusedVolume.tooltip=Lower volume when the window is unfocused.
+modernui.config.performance.unfocusedVolumeFactor=Unfocused Volume Factor
+modernui.config.performance.unfocusedVolumeFactor.tooltip=Volume multiplier when unfocused.
+modernui.config.performance.preload=Warm Up on Load
+modernui.config.performance.preload.tooltip=Warm up fonts, shaders and item icons once after loading (small hitch on load, smoother afterwards).
+
+modernui.config.cat.ui=Interface
+modernui.config.ui.textUndoEnabled=Text Undo/Redo
+modernui.config.ui.textUndoEnabled.tooltip=Ctrl+Z / Ctrl+Y in text fields.
+modernui.config.ui.textUndoLimit=Undo History Limit
+modernui.config.ui.textUndoLimit.tooltip=Maximum undo history steps.
+modernui.config.ui.pauseContainers=Pause on Containers
+modernui.config.ui.pauseContainers.tooltip=Pause the world when a container is open in singleplayer.
+
+modernui.config.cat.emoji=Emoji
+modernui.config.emoji.enabled=Emoji Shortcodes
+modernui.config.emoji.enabled.tooltip=Convert :name: shortcodes to emoji in chat (needs a system emoji font).
+
+modernui.config.cat.textselection=Text Selection
+modernui.config.textselection.selectionEnabled=Custom Selection Highlight
+modernui.config.textselection.selectionEnabled.tooltip=Replace the vanilla XOR selection box.
+modernui.config.textselection.selectionColor=Selection Color
+modernui.config.textselection.selectionColor.tooltip=Selection highlight color (RGB).
+modernui.config.textselection.selectionAlpha=Selection Opacity
+modernui.config.textselection.selectionAlpha.tooltip=Selection highlight alpha (0-255).
+modernui.config.textselection.selectionOffsetX=Selection X Offset
+modernui.config.textselection.selectionOffsetX.tooltip=Shift the selection box horizontally in pixels.
+modernui.config.textselection.selectionOffsetY=Selection Y Offset
+modernui.config.textselection.selectionOffsetY.tooltip=Shift the selection box vertically in pixels (negative moves up).
+
+modernui.md.nav.home=Home
+modernui.md.nav.addon=Enhance
+modernui.md.nav.modernui=ModernUI
+modernui.md.tab.general=General
+modernui.md.tab.fontsystem=Font System
+modernui.md.tab.fontsize=Font Size
+modernui.md.modernui.desc=Edit ModernUI's own modernui.yaml: chat frame, picker density, font sort and font sizes.
+modernui.md.modernui.restartHint=Some changes (chat frame, fonts) take effect after a game restart.
+modernui.md.modernui.missing=modernui.yaml not found.
+
+modernui.modernui.chatFrame=Chat Frame
+modernui.modernui.chatFrame.tooltip=ModernUI chat frame style.
+modernui.modernui.chatFrame.custom=Custom
+modernui.modernui.chatFrame.vanilla=Vanilla
+modernui.modernui.pickerDensity=Picker Density
+modernui.modernui.pickerDensity.tooltip=Selector panel density preset.
+modernui.modernui.pickerDensity.auto=Auto
+modernui.modernui.pickerDensity.compact=Compact
+modernui.modernui.pickerDensity.standard=Standard
+modernui.modernui.pickerDensity.roomy=Roomy
+modernui.modernui.glyphGenerationSize=Glyph Resolution
+modernui.modernui.glyphGenerationSize.tooltip=Glyph atlas generation size; higher is sharper but uses more VRAM.
+modernui.modernui.gameCharSize=Game Char Size
+modernui.modernui.gameCharSize.tooltip=Default on-screen font size and the basis for width/line height.

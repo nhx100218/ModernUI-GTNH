@@ -1,0 +1,337 @@
+package blocamlimb.nhx100218.modernui.uilib.ui.scene.control;
+
+import java.util.function.Supplier;
+
+import com.github.bsideup.jabel.Desugar;
+
+import blocamlimb.nhx100218.modernui.uilib.ui.reactive.ReadableSignal;
+import blocamlimb.nhx100218.modernui.uilib.ui.reactive.Signal;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.SceneRuntime;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneCursor;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneInteractionState;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.node.SceneNode;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.paint.SceneChromeTokens;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneSurfaceBinder;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneSurfaceStyle;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneTheme;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneThemes;
+
+/**
+ * SceneSlider —— scene 新栈控件层 Phase 4 批 3 迁移控件（水平连续数值滑块）。
+ *
+ * <h3>定位：受控连续值控件（契约 R7 连续版）</h3>
+ * <p>当前值由外部 {@code value} 只读 signal 驱动，控件<b>零内部受控状态</b>。
+ * 交互时只经 {@code onChange(value, committing)} 把「期望的新值」交还外部，
+ * 由外部决定是否 set 回 value signal。控件自身唯一的本地态是
+ * <b>瞬态拖拽值 {@code draggingValue}</b>（由 {@link SceneSliderPrimitive} 内部创建，
+ * null=未拖拽，仅 pointerCapture 生命周期内存活，被 handler 闭包捕获、归 Owner 作用域），
+ * 它不是控件类字段（守 R1 零实例字段），<b>降级为纯渲染 signal（只写不读）</b>——
+ * 仅在拖拽期临时接管 progress 派生，松手清 null 自动回落外部 value。
+ * UP/MOVE 的业务值用事件坐标当场算（valueFromPointerX），绝不读 draggingValue。</p>
+ *
+ * <h3>渲染派生（守 R7 受控零状态）</h3>
+ * <p>统一读 {@code effectiveValue = draggingValue!=null ? draggingValue : value}，
+ * 由它算 {@code progress = clamp((effectiveValue-min)/(max-min),0,1)}。非拖拽期 draggingValue==null，
+ * 完全由外部 value 驱动；拖拽期临时接管，松手清 null 回落外部 value（即使外部不回写）。
+ * 所有外观变化经 {@code rt.bind(computed(...))}，绝不在 handler 里直接 setXxx（R4）。</p>
+ *
+ * <h3>结构</h3>
+ * <pre>
+ * root (ROW, crossAxisAlign=CENTER, 装饰穿透 hitTestable=false)
+ *   └─ track (ROW, crossAxisAlign=CENTER, preferredWidth=200, 交互单元 hitTestable=true)  ← 绑 interactionState
+ *         ├─ fillBox (叶, preferredWidth 动态=round(W*progress)-thumb/2, 装饰穿透)  ← 进度填充（accent 实色）
+ *         └─ thumb   (叶, THUMB_SIZE 圆, 装饰穿透)                                  ← 紧随 fill 推到 progress 位置
+ * </pre>
+ * <p>track 是交互单元（{@code setHitTestable(true)}），root/fill/thumb 全部 {@code setHitTestable(false)}
+ * 命中穿透到 track（交互单元）——R6。
+ * thumb 骑中心用负偏移近似：fillBox 宽减 thumbSize/2，使 thumb 中心落在 {@code round(W*progress)}。
+ * <b>margin 精确定位回退说明</b>：经核查，当前布局引擎无绝对定位、负 margin collapse 规则不完整、
+ * setPreferredWidth(0) 触发 fill 陷阱（0=不约束=回退 fill 父宽），三重约束下无法用 margin 精确定位
+ * thumb 中心到 round(W*progress) 且 progress=0 时 thumb 中心=0。故回退当前近似方案，不阻塞缺陷 D 修复。</p>
+ * <p><b>外观归属</b>：track 由 INPUT 角色配方、thumb 由 INDICATOR 强调配方经
+ * {@link SceneSurfaceBinder} 独占写入（圆角/边框/滤镜/实体高度全来自配方），fillBox 底色取主题
+ * {@code accent}/{@code disabledForeground}；控件自身只保留尺寸、间距与 fill 圆角这类非颜色几何。</p>
+ *
+ * <h3>拖拽手势（pointerCapture，committing 双语义，缺陷 D 根治后）</h3>
+ * <ul>
+ *   <li>POINTER_DOWN：{@code requestPointerCapture}，按命中 x 当场算初值，draggingValue.set(初值)（纯渲染），onChange(初值, committing=false)</li>
+ *   <li>POINTER_MOVE（capture 期间强制投递到 root，无 draggingValue==null 守卫）：按指针 x 当场算新值，draggingValue.set(newV)（纯渲染），onChange(newV, committing=false)——预览</li>
+ *   <li>POINTER_UP：按指针 x 当场算提交值（绝不读 draggingValue），draggingValue.set(null) 清渲染态，onChange(当场算的 v, committing=true)——提交后归还外部</li>
+ *   <li>POINTER_CANCEL：draggingValue.set(null)——取消不提交、不读 signal</li>
+ * </ul>
+ *
+ * <h3>键盘步进（focusable + KEY_DOWN，离散提交 committing=true，不走 draggingValue）</h3>
+ * <p>←/↓ 减、→/↑ 加（步长 = step>0?step:(max-min)/100）；PageUp 加 10×、PageDown 减 10×；Home→min、End→max。
+ * 每次读 {@code value.get()} 算相邻值（读 signal 合法：handler 边界只禁写节点属性槽，不禁读 signal），onChange(量化+clamp 后的 newV, committing=true)。</p>
+ *
+ * <h3>契约</h3>
+ * <p>R1 纯静态工厂零实例字段 / R2 Props 只读 signal + 不可变常量 + 回调 / R3 组件函数只执行一次 /
+ * R4 外观随状态经 bind 派生 / R5 交互态读 interactionState / R6 装饰子节点命中穿透 /
+ * R7 受控连续零内部受控状态。</p>
+ */
+public final class SceneSlider {
+
+    /**
+     * fillBox 圆角（足够大呈胶囊）。
+     *
+     * <p>只服务进度填充条这一处几何：track/thumb 的圆角由各自表面配方的
+     * {@code cornerRadius} 提供，不再共用本常量。</p>
+     */
+    private static final int FILL_RADIUS = SceneChromeTokens.RADIUS_PILL;
+
+    /** track 固定宽度（像素，值↔像素映射的分母，与旧栈固定尺寸范式一致） */
+    private static final int TRACK_WIDTH = 200;
+    /** fill 填充条固定高度（像素，细轨视觉） */
+    private static final int FILL_HEIGHT = 6;
+    /** thumb 固定直径（像素），track 容器高由它撑起 */
+    private static final int THUMB_SIZE = 16;
+
+    /**
+     * fillBox 最小宽度（像素），下限钉 1 而非 0。
+     *
+     * <p>{@code setPreferredWidth(0)} 是「不约束→回退 fill 父宽」语义而非「宽 0」，
+     * 故 progress=0 时必须给 1px 显式约束，否则 fillBox 撑满 track 把 thumb 反挤到最右。
+     * 详见 {@link #computeFillWidth} 注释。</p>
+     */
+    private static final int FILL_MIN_WIDTH = 1;
+
+    /** 纯静态工厂，禁止实例化（强制无状态，契约 R1） */
+    private SceneSlider() {
+    }
+
+    /**
+     * Slider 输入契约 —— 受控连续：当前值由外部只读 signal 驱动，
+     * 交互经 onChange 交还期望新值（契约 R2/R7）。
+     *
+     * <p>onChange 类型复用 {@link SceneSliderPrimitive.SliderChange}，不再单独声明子接口。</p>
+     *
+     * @param value    当前值（响应式只读，受控源），控件绝不自己缓存此值
+     * @param enabled  是否启用（响应式只读），false 时禁用拖拽/键盘并切灰态
+     * @param min      最小值（不可变常量）
+     * @param max      最大值（不可变常量，应 &gt; min）
+     * @param step     步进（不可变常量），&lt;=0 表示连续（不量化）
+     * @param onChange 值变更回调，预览传 committing=false、提交传 committing=true
+     */
+    @Desugar
+    public record Props(
+            ReadableSignal<Double> value,
+            ReadableSignal<Boolean> enabled,
+            double min,
+            double max,
+            double step,
+            SceneSliderPrimitive.SliderChange onChange
+    ) {
+
+        /**
+         * 创建 Props builder。
+         *
+         * @param value 当前值（响应式只读，受控源），控件绝不自己缓存此值
+         * @return builder 实例
+         */
+        public static Builder builder(ReadableSignal<Double> value) {
+            return new Builder(value);
+        }
+
+        /** Props 构建器。 */
+        public static final class Builder {
+            /** 当前值（响应式只读，受控源）。 */
+            private final ReadableSignal<Double> value;
+            /** 是否启用（响应式只读），false 时禁用拖拽/键盘并切灰态。 */
+            private ReadableSignal<Boolean> enabled = Signal.create(Boolean.TRUE);
+            /** 最小值（不可变常量）。 */
+            private double min = 0.0D;
+            /** 最大值（不可变常量，应 &gt; min）。 */
+            private double max = 100.0D;
+            /** 步进（不可变常量），&lt;=0 表示连续（不量化）。 */
+            private double step = 1.0D;
+            /** 值变更回调，预览传 committing=false、提交传 committing=true。 */
+            private SceneSliderPrimitive.SliderChange onChange;
+
+            /**
+             * 创建构建器。
+             *
+             * @param value 当前值（响应式只读，受控源）
+             */
+            private Builder(ReadableSignal<Double> value) {
+                this.value = value;
+            }
+
+            /**
+             * 设置是否启用。
+             *
+             * @param enabled 是否启用（响应式只读）
+             * @return 当前 builder
+             */
+            public Builder enabled(ReadableSignal<Boolean> enabled) {
+                this.enabled = enabled;
+                return this;
+            }
+
+            /**
+             * 设置最小值。
+             *
+             * @param min 最小值（不可变常量）
+             * @return 当前 builder
+             */
+            public Builder min(double min) {
+                this.min = min;
+                return this;
+            }
+
+            /**
+             * 设置最大值。
+             *
+             * @param max 最大值（不可变常量，应 &gt; min）
+             * @return 当前 builder
+             */
+            public Builder max(double max) {
+                this.max = max;
+                return this;
+            }
+
+            /**
+             * 设置步进。
+             *
+             * @param step 步进（不可变常量），&lt;=0 表示连续（不量化）
+             * @return 当前 builder
+             */
+            public Builder step(double step) {
+                this.step = step;
+                return this;
+            }
+
+            /**
+             * 设置值变更回调。
+             *
+             * @param onChange 值变更回调，预览传 committing=false、提交传 committing=true
+             * @return 当前 builder
+             */
+            public Builder onChange(SceneSliderPrimitive.SliderChange onChange) {
+                this.onChange = onChange;
+                return this;
+            }
+
+            /**
+             * 构建 Props。
+             *
+             * @return Props 实例
+             * @throws IllegalArgumentException 当 onChange 未设置（null）时
+             */
+            public Props build() {
+                if (onChange == null) {
+                    throw new IllegalArgumentException("onChange must not be null");
+                }
+                return new Props(value, enabled, min, max, step, onChange);
+            }
+        }
+    }
+
+    /**
+     * 工厂：构建 Slider 组件函数。
+     *
+     * <p>返回的 {@code Supplier} 体由 {@link SceneRuntime#mount} 执行一次（R3）：
+     * 建树 + 设静态尺寸 + 体内创建瞬态 {@code draggingValue} signal（被 handler 闭包捕获，
+     * 归 Owner 作用域，非控件类字段守 R1）。动态外观全落 {@code bind(computed(...))}，
+     * 拖拽/键盘交互只经 {@code draggingValue.set} 或 {@code onChange} 回调（R4/R5/R7）。</p>
+     *
+     * <p><b>主题化</b>：track 走 {@link SceneThemes#surface} 的 INPUT 角色配方（凹陷轨道），
+     * thumb 走 {@link SceneThemes#accentSurface} 的 INDICATOR 强调配方，两者由
+     * {@link SceneSurfaceBinder} 独占 background/border/borderWidth/cornerRadius/backdrop/
+     * surfaceElevation——不再静态设值，也不再叠加 {@code SceneStateColors} 与
+     * {@code SceneControlChrome.bindStandardBorder} 的第二外观写入者；fillBox 底色取
+     * {@link SceneThemes#accent}（禁用取 {@link SceneThemes#disabledForeground}）。
+     * thumb 的 {@code motionRoot} 显式传 null：数值定位由 primitive 的布局（fill 宽度 + thumb
+     * 紧随）驱动，绑定器不得写其 transform/opacity。</p>
+     *
+     * @param rt    场景运行时
+     * @param props Slider 输入契约
+     * @return 组件函数，交 {@code rt.mount(parent, ...)} 挂载
+     */
+    public static Supplier<SceneNode> create(SceneRuntime rt, Props props) {
+        return () -> {
+            SceneSliderPrimitive.Props primitiveProps = new SceneSliderPrimitive.Props(
+                    props.value(), props.enabled(), props.min(), props.max(), props.step(), props.onChange());
+            SceneSliderPrimitive.Result result = SceneSliderPrimitive.create(rt, primitiveProps);
+            SceneInteractionState interaction = result.interaction();
+
+            SceneNode root = result.root();
+            root.setPreferredWidth(TRACK_WIDTH);
+
+            SceneNode track = result.track();
+            track.setPreferredWidth(TRACK_WIDTH);
+            // track 的边框宽/边框色/圆角/染色/滤镜/实体高度全部由表面绑定器从 INPUT 配方派生
+            // （构造期不再静态设 borderWidth/cornerRadius/borderColor，也不另绑状态色或标准边框）。
+
+            SceneNode fillBox = result.fillBox();
+            fillBox.setPreferredHeight(FILL_HEIGHT);
+            // 进度条是控件自持几何（不参与表面采样）：圆角保持静态常量。
+            fillBox.setCornerRadius(FILL_RADIUS);
+
+            SceneNode thumb = result.thumb();
+            thumb.setPreferredWidth(THUMB_SIZE);
+            thumb.setPreferredHeight(THUMB_SIZE);
+            // thumb 的圆角来自 INDICATOR 强调配方；不再静态设圆角或三态实色绑定。
+
+            // 进度宽度仍由数值驱动（布局语义不变，仅取色改为主题）。
+            rt.bindComputed(() -> computeFillWidth(result.progress().get(), TRACK_WIDTH, THUMB_SIZE),
+                    fillBox::setPreferredWidth);
+
+            // 进度填充底色：启用取主题强调色，禁用取主题禁用前景色（不再取 SceneChromeTokens 实色）。
+            ReadableSignal<Integer> accent = SceneThemes.accent(rt);
+            ReadableSignal<Integer> disabledForeground = SceneThemes.disabledForeground(rt);
+            rt.bindComputed(() -> Boolean.TRUE.equals(props.enabled().get())
+                            ? accent.get()
+                            : disabledForeground.get(),
+                    fillBox::setBackgroundColor);
+
+            // track 表面：INPUT 角色配方（轨道凹陷），禁用走角色禁用档。唯一外观写入者。
+            ReadableSignal<SceneSurfaceStyle> trackSurface = SceneThemes.surface(rt, SceneTheme.Role.INPUT);
+            SceneSurfaceBinder.bind(rt, track, trackSurface, props.enabled(), interaction);
+
+            // thumb 表面：INDICATOR 强调配方（tint RGB=主题 accent）；motionRoot=null，
+            // 数值定位的 transform 仍归 primitive，绑定器不得触碰。
+            ReadableSignal<SceneSurfaceStyle> thumbSurface =
+                    SceneThemes.accentSurface(rt, SceneTheme.Role.INDICATOR);
+            SceneSurfaceBinder.bind(rt, thumb, null, thumbSurface, props.enabled(), interaction);
+
+            // B2：interaction 挂 track（primitive 已改），hover/pressed/focused 写 track。
+            // cursor 也设到 track（SceneCursorResolver 读 hoveredNode=track 的 cursor 属性）。
+            SceneControlChrome.bindCursor(rt, track, props.enabled(), SceneCursor.POINTER, SceneCursor.NOT_ALLOWED);
+
+            return root;
+        };
+    }
+
+    // ==================== 纯函数辅助（无副作用，无实例状态） ====================
+
+    /**
+     * 由生效值算 fillBox 宽度（像素）。
+     *
+     * <p>{@code progress = clamp((v-min)/(max-min),0,1)}，
+     * {@code width = clamp(round(W*progress) - thumb/2, FILL_MIN_WIDTH, W)}。
+     * 减 thumb/2 使 thumb（紧随 fill）中心骑在 {@code round(W*progress)} 处（负偏移近似）。</p>
+     *
+     * <p><b>★ 下限取 {@link #FILL_MIN_WIDTH}=1 而非 0 的关键原因</b>：
+     * {@link SceneNode#setPreferredWidth} 的 0 是「不约束 → 回退无文本叶 fill 父宽」语义
+     * （见 SceneNode 属性槽注释），<b>不是「宽 0」</b>。若 progress 小时返回 0，fillBox 会
+     * 撑满 track 全宽 200，把紧随它的 thumb 反向挤到最右——progress 越小 thumb 越靠右，完全反了。
+     * 故下限钉死 1px（显式约束、绕开 fill 陷阱），视觉上 1px 等同于 0，且保证 thumb 位置随
+     * progress 单调右移。</p>
+     *
+     * @param progress   当前进度比例 [0,1]
+     * @param trackWidth track chrome 宽度
+     * @param thumbSize  thumb chrome 直径
+     * @return fillBox 首选宽度（像素，[FILL_MIN_WIDTH, TRACK_WIDTH]）
+     */
+    private static int computeFillWidth(double progress, int trackWidth, int thumbSize) {
+        int raw = (int) Math.round(trackWidth * progress) - thumbSize / 2;
+        if (raw < FILL_MIN_WIDTH) {
+            return FILL_MIN_WIDTH;
+        }
+        if (raw > trackWidth) {
+            return trackWidth;
+        }
+        return raw;
+    }
+
+}

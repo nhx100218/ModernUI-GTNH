@@ -1,0 +1,11 @@
+[
+  {
+    "modid": "${modId}",
+    "name": "${modName}",
+    "description": "ModernUI-GTNH: client-side UI beautification and font rendering for GTNH. Rounded tooltips, smooth motion, chat quality-of-life, bundled fonts and a single modern config screen.",
+    "version": "1.0",
+    "mcversion": "${minecraftVersion}",
+    "authorList": ["BloCamLimb", "nhx100218"],
+    "dependencies": []
+  }
+]
