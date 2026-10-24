@@ -5,22 +5,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import blocamlimb.nhx100218.modernui.enhance.vanilla.ChatScrollSmooth;
 import blocamlimb.nhx100218.modernui.enhance.vanilla.ScreenTransition;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 
-/** Starts the screen transition timer and delays the chat close animation. */
+/** Starts the screen transition timer on every displayGuiScreen call. */
 @Mixin(Minecraft.class)
 public class MixinMinecraftScreenPoke {
 
-    @Inject(method = "displayGuiScreen", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "displayGuiScreen", at = @At("HEAD"))
     private void modernui$poke(GuiScreen screen, CallbackInfo ci) {
-        if (ChatScrollSmooth.interceptChatClose(screen)) {
-            ci.cancel();
-            return;
-        }
         ScreenTransition.poke();
     }
 }
