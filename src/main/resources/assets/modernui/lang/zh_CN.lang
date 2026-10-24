@@ -1,0 +1,161 @@
+modernui.config.title=ModernUI 附属增强
+modernui.config.button=配置
+modernui.md.on=开
+modernui.md.off=关
+modernui.md.done=完成
+modernui.md.back=返回
+modernui.md.hint=在左侧选择分类
+modernui.md.home=主页
+modernui.md.apply=应用
+modernui.md.cancel=取消
+modernui.md.home.desc=ModernUI 附属增强：圆角 tooltip、平滑过渡、聊天头像、缩放等。
+modernui.md.home.hint=从左侧面板选择分类。
+
+modernui.config.cat.tooltip=提示框
+modernui.config.tooltip.enabled=圆角提示框
+modernui.config.tooltip.enabled.tooltip=启用圆角 tooltip 渲染。
+modernui.config.tooltip.rounded=圆角
+modernui.config.tooltip.rounded.tooltip=使用圆角。
+modernui.config.tooltip.centerTitle=标题居中
+modernui.config.tooltip.centerTitle.tooltip=物品名称行居中。
+modernui.config.tooltip.titleBreak=标题分隔线
+modernui.config.tooltip.titleBreak.tooltip=在标题下绘制分隔线。
+modernui.config.tooltip.adaptiveColors=自适应颜色
+modernui.config.tooltip.adaptiveColors.tooltip=边框颜色随物品名称颜色变化。
+modernui.config.tooltip.borderColorCycle=边框颜色循环
+modernui.config.tooltip.borderColorCycle.tooltip=边框颜色循环周期(ms)，0=关闭。
+modernui.config.tooltip.borderWidth=边框宽度
+modernui.config.tooltip.borderWidth.tooltip=提示框边框宽度。
+modernui.config.tooltip.cornerRadius=圆角半径
+modernui.config.tooltip.cornerRadius.tooltip=提示框圆角半径。
+modernui.config.tooltip.modularUiMaxWidth=ModularUI 最大宽度
+modernui.config.tooltip.modularUiMaxWidth.tooltip=ModularUI2 提示框最大折行宽度，0=自动。
+modernui.config.tooltip.modularUiNoWrap=禁用 ModularUI 折行
+modernui.config.tooltip.modularUiNoWrap.tooltip=禁用 ModularUI2 文本自动折行。
+modernui.config.tooltip.fillColor=背景颜色
+modernui.config.tooltip.fillColor.tooltip=背景四角颜色(ARGB)，最多 4 个。
+modernui.config.tooltip.strokeColor=边框颜色
+modernui.config.tooltip.strokeColor.tooltip=边框四角颜色(ARGB)，最多 4 个。
+
+modernui.config.cat.waila=Waila
+modernui.config.waila.enabled=Waila 圆角
+modernui.config.waila.enabled.tooltip=Waila HUD 框使用圆角。
+modernui.config.waila.cornerRadius=Waila 圆角半径
+modernui.config.waila.cornerRadius.tooltip=Waila 圆角半径。
+modernui.config.waila.borderWidth=Waila 边框宽度
+modernui.config.waila.borderWidth.tooltip=Waila 边框宽度。
+
+modernui.config.cat.smoothscroll=平滑滚动
+modernui.config.smoothscroll.enabled=平滑滚动
+modernui.config.smoothscroll.enabled.tooltip=原版列表平滑滚动。
+modernui.config.smoothscroll.listSmoothness=列表平滑度
+modernui.config.smoothscroll.listSmoothness.tooltip=原版列表滚动缓动。0=关闭，越大越慢，100=不再滚动。
+modernui.config.smoothscroll.listAmount=列表滚动量
+modernui.config.smoothscroll.listAmount.tooltip=列表每次滚轮像素量，0=自动（半行）。
+modernui.config.smoothscroll.chatSmoothness=聊天平滑度
+modernui.config.smoothscroll.chatSmoothness.tooltip=聊天栏滚动缓动。0=关闭，越大越慢，100=不再滚动。
+modernui.config.smoothscroll.chatAmount=聊天滚动量
+modernui.config.smoothscroll.chatAmount.tooltip=聊天每次滚轮像素量，0=自动。
+modernui.config.smoothscroll.chatOpenSmoothness=聊天打开平滑度
+modernui.config.smoothscroll.chatOpenSmoothness.tooltip=聊天栏打开时的滑入缓动。0=关闭，越大越慢。
+modernui.config.smoothscroll.creativeSmoothness=创造栏平滑度
+modernui.config.smoothscroll.creativeSmoothness.tooltip=创造模式物品栏滚动缓动。0=关闭，越大越慢，100=不再滚动。
+modernui.config.smoothscroll.creativeAmount=创造栏滚动量
+modernui.config.smoothscroll.creativeAmount.tooltip=创造模式物品栏每次滚轮像素量。
+modernui.config.smoothscroll.textSmoothness=文本框平滑度
+modernui.config.smoothscroll.textSmoothness.tooltip=文本框光标滚动缓动。0=关闭，越大越慢。
+modernui.config.smoothscroll.textAmount=文本框滚动量
+modernui.config.smoothscroll.textAmount.tooltip=文本框每次滚轮像素量。
+
+modernui.config.cat.screentransition=界面切换
+modernui.config.screentransition.enabled=切换动画
+modernui.config.screentransition.enabled.tooltip=界面打开/关闭动画。
+modernui.config.screentransition.durationMs=时长
+modernui.config.screentransition.durationMs.tooltip=动画时长(ms)。
+modernui.config.screentransition.offset=位移
+modernui.config.screentransition.offset.tooltip=位移幅度(px)。
+modernui.config.screentransition.scale=缩放
+modernui.config.screentransition.scale.tooltip=位移缩放。
+
+modernui.config.cat.zoom=缩放
+modernui.config.zoom.enabled=启用缩放
+modernui.config.zoom.enabled.tooltip=按住按键缩放。
+modernui.config.zoom.factor=缩放倍率
+modernui.config.zoom.factor.tooltip=缩放倍率。
+modernui.config.zoom.smooth=平滑缩放
+modernui.config.zoom.smooth.tooltip=平滑过渡。
+modernui.config.zoom.speed=过渡速度
+modernui.config.zoom.speed.tooltip=过渡速度。
+modernui.config.zoom.sensitivity=灵敏度减速
+modernui.config.zoom.sensitivity.tooltip=缩放时灵敏度额外减速系数(越大越慢)。
+modernui.config.zoom.keyCode=按键码
+modernui.config.zoom.keyCode.tooltip=触发缩放的 LWJGL 键码(默认 46=C)。
+
+modernui.config.cat.chat=聊天
+modernui.config.chat.headsEnabled=聊天头像
+modernui.config.chat.headsEnabled.tooltip=在聊天行显示发送者皮肤头像。
+modernui.config.chat.headSize=头像尺寸
+modernui.config.chat.headSize.tooltip=头像边长(px)。
+modernui.config.chat.headGap=头像间距
+modernui.config.chat.headGap.tooltip=头像与文字间距(px)。
+
+modernui.config.cat.performance=性能
+modernui.config.performance.unfocusedFramerate=失焦降帧
+modernui.config.performance.unfocusedFramerate.tooltip=窗口失焦时降低帧率。
+modernui.config.performance.unfocusedFramerateLimit=失焦帧率上限
+modernui.config.performance.unfocusedFramerateLimit.tooltip=失焦时的帧率上限。
+modernui.config.performance.unfocusedVolume=失焦降音量
+modernui.config.performance.unfocusedVolume.tooltip=窗口失焦时降低音量。
+modernui.config.performance.unfocusedVolumeFactor=失焦音量系数
+modernui.config.performance.unfocusedVolumeFactor.tooltip=失焦时音量倍率。
+modernui.config.performance.preload=加载时预热
+modernui.config.performance.preload.tooltip=加载后一次性预热字体、着色器与物品图标（加载时会卡一下，之后更流畅）。
+
+modernui.config.cat.ui=界面
+modernui.config.ui.textUndoEnabled=文本撤销/重做
+modernui.config.ui.textUndoEnabled.tooltip=文本框 Ctrl+Z / Ctrl+Y。
+modernui.config.ui.textUndoLimit=撤销步数上限
+modernui.config.ui.textUndoLimit.tooltip=撤销历史最大步数。
+modernui.config.ui.pauseContainers=开容器暂停
+modernui.config.ui.pauseContainers.tooltip=单机打开容器界面时暂停世界。
+
+modernui.config.cat.emoji=表情
+modernui.config.emoji.enabled=Emoji 短代码
+modernui.config.emoji.enabled.tooltip=聊天中把 :name: 短代码转为 emoji（需系统 emoji 字体）。
+
+modernui.config.cat.textselection=文本选中
+modernui.config.textselection.selectionEnabled=自定义选中高亮
+modernui.config.textselection.selectionEnabled.tooltip=替换原版 XOR 蓝色选中框。
+modernui.config.textselection.selectionColor=选中颜色
+modernui.config.textselection.selectionColor.tooltip=选中高亮颜色(RGB)。
+modernui.config.textselection.selectionAlpha=选中不透明度
+modernui.config.textselection.selectionAlpha.tooltip=选中高亮不透明度(0-255)。
+modernui.config.textselection.selectionOffsetX=选中框 X 偏移
+modernui.config.textselection.selectionOffsetX.tooltip=选中框水平方向整体偏移像素。
+modernui.config.textselection.selectionOffsetY=选中框 Y 偏移
+modernui.config.textselection.selectionOffsetY.tooltip=选中框垂直方向整体偏移像素（负值向上）。
+
+modernui.md.nav.home=主页
+modernui.md.nav.addon=附属增强
+modernui.md.nav.modernui=ModernUI
+modernui.md.tab.general=常规
+modernui.md.tab.fontsystem=字体系统
+modernui.md.tab.fontsize=字号
+modernui.md.modernui.desc=编辑 ModernUI 自身的 modernui.yaml：聊天框形态、选择器密度、字体排序与字号。
+modernui.md.modernui.restartHint=部分改动（聊天框形态、字体）需重启游戏后生效。
+modernui.md.modernui.missing=未找到 modernui.yaml。
+
+modernui.modernui.chatFrame=聊天框形态
+modernui.modernui.chatFrame.tooltip=ModernUI 聊天框样式。
+modernui.modernui.chatFrame.custom=自定义
+modernui.modernui.chatFrame.vanilla=原版
+modernui.modernui.pickerDensity=选择器密度
+modernui.modernui.pickerDensity.tooltip=选择器面板密度档位。
+modernui.modernui.pickerDensity.auto=自动
+modernui.modernui.pickerDensity.compact=紧凑
+modernui.modernui.pickerDensity.standard=标准
+modernui.modernui.pickerDensity.roomy=宽松
+modernui.modernui.glyphGenerationSize=字形分辨率
+modernui.modernui.glyphGenerationSize.tooltip=字形图集生成分辨率；调高更清晰但更耗显存。
+modernui.modernui.gameCharSize=游戏字号
+modernui.modernui.gameCharSize.tooltip=原版字符默认显示字号，同时是宽度与行高折算基准。
