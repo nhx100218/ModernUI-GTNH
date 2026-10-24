@@ -188,6 +188,7 @@ public final class UiRenderBackends {
      */
     public static void __roundedBand(UiRenderBackend backend, int left, int top, int right, int bottom,
             int[] outer, int[] inner, int[] bounds, int[] colors) {
+        flushFillBatch(backend);
         float scale = 1.0F;
         UiRenderBackend target = backend;
         while (target instanceof ScaledRenderBackend) {
