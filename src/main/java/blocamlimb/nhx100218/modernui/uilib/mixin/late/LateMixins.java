@@ -43,43 +43,43 @@ public class LateMixins implements ILateMixinLoader {
 
         List<String> mixins = new ArrayList<String>();
         if (has.test("appliedenergistics2")) {
-            mixins.add("uilib.mixin.late.ae2.MixinAbstractPartMonitor");
+            mixins.add("ae2.MixinAbstractPartMonitor");
         }
         if (has.test("Waila")) {
-            mixins.add("enhance.mixin.late.waila.MixinWailaOverlayRenderer");
+            mixins.add("enhance.waila.MixinWailaOverlayRenderer");
         }
         if (has.test("CodeChickenCore")) {
-            mixins.add("enhance.mixin.late.codechicken.MixinGuiDrawTooltip");
+            mixins.add("enhance.codechicken.MixinGuiDrawTooltip");
         }
         if (has.test("modularui2")) {
-            mixins.add("enhance.mixin.late.modularui.MixinModularUiTooltip");
-            mixins.add("enhance.mixin.late.modularui.MixinModularScreenTransition");
-            mixins.add("enhance.mixin.late.modularui.MixinTextRendererNoWrap");
-            mixins.add("enhance.mixin.late.modularui.MixinRichTextCompilerNoWrap");
+            mixins.add("enhance.modularui.MixinModularUiTooltip");
+            mixins.add("enhance.modularui.MixinModularScreenTransition");
+            mixins.add("enhance.modularui.MixinTextRendererNoWrap");
+            mixins.add("enhance.modularui.MixinRichTextCompilerNoWrap");
         }
         if (has.test("chromatictooltips")) {
-            mixins.add("enhance.mixin.late.ct.MixinCtTooltipDecorator");
-            mixins.add("enhance.mixin.late.ct.MixinCtTextComponent");
+            mixins.add("enhance.ct.MixinCtTooltipDecorator");
+            mixins.add("enhance.ct.MixinCtTextComponent");
         }
         if (has.test("chromatictooltipscompat")) {
-            mixins.add("enhance.mixin.late.ct.MixinNeiTooltipComponentCompat");
+            mixins.add("enhance.ct.MixinNeiTooltipComponentCompat");
         }
         if (has.test("betterquesting")) {
-            mixins.add("enhance.mixin.late.bq.MixinBqTooltip");
-            mixins.add("enhance.mixin.late.bq.MixinBqSceneTransition");
-            mixins.add("enhance.mixin.late.bq.MixinBqPanelTextField");
-            mixins.add("enhance.mixin.late.bq.MixinBqRenderUtils");
-            mixins.add("enhance.mixin.late.bq.MixinBqScreenCanvas");
+            mixins.add("enhance.bq.MixinBqTooltip");
+            mixins.add("enhance.bq.MixinBqSceneTransition");
+            mixins.add("enhance.bq.MixinBqPanelTextField");
+            mixins.add("enhance.bq.MixinBqRenderUtils");
+            mixins.add("enhance.bq.MixinBqScreenCanvas");
         }
         if (has.test("NotEnoughItems")) {
-            mixins.add("enhance.mixin.late.nei.MixinFormattedTextFieldSelection");
-            mixins.add("enhance.mixin.late.nei.MixinRecipeTooltipLineHandler");
+            mixins.add("enhance.nei.MixinFormattedTextFieldSelection");
+            mixins.add("enhance.nei.MixinRecipeTooltipLineHandler");
         }
         if (has.test("TConstruct")) {
-            mixins.add("enhance.mixin.late.tconstruct.MixinSmelteryGui");
+            mixins.add("enhance.tconstruct.MixinSmelteryGui");
         }
         if (has.test("bogosorter")) {
-            mixins.add("enhance.mixin.late.bogo.MixinBogoHotbarSwap");
+            mixins.add("enhance.bogo.MixinBogoHotbarSwap");
         }
         return mixins;
     }

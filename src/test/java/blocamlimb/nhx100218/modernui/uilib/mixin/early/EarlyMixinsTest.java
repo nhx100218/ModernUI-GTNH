@@ -20,13 +20,13 @@ public class EarlyMixinsTest {
     public void shouldNotReturnClientMixinsOnDedicatedServerSide() {
         List<String> mixins = EarlyMixins.buildMixinsForSide(Side.SERVER);
 
-        Assert.assertTrue(mixins.contains("uilib.mixin.early.network.MixinNetHandlerPlayServer"));
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.network.MixinNetHandlerPlayClient"));
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.MixinFontRenderer"));
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.MixinMinecraftWorldLoadPump"));
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.MixinGuiScreenKeyboardIsolation"));
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.tesr.MixinAngelicaTesrBatchReplay"));
-        Assert.assertFalse(mixins.contains("enhance.mixin.early.MixinGuiNewChat"));
+        Assert.assertTrue(mixins.contains("network.MixinNetHandlerPlayServer"));
+        Assert.assertFalse(mixins.contains("network.MixinNetHandlerPlayClient"));
+        Assert.assertFalse(mixins.contains("MixinFontRenderer"));
+        Assert.assertFalse(mixins.contains("MixinMinecraftWorldLoadPump"));
+        Assert.assertFalse(mixins.contains("MixinGuiScreenKeyboardIsolation"));
+        Assert.assertFalse(mixins.contains("tesr.MixinAngelicaTesrBatchReplay"));
+        Assert.assertFalse(mixins.contains("enhance.MixinGuiNewChat"));
         assertNoNameTagMixins(mixins);
     }
 
@@ -34,16 +34,16 @@ public class EarlyMixinsTest {
     public void shouldReturnClientAndServerNetworkMixinsOnClientSide() {
         List<String> mixins = EarlyMixins.buildMixinsForSide(Side.CLIENT);
 
-        Assert.assertTrue(mixins.contains("uilib.mixin.early.network.MixinNetHandlerPlayClient"));
-        Assert.assertTrue(mixins.contains("uilib.mixin.early.network.MixinNetHandlerPlayServer"));
-        Assert.assertTrue(mixins.contains("uilib.mixin.early.MixinMinecraftWorldLoadPump"));
-        Assert.assertTrue(mixins.contains("uilib.mixin.early.MixinGuiScreenKeyboardIsolation"));
+        Assert.assertTrue(mixins.contains("network.MixinNetHandlerPlayClient"));
+        Assert.assertTrue(mixins.contains("network.MixinNetHandlerPlayServer"));
+        Assert.assertTrue(mixins.contains("MixinMinecraftWorldLoadPump"));
+        Assert.assertTrue(mixins.contains("MixinGuiScreenKeyboardIsolation"));
         assertGenericNameTagMixins(mixins);
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.nametag.MixinAngelicaPlayerNameTagReplay"));
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.tesr.MixinAngelicaTesrBatchReplay"));
+        Assert.assertFalse(mixins.contains("nametag.MixinAngelicaPlayerNameTagReplay"));
+        Assert.assertFalse(mixins.contains("tesr.MixinAngelicaTesrBatchReplay"));
         // The merged enhancement early mixins are loaded from the same config.
-        Assert.assertTrue(mixins.contains("enhance.mixin.early.MixinGuiNewChat"));
-        Assert.assertTrue(mixins.contains("enhance.mixin.early.MixinGuiSlotSmoothScroll"));
+        Assert.assertTrue(mixins.contains("enhance.MixinGuiNewChat"));
+        Assert.assertTrue(mixins.contains("enhance.MixinGuiSlotSmoothScroll"));
     }
 
     @Test
@@ -52,25 +52,25 @@ public class EarlyMixinsTest {
 
         List<String> clientMixins = EarlyMixins.buildMixinsForSide(Side.CLIENT, loadedCoreMods);
         assertGenericNameTagMixins(clientMixins);
-        Assert.assertTrue(clientMixins.contains("uilib.mixin.early.nametag.MixinAngelicaPlayerNameTagReplay"));
+        Assert.assertTrue(clientMixins.contains("nametag.MixinAngelicaPlayerNameTagReplay"));
         Assert.assertTrue("Angelica must install the TESR replay guard",
-                clientMixins.contains("uilib.mixin.early.tesr.MixinAngelicaTesrBatchReplay"));
+                clientMixins.contains("tesr.MixinAngelicaTesrBatchReplay"));
 
         List<String> serverMixins = EarlyMixins.buildMixinsForSide(Side.SERVER, loadedCoreMods);
         assertNoNameTagMixins(serverMixins);
     }
 
     private static void assertGenericNameTagMixins(List<String> mixins) {
-        Assert.assertTrue(mixins.contains("uilib.mixin.early.nametag.MixinEntityRendererPlayerNameTagPass"));
-        Assert.assertTrue(mixins.contains("uilib.mixin.early.nametag.MixinRendererLivingEntityPlayerNameTag"));
-        Assert.assertTrue(mixins.contains("uilib.mixin.early.nametag.MixinRenderPlayerScoreboardNameTag"));
+        Assert.assertTrue(mixins.contains("nametag.MixinEntityRendererPlayerNameTagPass"));
+        Assert.assertTrue(mixins.contains("nametag.MixinRendererLivingEntityPlayerNameTag"));
+        Assert.assertTrue(mixins.contains("nametag.MixinRenderPlayerScoreboardNameTag"));
     }
 
     private static void assertNoNameTagMixins(List<String> mixins) {
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.nametag.MixinEntityRendererPlayerNameTagPass"));
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.nametag.MixinRendererLivingEntityPlayerNameTag"));
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.nametag.MixinRenderPlayerScoreboardNameTag"));
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.nametag.MixinAngelicaPlayerNameTagReplay"));
-        Assert.assertFalse(mixins.contains("uilib.mixin.early.tesr.MixinAngelicaTesrBatchReplay"));
+        Assert.assertFalse(mixins.contains("nametag.MixinEntityRendererPlayerNameTagPass"));
+        Assert.assertFalse(mixins.contains("nametag.MixinRendererLivingEntityPlayerNameTag"));
+        Assert.assertFalse(mixins.contains("nametag.MixinRenderPlayerScoreboardNameTag"));
+        Assert.assertFalse(mixins.contains("nametag.MixinAngelicaPlayerNameTagReplay"));
+        Assert.assertFalse(mixins.contains("tesr.MixinAngelicaTesrBatchReplay"));
     }
 }
