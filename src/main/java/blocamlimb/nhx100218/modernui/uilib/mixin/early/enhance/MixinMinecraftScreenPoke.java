@@ -10,12 +10,16 @@ import blocamlimb.nhx100218.modernui.enhance.vanilla.ScreenTransition;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 
-/** 每次显示界面都复位切换动画计时，修复“复用同一界面实例重复打开不再播放动画”。 */
+/** Starts the screen transition timer and delays the chat close animation. */
 @Mixin(Minecraft.class)
 public class MixinMinecraftScreenPoke {
 
-    @Inject(method = "displayGuiScreen", at = @At("HEAD"))
+    @Inject(method = "displayGuiScreen", at = @At("HEAD"), cancellable = true)
     private void modernui$poke(GuiScreen screen, CallbackInfo ci) {
+        if (ScreenTransition.interceptGuiDisplay(screen)) {
+            ci.cancel();
+            return;
+        }
         ScreenTransition.poke();
     }
 }
