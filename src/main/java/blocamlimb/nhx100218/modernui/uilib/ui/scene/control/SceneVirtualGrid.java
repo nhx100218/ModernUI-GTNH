@@ -343,21 +343,40 @@ public final class SceneVirtualGrid {
         // 窗口数学切共享内核（唯一实现 = SceneGridWindow.compute）：本控件只把内核结果映射为自己的
         // 公共 WindowModel 形状（columns/totalItems/totalRows/windowStartRow/mountedRows/maxStartRow/
         // maxScrollPx/rows），字段与可见行为逐项不变——SceneVirtualGridTest 全绿即等价性证书。
+        // Large-list fast path: smooth scrolling changes the scroll pixel on every
+        // frame, but the mounted row window only changes when crossing a stride
+        // boundary. Reuse the previous window model while the row window is stable
+        // instead of rebuilding RowRanges + sublists for every pixel.
+        final WindowCache[] windowCache = new WindowCache[1];
         ReadableSignal<WindowModel> windowModel = Computed.create(() -> {
             List<Item> items = safeItems(props.items());
             int cols = Math.max(1, columns.get().intValue());
             int effectiveRows = visibleRows == null ? props.visibleRows() : visibleRows.get().intValue();
-            SceneGridWindow.WindowModel model = SceneGridWindow.compute(items.size(), cols,
-                    effectiveRows, OVERSCAN_ROWS, stride, scrollSignal.get().intValue(),
-                    viewportHeight(props, effectiveRows));
+            int viewportHeightPx = viewportHeight(props, effectiveRows);
+            int scroll = scrollSignal.get().intValue();
+            int size = items.size();
+            int totalRows = size <= 0 ? 0 : (size + cols - 1) / cols;
+            int maxStart = Math.max(0, totalRows - effectiveRows);
+            int startRow = Math.max(0, Math.min(maxStart, Math.max(0, scroll) / stride));
+            WindowCache cached = windowCache[0];
+            if (cached != null && cached.items == items && cached.size == size
+                    && cached.columns == cols && cached.visibleRows == effectiveRows
+                    && cached.startRow == startRow && cached.viewportHeight == viewportHeightPx) {
+                return cached.model;
+            }
+            SceneGridWindow.WindowModel model = SceneGridWindow.compute(size, cols,
+                    effectiveRows, OVERSCAN_ROWS, stride, scroll, viewportHeightPx);
             List<WindowRow> rows = new ArrayList<>(Math.max(0, model.mountedRows()));
             for (SceneGridWindow.RowRange range : model.rows()) {
                 rows.add(new WindowRow(range.firstIndex(),
                         new ArrayList<>(items.subList(range.firstIndex(), range.endIndex()))));
             }
-            return new WindowModel(model.columns(), model.totalItems(), model.totalRows(),
+            WindowModel built = new WindowModel(model.columns(), model.totalItems(), model.totalRows(),
                     model.windowStartRow(), model.mountedRows(), model.maxStartRow(),
                     model.maxScrollPx(), rows);
+            windowCache[0] = new WindowCache(items, size, cols, effectiveRows, startRow,
+                    viewportHeightPx, built);
+            return built;
         });
 
         // 结构：viewport = [topSpacer, rowsContainer, bottomSpacer]（gap=0，行间距由行 marginBottom 承担）
@@ -651,4 +670,26 @@ public final class SceneVirtualGrid {
         return from < to ? new ArrayList<>(items.subList(from, to)) : java.util.Collections.<Item>emptyList();
     }
 
+    /** Snapshot of the row window; reused while the visible row range is unchanged. */
+    private static final class WindowCache {
+
+        private final List<Item> items;
+        private final int size;
+        private final int columns;
+        private final int visibleRows;
+        private final int startRow;
+        private final int viewportHeight;
+        private final WindowModel model;
+
+        WindowCache(List<Item> items, int size, int columns, int visibleRows, int startRow,
+                int viewportHeight, WindowModel model) {
+            this.items = items;
+            this.size = size;
+            this.columns = columns;
+            this.visibleRows = visibleRows;
+            this.startRow = startRow;
+            this.viewportHeight = viewportHeight;
+            this.model = model;
+        }
+    }
 }

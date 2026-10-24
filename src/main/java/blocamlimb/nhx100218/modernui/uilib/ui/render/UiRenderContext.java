@@ -41,6 +41,7 @@ public class UiRenderContext implements UiRenderBackend {
     /** 将 scene 图片源适配到既有 Minecraft 宿主图片渲染器。 */
     @Override
     public void drawImage(SceneImageSource source, int left, int top, int right, int bottom) {
+        flushFillBatch();
         if (source instanceof HostImageSource) {
             drawHostImage((HostImageSource) source, left, top, right, bottom);
         }
@@ -66,6 +67,8 @@ public class UiRenderContext implements UiRenderBackend {
     private int backdropBatchDepth;
     /** 批次期间是否发生过内容写入（决定收尾时要不要 bump 一次）。 */
     private boolean backdropBatchDirty;
+    /** Consecutive solid fills are accumulated into one glBegin(GL_QUADS). */
+    private boolean fillBatchOpen;
 
     @Override
     public void publishTextDemand(List<String> texts) {
@@ -214,6 +217,7 @@ public class UiRenderContext implements UiRenderBackend {
      * @param targetHeight 目标高度
      */
     public void beginDeferredTextBatch(int targetWidth, int targetHeight) {
+        flushFillBatch();
         if (fontRenderer instanceof DefaultFontRendererAdapter) {
             ((DefaultFontRendererAdapter) fontRenderer).beginDeferredFlushScope(targetWidth, targetHeight);
         }
@@ -223,6 +227,7 @@ public class UiRenderContext implements UiRenderBackend {
      * 刷新当前延迟文本批次，但不结束批处理边界。
      */
     public void flushDeferredTextBatch() {
+        flushFillBatch();
         if (fontRenderer instanceof DefaultFontRendererAdapter) {
             ((DefaultFontRendererAdapter) fontRenderer).flushDeferredFlushScope();
         }
@@ -232,6 +237,7 @@ public class UiRenderContext implements UiRenderBackend {
      * 结束延迟文本批处理边界。
      */
     public void endDeferredTextBatch() {
+        flushFillBatch();
         if (fontRenderer instanceof DefaultFontRendererAdapter) {
             ((DefaultFontRendererAdapter) fontRenderer).endDeferredFlushScope();
         }
@@ -289,11 +295,13 @@ public class UiRenderContext implements UiRenderBackend {
      * 与下一帧都能看见玻璃自身画上去的内容。可嵌套，只有最外层负责收尾。</p>
      */
     public void beginBackdropBatch() {
+        flushFillBatch();
         backdropBatchDepth++;
     }
 
     /** 退出 backdrop 批次（与 {@link #beginBackdropBatch()} 严格配对）。 */
     public void endBackdropBatch() {
+        flushFillBatch();
         if (backdropBatchDepth <= 0) {
             return;
         }
@@ -397,21 +405,33 @@ public class UiRenderContext implements UiRenderBackend {
      * @param color ARGB 颜色
      */
     public void fillRect(int left, int top, int right, int bottom, int color) {
+        if (!fillBatchOpen) {
+            GL11.glEnable(GL11.GL_BLEND);
+            GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA,
+                    GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            // Architecture red line: no Tessellator; direct GL immediate mode.
+            // Consecutive solid rects share one glBegin to cut state changes and draw calls.
+            GL11.glBegin(GL11.GL_QUADS);
+            fillBatchOpen = true;
+        }
         UiContextGlHelpers.applyColor(color);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA,
-                GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        // 架构禁令:不使用原版包装类(Tessellator 等),直接 GL 立即模式
-        GL11.glBegin(GL11.GL_QUADS);
         GL11.glVertex2i(right, bottom);
         GL11.glVertex2i(right, top);
         GL11.glVertex2i(left, top);
         GL11.glVertex2i(left, bottom);
+        notifyMainLayerContentChanged();
+    }
+
+    /** Ends a pending consecutive-fill batch and restores texture/color state. */
+    void flushFillBatch() {
+        if (!fillBatchOpen) {
+            return;
+        }
+        fillBatchOpen = false;
         GL11.glEnd();
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-        notifyMainLayerContentChanged();
     }
 
     /**
@@ -447,6 +467,7 @@ public class UiRenderContext implements UiRenderBackend {
      */
     public void drawSurface(int left, int top, int right, int bottom, int fillColor, int borderColor,
             int cornerRadius) {
+        flushFillBatch();
         drawSurface(left, top, right, bottom, fillColor, borderColor,
                 UiBorderRadiusResolver.ResolvedCornerRadii.uniform(cornerRadius));
     }
@@ -472,6 +493,7 @@ public class UiRenderContext implements UiRenderBackend {
     public void drawSurface(int left, int top, int right, int bottom, int fillColor, int borderColor,
             int cornerRadiusTopLeft, int cornerRadiusTopRight,
             int cornerRadiusBottomRight, int cornerRadiusBottomLeft) {
+        flushFillBatch();
         drawSurface(left, top, right, bottom, fillColor, borderColor,
                 UiBorderRadiusResolver.ResolvedCornerRadii.of(
                         cornerRadiusTopLeft, cornerRadiusTopRight,
@@ -491,6 +513,7 @@ public class UiRenderContext implements UiRenderBackend {
      */
     public void drawSurface(int left, int top, int right, int bottom, int fillColor, int borderColor,
             UiBorderRadiusResolver.ResolvedCornerRadii cornerRadii) {
+        flushFillBatch();
         int cornerMask = blocamlimb.nhx100218.modernui.uilib.ui.base.values.UiSurfaceStyle.CORNER_ALL;
         UiBorderRadiusResolver.ResolvedCornerRadii resolvedRadii = UiRoundedRectGeometry.resolveCornerRadii(
                 cornerRadii, right - left, bottom - top, cornerMask);
@@ -532,6 +555,7 @@ public class UiRenderContext implements UiRenderBackend {
      */
     public void drawBackdropFilter(int left, int top, int right, int bottom, int blurRadius, float saturation,
             int cornerRadius) {
+        flushFillBatch();
         UiBackdropFilterRenderer.render(this, left, top, right, bottom, blurRadius, saturation,
                 UiBorderRadiusResolver.ResolvedCornerRadii.uniform(cornerRadius));
     }
@@ -549,6 +573,7 @@ public class UiRenderContext implements UiRenderBackend {
      */
     public void drawBackdropFilter(int left, int top, int right, int bottom, int blurRadius, float saturation,
             UiBorderRadiusResolver.ResolvedCornerRadii cornerRadii) {
+        flushFillBatch();
         UiBackdropFilterRenderer.render(this, left, top, right, bottom, blurRadius, saturation, cornerRadii);
     }
 
@@ -571,6 +596,7 @@ public class UiRenderContext implements UiRenderBackend {
      */
     public void drawBackdropFilter(int left, int top, int right, int bottom, int blurRadius, float saturation,
             UiBorderRadiusResolver.ResolvedCornerRadii cornerRadii, UiGlassMaterial material) {
+        flushFillBatch();
         UiBackdropFilterRenderer.render(this, left, top, right, bottom, blurRadius, saturation, cornerRadii,
                 material);
     }
@@ -593,6 +619,7 @@ public class UiRenderContext implements UiRenderBackend {
      */
     public void drawBackdropFilter(int left, int top, int right, int bottom, int blurRadius, float saturation,
             UiBorderRadiusResolver.ResolvedCornerRadii cornerRadii, UiBackdropEffect effect) {
+        flushFillBatch();
         UiBackdropFilterRenderer.render(this, left, top, right, bottom, blurRadius, saturation, cornerRadii,
                 effect);
     }
@@ -607,6 +634,7 @@ public class UiRenderContext implements UiRenderBackend {
      * @param shadow 是否带阴影
      */
     public void drawText(String text, int x, int y, int color, boolean shadow) {
+        flushFillBatch();
         drawText(text, x, y, color, shadow, TextContentMode.UILIB_RAW);
     }
 
@@ -621,11 +649,13 @@ public class UiRenderContext implements UiRenderBackend {
      * @param fontSizePx UI 像素字号
      */
     public void drawText(String text, int x, int y, int color, boolean shadow, int fontSizePx) {
+        flushFillBatch();
         drawText(text, x, y, color, shadow, TextMeasureStyle.fontSizePx(fontSizePx));
     }
 
     @Override
     public void drawText(String text, int x, int y, int color, boolean shadow, int fontSizePx, int textMode) {
+        flushFillBatch();
         // 越引用收回（2026-09-01 审查 C1）：本方法曾直调 scene 装配接缝
         // TextMeasureServiceSceneAdapter.toTextContentMode（render 伸入 scene 装配层的唯一实例）。
         // 现改经 scene 值类型 SceneTextMode.fromCode 归一（越界回落 UILIB_RAW 语义不变）后按
@@ -647,6 +677,7 @@ public class UiRenderContext implements UiRenderBackend {
      * @param textContentMode 文本内容解析模式
      */
     public void drawText(String text, int x, int y, int color, boolean shadow, TextContentMode textContentMode) {
+        flushFillBatch();
         drawTextResolved(text, x, y, color, shadow, textContentMode, UiFontWeight.NORMAL, UiFontStyle.NORMAL);
     }
 
@@ -664,6 +695,7 @@ public class UiRenderContext implements UiRenderBackend {
      */
     public void drawText(String text, int x, int y, int color, boolean shadow, TextContentMode textContentMode,
             UiFontWeight fontWeight, UiFontStyle fontStyle) {
+        flushFillBatch();
         UiFontWeight resolvedFontWeight = fontWeight == null ? UiFontWeight.NORMAL : fontWeight;
         UiFontStyle resolvedFontStyle = fontStyle == null ? UiFontStyle.NORMAL : fontStyle;
         if (resolvedFontWeight == UiFontWeight.NORMAL && resolvedFontStyle == UiFontStyle.NORMAL) {
@@ -684,6 +716,7 @@ public class UiRenderContext implements UiRenderBackend {
      * @param textStyle 文本样式快照
      */
     public void drawText(String text, int x, int y, int color, boolean shadow, TextMeasureStyle textStyle) {
+        flushFillBatch();
         TextMeasureStyle resolvedStyle = textStyle == null ? TextMeasureStyle.DEFAULT : textStyle;
         drawTextResolved(text, x, y, color, shadow, resolvedStyle);
     }
@@ -776,6 +809,7 @@ public class UiRenderContext implements UiRenderBackend {
      */
     @Override
     public void drawSegments(List<TextSegment> segments, int x, int y, int fontSizePx) {
+        flushFillBatch();
         if (segments == null || segments.isEmpty()) {
             return;
         }
@@ -808,6 +842,7 @@ public class UiRenderContext implements UiRenderBackend {
      * @param bottom 下边界
      */
     public void drawHostImage(HostImageSource source, int left, int top, int right, int bottom) {
+        flushFillBatch();
         if (source == null || right <= left || bottom <= top) {
             return;
         }
@@ -1228,6 +1263,7 @@ public class UiRenderContext implements UiRenderBackend {
      * @param opacity 当前上下文的局部 opacity
      */
     public void pushGroupOpacity(int left, int top, int right, int bottom, float opacity) {
+        flushFillBatch();
         paintContextCompositor.pushGroupOpacity(screenWidth, screenHeight, left, top, right, bottom, opacity,
                 copyCurrentClipSnapshot());
     }
@@ -1245,6 +1281,7 @@ public class UiRenderContext implements UiRenderBackend {
      * 退出 group opacity 合成作用域，与 {@link #pushGroupOpacity} 严格配对。
      */
     public void popGroupOpacity() {
+        flushFillBatch();
         if (paintContextCompositor.popGroupOpacity()) {
             applyCurrentClip();
             notifyMainLayerContentChanged();
@@ -1273,6 +1310,7 @@ public class UiRenderContext implements UiRenderBackend {
     public void pushTransform(float translateX, float translateY, float rotateDegrees,
                               float scaleX, float scaleY, float originXRatio, float originYRatio,
                               int left, int top, int right, int bottom) {
+        flushFillBatch();
         GL11.glPushMatrix();
         float originX = left + originXRatio * (right - left);
         float originY = top + originYRatio * (bottom - top);
@@ -1286,6 +1324,7 @@ public class UiRenderContext implements UiRenderBackend {
      * 弹出最近压入的文档元素 transform 矩阵。
      */
     public void popTransform() {
+        flushFillBatch();
         GL11.glPopMatrix();
     }
 
@@ -1310,6 +1349,7 @@ public class UiRenderContext implements UiRenderBackend {
     public void pushTransformLayer(float translateX, float translateY, float rotateDegrees,
                                    float scaleX, float scaleY, float originXRatio, float originYRatio,
                                    int left, int top, int right, int bottom) {
+        flushFillBatch();
         paintContextCompositor.pushTransformLayer(screenWidth, screenHeight, left, top, right, bottom,
                 translateX, translateY, rotateDegrees, scaleX, scaleY, originXRatio, originYRatio,
                 copyCurrentClipSnapshot());
@@ -1319,6 +1359,7 @@ public class UiRenderContext implements UiRenderBackend {
      * 退出 transform 离屏图层作用域，与 {@link #pushTransformLayer} 严格配对。
      */
     public void popTransformLayer() {
+        flushFillBatch();
         if (paintContextCompositor.popTransformLayer()) {
             applyCurrentClip();
             notifyMainLayerContentChanged();
@@ -1326,6 +1367,7 @@ public class UiRenderContext implements UiRenderBackend {
     }
 
     public void pushClip(int left, int top, int right, int bottom) {
+        flushFillBatch();
         pushClip(left, top, right, bottom, 0);
     }
 
@@ -1339,6 +1381,7 @@ public class UiRenderContext implements UiRenderBackend {
      * @param cornerRadius 圆角半径；为 0 时退化为普通矩形裁剪
      */
     public void pushClip(int left, int top, int right, int bottom, int cornerRadius) {
+        flushFillBatch();
         pushClip(left, top, right, bottom, UiBorderRadiusResolver.ResolvedCornerRadii.uniform(cornerRadius));
     }
 
@@ -1353,6 +1396,7 @@ public class UiRenderContext implements UiRenderBackend {
      */
     public void pushClip(int left, int top, int right, int bottom,
             UiBorderRadiusResolver.ResolvedCornerRadii cornerRadii) {
+        flushFillBatch();
         // clip 变更前先 flush，避免 deferred text batch 跨 scissor 边界提交到错误状态
         flushDeferredTextBatch();
         clipStack.push(left, top, right, bottom, screenWidth, screenHeight, cornerRadii);
@@ -1368,6 +1412,7 @@ public class UiRenderContext implements UiRenderBackend {
     }
 
     public void popClip() {
+        flushFillBatch();
         Throwable flushFailure = null;
         try {
             flushDeferredTextBatch();
