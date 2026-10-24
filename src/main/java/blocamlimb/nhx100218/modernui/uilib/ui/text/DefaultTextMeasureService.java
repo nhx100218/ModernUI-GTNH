@@ -1,6 +1,9 @@
 package blocamlimb.nhx100218.modernui.uilib.ui.text;
 
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import blocamlimb.nhx100218.modernui.uilib.font.FontService;
 import blocamlimb.nhx100218.modernui.uilib.font.layout.TextLayoutService;
@@ -21,6 +24,12 @@ public final class DefaultTextMeasureService implements TextMeasureService {
             new DefaultTextMeasureService(TextContentMode.MINECRAFT_FORMATTED);
 
     private final TextContentMode defaultTextContentMode;
+
+    /** Per-epoch whole-string width cache (upstream BatchTextMeasurer idea, merged inline). */
+    private static final int WIDTH_CACHE_CAPACITY = 256;
+    private final Map<WidthCacheKey, Integer> widthCache =
+            new LinkedHashMap<WidthCacheKey, Integer>(64, 0.75f, true);
+    private int widthCacheEpoch = Integer.MIN_VALUE;
 
     private DefaultTextMeasureService(TextContentMode defaultTextContentMode) {
         this.defaultTextContentMode = defaultTextContentMode;
@@ -89,7 +98,33 @@ public final class DefaultTextMeasureService implements TextMeasureService {
     @Override
     public int getStringWidth(String text, TextMeasureStyle style) {
         TextMeasureStyle resolvedStyle = resolveTextMeasureStyle(style);
-        return getTextLayoutService().getStringWidth(text, resolvedStyle);
+        if (text == null || text.isEmpty()) {
+            return 0;
+        }
+        int epoch = getEpoch();
+        WidthCacheKey key = new WidthCacheKey(text, resolvedStyle);
+        synchronized (widthCache) {
+            if (widthCacheEpoch != epoch) {
+                widthCache.clear();
+                widthCacheEpoch = epoch;
+            }
+            Integer cached = widthCache.get(key);
+            if (cached != null) {
+                return cached.intValue();
+            }
+        }
+        int width = getTextLayoutService().getStringWidth(text, resolvedStyle);
+        synchronized (widthCache) {
+            widthCache.put(key, Integer.valueOf(width));
+            if (widthCache.size() > WIDTH_CACHE_CAPACITY) {
+                Iterator<WidthCacheKey> iterator = widthCache.keySet().iterator();
+                if (iterator.hasNext()) {
+                    iterator.next();
+                    iterator.remove();
+                }
+            }
+        }
+        return width;
     }
 
     @Override
@@ -192,5 +227,33 @@ public final class DefaultTextMeasureService implements TextMeasureService {
         TextContentMode resolvedMode = resolveTextContentMode(resolvedStyle.getTextContentMode());
         return new TextMeasureStyle(resolvedStyle.getFontSizePx(), resolvedMode, resolvedStyle.getFontWeight(),
                 resolvedStyle.getFontStyle());
+    }
+
+    private static final class WidthCacheKey {
+
+        private final String text;
+        private final TextMeasureStyle style;
+
+        WidthCacheKey(String text, TextMeasureStyle style) {
+            this.text = text;
+            this.style = style;
+        }
+
+        @Override
+        public boolean equals(Object value) {
+            if (this == value) {
+                return true;
+            }
+            if (!(value instanceof WidthCacheKey)) {
+                return false;
+            }
+            WidthCacheKey other = (WidthCacheKey) value;
+            return text.equals(other.text) && style.equals(other.style);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * text.hashCode() + style.hashCode();
+        }
     }
 }
