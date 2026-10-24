@@ -67,7 +67,7 @@ public class EarlyMixins implements IEarlyMixinLoader, IFMLLoadingPlugin {
             mixins.add("enhance.MixinGuiIngameHotbarScroll");
             mixins.add("enhance.MixinGuiHotbarTexture");
             mixins.add("enhance.MixinInventoryPlayerHotbar");
-            mixins.add("enhance.MixinGuiChatAnimation");
+            mixins.add("enhance.MixinGuiNewChatScroll");
         }
         mixins.add("network.MixinNetHandlerPlayServer");
         return mixins;
