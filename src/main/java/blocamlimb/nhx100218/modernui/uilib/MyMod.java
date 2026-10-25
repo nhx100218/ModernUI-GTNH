@@ -21,7 +21,7 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
         // 注意「显式空串」不是开发期形态：它构成空区间并拒绝一切（含自身）；精确版本相等只属于
         // 整条属性不写的形态。区间不跨 major：下界为 4.11.0 定档时收紧的已承诺下界，上界取当前
         // 制品 4.11.0 的下一 minor 边界 4.12.0（覆盖 4.11.x；与 4.10.x 及更早不承诺混用）。
-        acceptableRemoteVersions = "[1.0.0,1.1.0)",
+        acceptableRemoteVersions = "[1.1.0,1.2.0)",
         guiFactory = MyMod.GUI_FACTORY)
 public class MyMod {
 
