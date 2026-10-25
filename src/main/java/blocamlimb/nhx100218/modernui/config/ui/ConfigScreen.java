@@ -185,7 +185,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     /** 标题条节点 */
     private SceneNode titleBar;
     /** 状态摘要条节点 */
-    private SceneNode statusSummary;
     /** 操作条节点 */
     private SceneNode actionBar;
     /** 固定左侧导航根节点；0/1 section 时为 null。 */
@@ -387,7 +386,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             // 专用世界遮罩与玻璃分层：遮罩是页壳外层的独立节点（静态 ROOT_BG，不装玻璃），
             // 绘制顺序先于玻璃 BACKDROP，只负责遮罩、不遮挡玻璃采样（G15 验证条款）。
             FormPageShell.Parts parts = FormPageShell.build(runtime,
-                    schema.title(), "modId: " + schema.modId(),
+                    schema.title(), null,
                     ConfigTheme.TITLE_BAR_HEIGHT, ConfigTheme.ROOT_PADDING, ConfigTheme.ROOT_GAP,
                     14, 14,
                     false, false);
@@ -415,8 +414,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             // 操作条固定在页面底部，保存始终位于视觉终点且不随内容滚动。
             this.actionBar = createActionBar();
 
-            this.statusSummary = createStatusSummary();
-            pageRoot.appendChild(statusSummary);
 
             this.sections = schema.sections();
             this.groups = createGroups(this.sections);
@@ -572,55 +569,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         bar.appendChild(text(schema.title(),
                 Computed.create(() -> Integer.valueOf(formTheme.get().titleColor())),
                 ConfigTheme.FONT_TITLE));
-        bar.appendChild(text("modId: " + schema.modId(),
-                Computed.create(() -> Integer.valueOf(formTheme.get().mutedColor())),
-                ConfigTheme.FONT_SUBTITLE));
         return bar;
-    }
-
-    /**
-     * 创建固定状态摘要条：dirty 计数徽标 + error 计数徽标。
-     *
-     * <p>S4：save 反馈已拆出为独立行（{@link #createSaveFeedbackBar}），不再挤在本行。</p>
-     *
-     * <p>G15/Shell：徽标状态描边经 {@code formTheme} 取主题语义色——dirty 态取
-     * {@code dirtyColor()}（主题 accent）、error 态取 {@code errorColor()}（主题 errorText）、
-     * 静默态取 {@code mutedColor()}；三态在任意主题档下互异可辨（dirty≠error≠静默由
-     * accent/errorText/mutedForeground 的语义分工保证，用例锁值）。</p>
-     *
-     * @return 状态摘要节点
-     */
-    private SceneNode createStatusSummary() {
-        SceneNode row = SceneNode.row();
-        row.setPreferredHeight(ConfigTheme.STATUS_HEIGHT);
-        row.setFillParentWidth(true);
-        row.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
-        row.setGap(10);
-
-        // 脏字段计数徽标：「N 项未保存」/「无未保存更改」
-        row.appendChild(badge(
-                Computed.create(() -> {
-                    int n = safeCount(adapter.dirtyCountSignal().get());
-                    return n > 0 ? n + " 项未保存" : "无未保存更改";
-                }),
-                Computed.create(() -> {
-                    int n = safeCount(adapter.dirtyCountSignal().get());
-                    FormTheme theme = formTheme.get();
-                    return Integer.valueOf(n > 0 ? theme.dirtyColor() : theme.mutedColor());
-                })));
-        // 错误字段计数徽标：「N 项校验错误」/「校验通过」
-        row.appendChild(badge(
-                Computed.create(() -> {
-                    int n = safeCount(adapter.errorCountSignal().get());
-                    return n > 0 ? n + " 项校验错误" : "校验通过";
-                }),
-                Computed.create(() -> {
-                    int n = safeCount(adapter.errorCountSignal().get());
-                    FormTheme theme = formTheme.get();
-                    return Integer.valueOf(n > 0 ? theme.errorColor() : theme.mutedColor());
-                })));
-
-        return row;
     }
 
     /**
@@ -942,7 +891,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 ALWAYS_ENABLED, navInteraction);
 
         SceneImageSource[] icons = navIcons();
-        ReadableSignal<Integer> foreground = SceneThemes.foreground(runtime);
         for (int i = 0; i < groups.size(); i++) {
             final int groupIndex = i;
             GroupSpec group = groups.get(i);
@@ -958,9 +906,18 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             ReadableSignal<Boolean> selected = Computed.create(
                     () -> Boolean.valueOf(activeGroupIndex() == groupIndex));
             SceneInteractionState interaction = runtime.interactionState(item);
-            SceneSurfaceBinder.bind(runtime, item,
-                    SceneThemes.selectableSurface(runtime, SceneTheme.Role.INDICATOR, selected),
-                    ALWAYS_ENABLED, interaction);
+            runtime.bind(Computed.create(() -> {
+                if (selected.get()) {
+                    return Integer.valueOf(0xFF5D4038);
+                }
+                if (interaction.pressed().get()) {
+                    return Integer.valueOf(0x225D4038);
+                }
+                if (interaction.hovered().get()) {
+                    return Integer.valueOf(0x335D4038);
+                }
+                return Integer.valueOf(0);
+            }), item::setBackgroundColor);
 
             SceneNode icon = new SceneNode();
             icon.setPreferredWidth(24);
@@ -974,7 +931,9 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                     icon::setOpacity);
             item.appendChild(icon);
 
-            item.appendChild(text(group.title, foreground, ConfigTheme.FONT_LABEL));
+            item.appendChild(text(group.title, Computed.create(() ->
+                    Integer.valueOf(selected.get() ? 0xFFFFDBD1 : 0xFFF1DFDA)),
+                    ConfigTheme.FONT_LABEL));
             runtime.focusable(item, ALWAYS_ENABLED);
             runtime.on(item, SceneEventType.CLICK, (event, context) -> {
                 if (!group.sectionIndices.isEmpty()) {
@@ -1396,41 +1355,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     }
 
     /**
-     * 创建徽标节点（状态徽标）。
-     *
-     * <p>S1：徽标文本用 {@link ConfigTheme#FONT_BADGE} 字号。M4：文本与描边对比分工保留，
-     * 但改经主题语义色——文本取 {@code formTheme.textColor()}（正文前景），描边取 caller 传入的
-     * 状态色（dirty/error/静默，见 {@link #createStatusSummary}）。</p>
-     *
-     * <p><b>契约 §7.3「状态徽标明确不迁移」</b>：徽标是状态读数，不装玻璃、不采样背景。
-     * 因此这里<b>保留</b> {@code cornerRadius(999)=胶囊几何}、{@code borderWidth(2)=描边宽度}
-     * 与 {@code READOUT_BG=徽标底色} 三项静态设色——它们是徽标读数的固定视觉，不属表面绑定器
-     * 独占的「玻璃表面」，删除会破坏读数可辨性。可主题化的只有前景/描边语义色，已改走
-     * {@code formTheme} 信号。（{@code READOUT_BG} 与 {@code ROOT_BG} 同为本实例保留项，
-     * 见类头「G15/Shell 液态玻璃迁移要点」与施工报告销账表。）</p>
-     *
-     * @param label 文案源
-     * @param color 颜色源（用于边框描边）
-     * @return 徽标节点
-     */
-    private SceneNode badge(ReadableSignal<String> label, ReadableSignal<Integer> color) {
-        SceneNode node = new SceneNode();
-        node.setWidthSizing(SceneNode.WidthSizing.SHRINK);
-        node.setPadding(8);
-        node.setCornerRadius(999);
-        node.setHitTestable(false);
-        SceneNode textNode = text("",
-                Computed.create(() -> Integer.valueOf(formTheme.get().textColor())),
-                ConfigTheme.FONT_BADGE);
-        node.appendChild(textNode);
-        runtime.bind(label, textNode::setText);
-        runtime.bind(color, node::setBorderColor);
-        node.setBorderWidth(2);
-        node.setBackgroundColor(ConfigTheme.READOUT_BG);
-        return node;
-    }
-
-    /**
      * 创建跟随主题的文字节点（前景经 {@code bind} 响应式写入，主题切换自动重派生）。
      *
      * @param value     文本
@@ -1498,10 +1422,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         return titleBar;
     }
 
-    /** @return 状态摘要条节点 */
-    SceneNode __getStatusSummary() {
-        return statusSummary;
-    }
 
     /** @return 操作条节点 */
     SceneNode __getActionBar() {
