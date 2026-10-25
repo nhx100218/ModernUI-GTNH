@@ -74,7 +74,7 @@ public final class ConfigTheme {
     /** 单列内容最大宽度。 */
     public static int CONTENT_MAX_WIDTH = 860;
     /** 固定左侧 section navigation 宽度。 */
-    public static int NAV_PANE_WIDTH = 196;
+    public static int NAV_PANE_WIDTH = 88;
 
     /** 标题条固定高度（压缩后） */
     public static int TITLE_BAR_HEIGHT = 44;
@@ -95,17 +95,17 @@ public final class ConfigTheme {
     /** 滚动容器内 viewport 与 scrollbar 列间距（M3，原 0） */
     public static int SCROLL_GAP = 3;
     /** Navigation rail item height. */
-    public static int NAV_ITEM_HEIGHT = 48;
+    public static int NAV_ITEM_HEIGHT = 64;
     /** Navigation rail icon size. */
     public static int NAV_ICON_SIZE = 24;
     /** Navigation rail padding. */
     public static int NAV_PADDING = 8;
     /** Navigation rail item gap. */
-    public static int NAV_GAP = 6;
+    public static int NAV_GAP = 2;
     /** Navigation rail item horizontal padding. */
-    public static int NAV_ITEM_PADDING_H = 10;
+    public static int NAV_ITEM_PADDING_H = 4;
     /** Navigation rail item vertical padding. */
-    public static int NAV_ITEM_PADDING_V = 6;
+    public static int NAV_ITEM_PADDING_V = 4;
 
     /** Material fast Motion。 */
     public static final int MOTION_FAST_MS = SceneChromeTokens.MOTION_FAST_MS;
@@ -369,7 +369,7 @@ public final class ConfigTheme {
         BUTTON_WIDTH = dp(108);
         PAGE_MAX_WIDTH = dp(1120);
         CONTENT_MAX_WIDTH = dp(860);
-        NAV_PANE_WIDTH = dp(196);
+        NAV_PANE_WIDTH = dp(88);
         TITLE_BAR_HEIGHT = dp(44);
         STATUS_HEIGHT = dp(28);
         ACTION_BAR_HEIGHT = dp(46);
@@ -379,12 +379,12 @@ public final class ConfigTheme {
         ROOT_PADDING = dp(16);
         ROOT_GAP = dp(10);
         SCROLL_GAP = dp(3);
-        NAV_ITEM_HEIGHT = dp(48);
+        NAV_ITEM_HEIGHT = dp(64);
         NAV_ICON_SIZE = dp(24);
         NAV_PADDING = dp(8);
-        NAV_GAP = dp(6);
-        NAV_ITEM_PADDING_H = dp(10);
-        NAV_ITEM_PADDING_V = dp(6);
+        NAV_GAP = dp(2);
+        NAV_ITEM_PADDING_H = dp(4);
+        NAV_ITEM_PADDING_V = dp(4);
         FONT_TITLE = dp(24);
         FONT_SECTION = dp(18);
         FONT_LABEL = dp(16);
