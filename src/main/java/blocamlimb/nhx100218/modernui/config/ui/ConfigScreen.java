@@ -203,6 +203,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
 
     /** 导航请求的 section 下标（受控源），selection indicator 立即跟随。 */
     private Signal<Integer> activeSectionSignal;
+    private Signal<Boolean> dashboardSignal;
     /** schema section 快照，供单槽 panel 切换挂载。 */
     private List<SectionSpec> sections;
     /** Grouped sections for the MD3 shell. */
@@ -431,6 +432,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             int initialSection = groups.isEmpty() ? 0
                     : groups.get(0).sectionIndices.get(0).intValue();
             this.activeSectionSignal = Signal.create(Integer.valueOf(initialSection));
+            this.dashboardSignal = Signal.create(Boolean.FALSE);
             this.displayedSectionIndex = initialSection;
             this.sectionOwner = uiOwner.createChild();
 
@@ -460,6 +462,12 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 scrollContainer.setFlexGrow(1);
                 bodyRow.appendChild(scrollContainer);
                 pageRoot.appendChild(bodyRow);
+                runtime.bind(dashboardSignal, active -> {
+                    boolean on = Boolean.TRUE.equals(active);
+                    content.setCollapsed(on);
+                    titleBar.setCollapsed(on);
+                });
+                rt().show(viewport, dashboardSignal, this::createDashboard);
             } else {
                 // 0 或 1 section：无需导航，直接挂 scrollContainer
                 scrollContainer.setFillParentWidth(true);
@@ -888,68 +896,77 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 ALWAYS_ENABLED, navInteraction);
 
         SceneImageSource[] icons = navIcons();
+        nav.appendChild(createNavItem(icons, 3, "主页",
+                Computed.create(() -> Boolean.TRUE.equals(dashboardSignal.get())),
+                () -> dashboardSignal.set(Boolean.TRUE)));
         for (int i = 0; i < groups.size(); i++) {
             final int groupIndex = i;
             GroupSpec group = groups.get(i);
-            SceneNode item = SceneNode.column();
-            item.setFillParentWidth(true);
-            item.setPreferredHeight(ConfigTheme.NAV_ITEM_HEIGHT);
-            item.setPadding(ConfigTheme.NAV_ITEM_PADDING_H, ConfigTheme.NAV_ITEM_PADDING_V,
-                    ConfigTheme.NAV_ITEM_PADDING_H, ConfigTheme.NAV_ITEM_PADDING_V);
-            item.setGap(ConfigTheme.dp(4));
-            item.setCrossAxisAlign(CrossAxisAlign.CENTER);
-            item.setCursor(SceneCursor.POINTER);
-
-            ReadableSignal<Boolean> selected = Computed.create(
-                    () -> Boolean.valueOf(activeGroupIndex() == groupIndex));
-            SceneInteractionState interaction = runtime.interactionState(item);
-            SceneNode iconPill = SceneNode.column();
-            iconPill.setPreferredWidth(ConfigTheme.dp(56));
-            iconPill.setPreferredHeight(ConfigTheme.dp(32));
-            iconPill.setCornerRadius(ConfigTheme.dp(16));
-            iconPill.setCrossAxisAlign(CrossAxisAlign.CENTER);
-            iconPill.setMainAxisAlign(MainAxisAlign.CENTER);
-            runtime.bind(Computed.create(() -> {
-                if (selected.get()) {
-                    return Integer.valueOf(0x33FFB5A1);
-                }
-                if (interaction.pressed().get()) {
-                    return Integer.valueOf(0x1FFFB5A1);
-                }
-                if (interaction.hovered().get()) {
-                    return Integer.valueOf(0x14FFB5A1);
-                }
-                return Integer.valueOf(0);
-            }), iconPill::setBackgroundColor);
-
-            SceneNode icon = new SceneNode();
-            icon.setPreferredWidth(ConfigTheme.NAV_ICON_SIZE);
-            icon.setPreferredHeight(ConfigTheme.NAV_ICON_SIZE);
-            icon.setHitTestable(false);
-            if (icons != null && groupIndex < icons.length) {
-                icon.setImageSource(icons[groupIndex]);
-            }
-            runtime.bind(Computed.create(
-                            () -> Float.valueOf(selected.get() ? 1.0f : 0.55f)),
-                    icon::setOpacity);
-            iconPill.appendChild(icon);
-            item.appendChild(iconPill);
-
-            item.appendChild(text(group.title, Computed.create(() ->
-                    Integer.valueOf(selected.get() ? 0xFFFFB5A1 : 0xFFD8C2BC)),
-                    ConfigTheme.FONT_SUBTITLE));
-            runtime.focusable(item, ALWAYS_ENABLED);
-            runtime.on(item, SceneEventType.CLICK, (event, context) -> {
+            ReadableSignal<Boolean> selected = Computed.create(() ->
+                    Boolean.valueOf(!Boolean.TRUE.equals(dashboardSignal.get())
+                            && activeGroupIndex() == groupIndex));
+            nav.appendChild(createNavItem(icons, groupIndex, group.title, selected, () -> {
+                dashboardSignal.set(Boolean.FALSE);
                 if (!group.sectionIndices.isEmpty()) {
                     activeSectionSignal.set(group.sectionIndices.get(0));
                 }
-            });
-            nav.appendChild(item);
+            }));
         }
         parent.appendChild(nav);
         return nav;
     }
 
+    private SceneNode createNavItem(SceneImageSource[] icons, int iconIndex, String title,
+                                    ReadableSignal<Boolean> selected, Runnable action) {
+        SceneNode item = SceneNode.column();
+        item.setFillParentWidth(true);
+        item.setPreferredHeight(ConfigTheme.NAV_ITEM_HEIGHT);
+        item.setPadding(ConfigTheme.NAV_ITEM_PADDING_H, ConfigTheme.NAV_ITEM_PADDING_V,
+                ConfigTheme.NAV_ITEM_PADDING_H, ConfigTheme.NAV_ITEM_PADDING_V);
+        item.setGap(ConfigTheme.dp(4));
+        item.setCrossAxisAlign(CrossAxisAlign.CENTER);
+        item.setCursor(SceneCursor.POINTER);
+
+        SceneInteractionState interaction = runtime.interactionState(item);
+        SceneNode iconPill = SceneNode.column();
+        iconPill.setPreferredWidth(ConfigTheme.dp(56));
+        iconPill.setPreferredHeight(ConfigTheme.dp(32));
+        iconPill.setCornerRadius(ConfigTheme.dp(16));
+        iconPill.setCrossAxisAlign(CrossAxisAlign.CENTER);
+        iconPill.setMainAxisAlign(MainAxisAlign.CENTER);
+        runtime.bind(Computed.create(() -> {
+            if (selected.get()) {
+                return Integer.valueOf(0x33FFB5A1);
+            }
+            if (interaction.pressed().get()) {
+                return Integer.valueOf(0x1FFFB5A1);
+            }
+            if (interaction.hovered().get()) {
+                return Integer.valueOf(0x14FFB5A1);
+            }
+            return Integer.valueOf(0);
+        }), iconPill::setBackgroundColor);
+
+        SceneNode icon = new SceneNode();
+        icon.setPreferredWidth(ConfigTheme.NAV_ICON_SIZE);
+        icon.setPreferredHeight(ConfigTheme.NAV_ICON_SIZE);
+        icon.setHitTestable(false);
+        if (icons != null && iconIndex < icons.length) {
+            icon.setImageSource(icons[iconIndex]);
+        }
+        runtime.bind(Computed.create(
+                        () -> Float.valueOf(selected.get() ? 1.0f : 0.55f)),
+                icon::setOpacity);
+        iconPill.appendChild(icon);
+        item.appendChild(iconPill);
+
+        item.appendChild(text(title, Computed.create(() ->
+                Integer.valueOf(selected.get() ? 0xFFFFB5A1 : 0xFFD8C2BC)),
+                ConfigTheme.FONT_SUBTITLE));
+        runtime.focusable(item, ALWAYS_ENABLED);
+        runtime.on(item, SceneEventType.CLICK, (event, context) -> action.run());
+        return item;
+    }
     private static SceneImageSource[] navIcons() {
         if (sNavIcons != null) {
             return sNavIcons;
@@ -966,10 +983,10 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             Class<?> host = Class.forName(
                     "blocamlimb.nhx100218.modernui.uilib.ui.image.HostImageSource");
             Method factory = host.getMethod("bufferedImage", BufferedImage.class, String.class);
-            int[] columns = {0, 5, 6};
-            SceneImageSource[] icons = new SceneImageSource[columns.length];
-            for (int i = 0; i < columns.length; i++) {
-                BufferedImage crop = sheet.getSubimage(columns[i] * 72, 0, 72, 72);
+            int[][] cells = {{0, 0}, {5, 0}, {6, 0}, {0, 2}};
+            SceneImageSource[] icons = new SceneImageSource[cells.length];
+            for (int i = 0; i < cells.length; i++) {
+                BufferedImage crop = sheet.getSubimage(cells[i][0] * 72, cells[i][1] * 72, 72, 72);
                 icons[i] = (SceneImageSource) factory.invoke(null, crop,
                         "modernui:gui/nav_icon_" + i);
             }
@@ -1105,6 +1122,56 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             host.appendChild(tab);
         }
         return host;
+    }
+    private SceneNode createDashboard() {
+        SceneNode root = SceneNode.row();
+        root.setFillParentWidth(true);
+        root.setFillParentHeight(true);
+        root.setPadding(ConfigTheme.dp(20));
+        root.setGap(ConfigTheme.dp(16));
+        root.setCrossAxisAlign(CrossAxisAlign.START);
+
+        SceneNode left = dashboardCard();
+        left.setFlexGrow(1);
+        left.appendChild(dashboardTitle("Modern UI 操作中心"));
+        left.appendChild(dashboardBody("ModernUI-GTNH\nModern UI 的 1.7.10 移植\n\n版本 1.0.0\n源码: nhx100218/ModernUI-GTNH\n原作者: BloCamLimb"));
+
+        SceneNode right = dashboardCard();
+        right.setFlexGrow(1);
+        right.appendChild(dashboardTitle("更新内容"));
+        right.appendChild(dashboardBody("• 配置页改为 MD3 大圆角面板\n• 修改立即生效并自动保存\n• 控件跟随 GUI Scale 缩放\n• 描述改为悬停 Tooltip\n• 导航栏和 Tab 对齐 ModernUI"));
+
+        root.appendChild(left);
+        root.appendChild(right);
+        return root;
+    }
+
+    private SceneNode dashboardCard() {
+        SceneNode card = SceneNode.column();
+        card.setFillParentWidth(true);
+        card.setPadding(ConfigTheme.dp(24));
+        card.setGap(ConfigTheme.dp(12));
+        bindGroupSurface(runtime, card);
+        return card;
+    }
+
+    private SceneNode dashboardTitle(String title) {
+        SceneNode node = new SceneNode();
+        node.setText(title);
+        node.setFontSize(ConfigTheme.FONT_TITLE);
+        node.setTextColor(0xFFFFB5A1);
+        node.setMaxLines(2);
+        return node;
+    }
+
+    private SceneNode dashboardBody(String body) {
+        SceneNode node = new SceneNode();
+        node.setText(body);
+        node.setFontSize(ConfigTheme.FONT_LABEL);
+        node.setTextColor(0xFFD8C2BC);
+        node.setMaxLines(12);
+        node.setLineHeightMultiplier(1.25D);
+        return node;
     }
     private SceneNode createContent() {
         SceneNode node = SceneNode.column();
