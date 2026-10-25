@@ -79,11 +79,12 @@ public final class FieldShellBinder {
         label.setMaxTextWidth(ConfigTheme.dp(520));
         label.setMaxLines(1);
         label.setEllipsis(true);
+        label.setHitTestable(true);
         rt.bindComputed(() -> Integer.valueOf(themeSignal.get().textColor()), label::setTextColor);
         left.appendChild(label);
 
         if (spec.helper() != null && !spec.helper().isEmpty()) {
-            SceneTooltip.attach(rt, new SceneTooltip.Props(row,
+            SceneTooltip.attach(rt, new SceneTooltip.Props(label,
                     Signal.create(spec.helper()), null, 350,
                     ConfigTheme.dp(260), 6));
         }
