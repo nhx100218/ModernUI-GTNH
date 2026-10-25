@@ -74,18 +74,18 @@ public record FormTheme(
                 0xFF2B2930,                  // cardBorder
                 0xFFD0BCFF,                  // cardBorderDirty
                 0xFFFFB4AB,                  // cardBorderError
-                SceneChromeTokens.RADIUS_LG, // cardRadius
-                SceneChromeTokens.PAD_LG,    // cardPad
-                SceneChromeTokens.GAP_MD,    // fieldGap     = ConfigTheme.FIELD_GAP
+                FormThemes.dp(SceneChromeTokens.RADIUS_LG), // cardRadius
+                FormThemes.dp(SceneChromeTokens.PAD_LG),    // cardPad
+                FormThemes.dp(SceneChromeTokens.GAP_MD),    // fieldGap
                 0xFFE6E1E5,                  // textColor    = ConfigTheme.TEXT_COLOR
                 0xFFCAC4D0,                  // mutedColor   = ConfigTheme.MUTED_COLOR
                 0xFFFFB4AB,                  // errorColor   = ConfigTheme.ERROR_COLOR
                 0xFFD0BCFF,                  // dirtyColor   = ConfigTheme.DIRTY_COLOR
-                16,                          // fontLabel    = ConfigTheme.FONT_LABEL
-                13,                          // fontHelper   = ConfigTheme.FONT_HELPER
-                13,                          // fontError    = ConfigTheme.FONT_ERROR
-                SceneChromeTokens.INPUT_HEIGHT, // inputHeight = ConfigTheme.INPUT_HEIGHT
-                220,                          // listHeight  多行字段默认视口高度
+                FormThemes.dp(16),                          // fontLabel
+                FormThemes.dp(13),                          // fontHelper
+                FormThemes.dp(13),                          // fontError
+                FormThemes.dp(SceneChromeTokens.INPUT_HEIGHT), // inputHeight
+                FormThemes.dp(220),                          // listHeight  多行字段默认视口高度
                 0xFF111318,                  // rootBg       = ConfigTheme.ROOT_BG
                 0xFF1B1B1F,                  // viewportBg   = ConfigTheme.VIEWPORT_BG
                 0xFFE6E1E5                   // titleColor   = ConfigTheme.TITLE_COLOR

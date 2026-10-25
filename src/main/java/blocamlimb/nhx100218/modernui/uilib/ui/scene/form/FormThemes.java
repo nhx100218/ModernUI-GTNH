@@ -72,6 +72,19 @@ public final class FormThemes {
     private static final int LIST_HEIGHT = 220;
 
     /** 工具类，禁止实例化。 */
+    private static float sDensity = 1.0F;
+
+    public static void setDensity(float density) {
+        sDensity = Math.max(0.5F, Math.min(4.0F, density));
+    }
+
+    public static float density() {
+        return sDensity;
+    }
+
+    public static int dp(int value) {
+        return Math.max(1, Math.round(value * sDensity));
+    }
     private FormThemes() {
     }
 
@@ -118,18 +131,18 @@ public final class FormThemes {
                 group.getIdle().getEdge(),          // cardBorder
                 theme.accent(),                     // cardBorderDirty
                 theme.errorText(),                  // cardBorderError
-                SceneChromeTokens.RADIUS_LG,        // cardRadius
-                SceneChromeTokens.PAD_LG,           // cardPad
-                SceneChromeTokens.GAP_MD,           // fieldGap
+                dp(SceneChromeTokens.RADIUS_LG),    // cardRadius
+                dp(SceneChromeTokens.PAD_LG),       // cardPad
+                dp(SceneChromeTokens.GAP_MD),       // fieldGap
                 theme.foreground(),                 // textColor
                 theme.mutedForeground(),            // mutedColor
                 theme.errorText(),                  // errorColor
                 theme.accent(),                     // dirtyColor
-                FONT_LABEL,                         // fontLabel
-                FONT_HELPER,                        // fontHelper
-                FONT_ERROR,                         // fontError
-                SceneChromeTokens.INPUT_HEIGHT,     // inputHeight
-                LIST_HEIGHT,                        // listHeight
+                dp(FONT_LABEL),                     // fontLabel
+                dp(FONT_HELPER),                    // fontHelper
+                dp(FONT_ERROR),                     // fontError
+                dp(SceneChromeTokens.INPUT_HEIGHT), // inputHeight
+                dp(LIST_HEIGHT),                    // listHeight
                 panelBackground,                    // rootBg
                 panelBackground,                    // viewportBg
                 theme.foreground()                  // titleColor

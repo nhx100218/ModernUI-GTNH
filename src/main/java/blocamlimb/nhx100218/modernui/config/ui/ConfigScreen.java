@@ -344,6 +344,13 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                  DraftSignalAdapter adapter, FieldRendererRegistry registry,
                  FieldRestorePolicy restorePolicy, ReadableSignal<SceneTheme> runtimeTheme) {
         super(input, environment);
+        String densityOverride = System.getProperty("modernui.config.density");
+        if (densityOverride != null) {
+            try {
+                ConfigTheme.setDensity(Float.parseFloat(densityOverride));
+            } catch (NumberFormatException ignored) {
+            }
+        }
         if (manager == null) {
             throw new IllegalArgumentException("manager must not be null");
         }
@@ -428,7 +435,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 titleBar.appendChild(topTabsHost);
                 titleBar.setHitTestable(true);
                 titleBar.setPreferredHeight(ConfigTheme.TITLE_BAR_HEIGHT
-                        + ConfigTheme.BUTTON_HEIGHT + 8);
+                        + ConfigTheme.BUTTON_HEIGHT + ConfigTheme.dp(8));
             }
 
             this.content = createContent();
@@ -445,7 +452,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 bodyRow.setFillParentHeight(true);
                 bodyRow.setFillParentWidth(true);
                 bodyRow.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
-                bodyRow.setGap(BODY_ROW_GAP);
+                bodyRow.setGap(ConfigTheme.dp(BODY_ROW_GAP));
                 this.navRoot = createSidebarNav(bodyRow, groups);
                 scrollContainer.setFlexGrow(1);
                 bodyRow.appendChild(scrollContainer);
@@ -647,7 +654,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         MountHandle handle = runtime.mount(row, SceneButton.create(runtime, props));
         SceneNode btnRoot = handle.getRoot();
         if (btnRoot != null) {
-            btnRoot.setPreferredWidth(ConfigTheme.BUTTON_WIDTH + 40);
+            btnRoot.setPreferredWidth(ConfigTheme.BUTTON_WIDTH + ConfigTheme.dp(40));
             btnRoot.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
         }
         return row;
@@ -880,8 +887,8 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         SceneNode nav = SceneNode.column();
         nav.setPreferredWidth(ConfigTheme.NAV_PANE_WIDTH);
         nav.setFillParentHeight(true);
-        nav.setPadding(8);
-        nav.setGap(6);
+        nav.setPadding(ConfigTheme.NAV_PADDING);
+        nav.setGap(ConfigTheme.NAV_GAP);
         SceneInteractionState navInteraction = runtime.interactionState(nav);
         navInteraction.hovered();
         navInteraction.pressed();
@@ -896,11 +903,12 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             GroupSpec group = groups.get(i);
             SceneNode item = SceneNode.row();
             item.setFillParentWidth(true);
-            item.setPreferredHeight(48);
-            item.setPadding(10, 6, 10, 6);
-            item.setGap(12);
+            item.setPreferredHeight(ConfigTheme.NAV_ITEM_HEIGHT);
+            item.setPadding(ConfigTheme.NAV_ITEM_PADDING_H, ConfigTheme.NAV_ITEM_PADDING_V,
+                    ConfigTheme.NAV_ITEM_PADDING_H, ConfigTheme.NAV_ITEM_PADDING_V);
+            item.setGap(ConfigTheme.dp(12));
             item.setCrossAxisAlign(CrossAxisAlign.CENTER);
-            item.setCornerRadius(24);
+            item.setCornerRadius(ConfigTheme.NAV_ITEM_HEIGHT / 2);
             item.setCursor(SceneCursor.POINTER);
 
             ReadableSignal<Boolean> selected = Computed.create(
@@ -920,8 +928,8 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             }), item::setBackgroundColor);
 
             SceneNode icon = new SceneNode();
-            icon.setPreferredWidth(24);
-            icon.setPreferredHeight(24);
+            icon.setPreferredWidth(ConfigTheme.NAV_ICON_SIZE);
+            icon.setPreferredHeight(ConfigTheme.NAV_ICON_SIZE);
             icon.setHitTestable(false);
             if (icons != null && groupIndex < icons.length) {
                 icon.setImageSource(icons[groupIndex]);
@@ -1073,7 +1081,8 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                     if (position >= 0 && position < group.sectionIndices.size()) {
                         activeSectionSignal.set(group.sectionIndices.get(position));
                     }
-                });
+                },
+                Signal.create(Integer.valueOf(ConfigTheme.NAV_TAB_FONT_SIZE)));
         SceneNode host = SceneNode.row();
         host.setFillParentWidth(true);
         MountHandle handle = runtime.mount(host, SceneSegmented.create(runtime, props));
@@ -1085,7 +1094,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     }
     private SceneNode createContent() {
         SceneNode node = SceneNode.column();
-        node.setGap(14);
+        node.setGap(ConfigTheme.dp(14));
         node.setFillParentWidth(true);
         node.setMaxWidth(ConfigTheme.CONTENT_MAX_WIDTH);
         return node;
@@ -1226,7 +1235,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 Signal.create(Boolean.TRUE), () -> requestAction(ActionKind.RESTORE),
                 cancelEnabled, () -> requestAction(ActionKind.CANCEL),
                 saveEnabled, () -> requestAction(ActionKind.SAVE),
-                ConfigTheme.ACTION_BAR_HEIGHT, 10,
+                ConfigTheme.ACTION_BAR_HEIGHT, ConfigTheme.dp(10),
                 ConfigTheme.BUTTON_WIDTH, ConfigTheme.BUTTON_HEIGHT);
         SceneNode cancelButton = bar.__getChildren().get(2);
         SceneNode saveButton = bar.__getChildren().get(3);
