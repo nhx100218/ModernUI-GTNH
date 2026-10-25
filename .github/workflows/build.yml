@@ -62,11 +62,22 @@ jobs:
             echo "__EOF__"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Read mod version
+        id: version
+        shell: bash
+        run: |
+          version=$(grep -E '^[[:space:]]*modVersion[[:space:]]*=' gradle.properties | head -n1 | cut -d= -f2 | tr -d '[:space:]')
+          if [ -z "$version" ]; then
+            echo "modVersion is missing from gradle.properties"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      
       - name: Publish release
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}-${{ github.run_attempt }}
+          tag_name: ${{ steps.version.outputs.version }}
           name: ${{ steps.meta.outputs.subject }}
           body: ${{ steps.meta.outputs.body }}
           files: release/*.jar
