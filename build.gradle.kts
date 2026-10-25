@@ -23,7 +23,7 @@ plugins {
 }
 
 // Fixed semantic version for CI (git-based versioning is disabled in gradle.properties).
-project.ext.set("modVersion", "1.0.0")
+project.ext.set("modVersion", providers.gradleProperty("modVersion").get())
 
 // 测试堆 1g：headless 软件渲染验收共享一张 GlyphRuntimeTables（约 123MiB direct-index 表），
 // 512m 默认堆下与其他字体测试类同 JVM 跑会互相挤压 OOM。
