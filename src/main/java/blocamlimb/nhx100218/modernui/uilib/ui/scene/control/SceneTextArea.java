@@ -297,7 +297,7 @@ public final class SceneTextArea {
             }
 
             if (configuredFontSize == null) {
-                root.setFontScope(rt.dp(16));
+                root.setFallbackFontSize(rt.dp(16));
             }
             SceneNode viewport = result.viewport();
             viewport.setPreferredHeight(rt.dp(props.viewportHeight() > 0 ? props.viewportHeight() : DEFAULT_VIEWPORT_HEIGHT));

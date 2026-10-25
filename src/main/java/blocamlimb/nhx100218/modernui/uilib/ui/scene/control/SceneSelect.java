@@ -109,7 +109,7 @@ public final class SceneSelect {
 
             SceneNode trigger = result.trigger();
             trigger.setPadding(rt.dp(TRIGGER_PADDING));
-            trigger.setFontScope(rt.dp(16));
+            trigger.setFallbackFontSize(rt.dp(16));
 
             // 唯一外观写入者：background/border/borderWidth/cornerRadius/backdrop/surfaceElevation
             // 全归 INPUT 表面绑定，控件不再静态设边框宽/圆角、不再叠加 SceneStateColors 实色绑定。

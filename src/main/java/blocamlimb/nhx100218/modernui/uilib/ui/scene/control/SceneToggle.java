@@ -133,7 +133,7 @@ public final class SceneToggle {
             int thumbSize = rt.dp(18);
             float thumbTravel = trackWidth - 2 * trackPadding - thumbSize;
             root.setGap(rt.dp(GAP));
-            root.setFontScope(rt.dp(16));
+            root.setFallbackFontSize(rt.dp(16));
 
             SceneNode track = result.indicator();
             track.setFlexDirection(FlexDirection.ROW);

@@ -103,7 +103,7 @@ public final class SceneCheckbox {
             SceneNode root = result.root();
             int boxSize = rt.dp(BOX_SIZE);
             root.setGap(rt.dp(GAP));
-            root.setFontScope(rt.dp(16));
+            root.setFallbackFontSize(rt.dp(16));
 
             SceneNode box = result.indicator();
             box.setPreferredWidth(boxSize);
