@@ -132,6 +132,9 @@ public final class NumberFieldRenderer implements FieldRenderer {
             rt.bind(SceneThemes.foreground(rt), readout::setTextColor);
             // 字号是排版/布局常量（契约 §4：尺寸/布局属性归控件自身，主题不接管布局），保留 ConfigTheme 取值
             readout.setFontSize(ConfigTheme.FONT_READOUT);
+        readout.setMaxTextWidth(ConfigTheme.dp(160));
+        readout.setMaxLines(1);
+        readout.setEllipsis(true);
             readout.setHitTestable(false);
             rt.bindComputed(() -> FieldRenderSupport.formatReadout(numValue.get()),
                     readout::setText);

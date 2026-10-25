@@ -499,7 +499,8 @@ public final class SceneSimpleList {
             Computed<List<ListItem>> rowItems = Computed.create(() -> SceneListOps.safeList(previewItems.get()));
 
             SceneNode root = SceneNode.column();
-            root.setGap(ROOT_GAP);
+            root.setGap(rt.dp(ROOT_GAP));
+        root.setFallbackFontSize(rt.dp(16));
             // 控件内文字跟随 root 字号：标题与行内按钮文字都是 root 的后代，沿父链继承层 2 声明，
             // 不再需要把字号信号逐层传进辅助方法。
             SceneNode labelNode = new SceneNode();
@@ -510,7 +511,7 @@ public final class SceneSimpleList {
             rt.show(root, Computed.create(() -> !props.label().isEmpty()), () -> labelNode);
 
             SceneNode listViewport = SceneNode.column();
-            listViewport.setGap(LIST_GAP);
+            listViewport.setGap(rt.dp(LIST_GAP));
             listViewport.setScrollable(true);
             listViewport.setClipChildren(true);
             listViewport.setFillParentHeight(true);
@@ -547,7 +548,7 @@ public final class SceneSimpleList {
 
             Computed<Boolean> addEnabled = Computed.create(() -> SceneListOps.canAdd(props.items().get(), props.maxItems()));
             SceneNode addButton = createButton(rt, "添加", SceneTheme.Role.BUTTON_STANDARD, 0, addEnabled);
-            addButton.setPreferredHeight(ADD_BUTTON_HEIGHT);
+            addButton.setPreferredHeight(rt.dp(ADD_BUTTON_HEIGHT));
             // 与 SceneKeyValueMap 行为对齐：操作按钮进 Tab 焦点环，disabled 时自动退出
             rt.focusable(addButton, addEnabled);
             rt.on(addButton, SceneEventType.CLICK, (ev, ctx) -> {
@@ -584,7 +585,7 @@ public final class SceneSimpleList {
                                       SceneNode viewport, Signal<Integer> scrollSignal, ListItem row) {
         SceneNode line = SceneNode.row();
         line.setCrossAxisAlign(CrossAxisAlign.CENTER);
-        line.setGap(ROW_GAP);
+        line.setGap(rt.dp(ROW_GAP));
 
         // draggable=true 时行首渲染拖拽把手（相邻中线插槽换位）
         SceneNode dragHandle = props.draggable()
@@ -606,11 +607,11 @@ public final class SceneSimpleList {
                 SceneInputType.TEXT,
                 next -> replaceItem(props, row.getId(), next));
         SceneNode input = SceneTextInput.create(rt, inputProps).get();
-        input.setPreferredWidth(INPUT_WIDTH);
+        input.setPreferredWidth(rt.dp(INPUT_WIDTH));
         line.appendChild(input);
 
         Computed<Boolean> deleteEnabled = Computed.create(() -> SceneListOps.canRemove(props.items().get(), props.minItems()));
-        SceneNode deleteButton = createButton(rt, "×", SceneTheme.Role.BUTTON_DANGER, DELETE_BUTTON_WIDTH, deleteEnabled);
+        SceneNode deleteButton = createButton(rt, "×", SceneTheme.Role.BUTTON_DANGER, rt.dp(DELETE_BUTTON_WIDTH), deleteEnabled);
         // 与 SceneKeyValueMap 行为对齐：行内删除按钮进 Tab 焦点环，disabled 时自动退出
         rt.focusable(deleteButton, deleteEnabled);
         rt.on(deleteButton, SceneEventType.CLICK, (ev, ctx) -> {
@@ -789,7 +790,8 @@ public final class SceneSimpleList {
         SceneNode button = SceneNode.row();
         button.setMainAxisAlign(MainAxisAlign.CENTER);
         button.setCrossAxisAlign(CrossAxisAlign.CENTER);
-        button.setPadding(BUTTON_PADDING);
+        button.setPadding(rt.dp(BUTTON_PADDING));
+        button.setFallbackFontSize(rt.dp(16));
         if (preferredWidth > 0) {
             button.setPreferredWidth(preferredWidth);
         } else {

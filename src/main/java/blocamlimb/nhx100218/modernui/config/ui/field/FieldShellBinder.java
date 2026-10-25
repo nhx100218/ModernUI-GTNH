@@ -5,12 +5,19 @@ import java.util.function.Supplier;
 import blocamlimb.nhx100218.modernui.config.schema.FieldSpec;
 import blocamlimb.nhx100218.modernui.config.ui.DraftSignalAdapter;
 import blocamlimb.nhx100218.modernui.config.ui.theme.ConfigTheme;
+import blocamlimb.nhx100218.modernui.uilib.ui.reactive.Effect;
 import blocamlimb.nhx100218.modernui.uilib.ui.reactive.ReadableSignal;
+import blocamlimb.nhx100218.modernui.uilib.ui.reactive.Signal;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormFieldShell;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormTheme;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormThemes;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.AnchorRect;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.CrossAxisAlign;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.LogicalBox;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.MainAxisAlign;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.SceneGeometry;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.node.Transform;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneTooltip;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.node.SceneNode;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.SceneRuntime;
 
@@ -76,12 +83,9 @@ public final class FieldShellBinder {
         left.appendChild(label);
 
         if (spec.helper() != null && !spec.helper().isEmpty()) {
-            SceneNode helper = text(spec.helper(), theme.mutedColor(), theme.fontHelper());
-            helper.setMaxTextWidth(ConfigTheme.dp(520));
-            helper.setMaxLines(2);
-            helper.setEllipsis(true);
-            rt.bindComputed(() -> Integer.valueOf(themeSignal.get().mutedColor()), helper::setTextColor);
-            left.appendChild(helper);
+            SceneTooltip.attach(rt, new SceneTooltip.Props(row,
+                    Signal.create(spec.helper()), null, 350,
+                    ConfigTheme.dp(260), 6));
         }
 
         SceneNode error = text("", theme.errorColor(), theme.fontError());
@@ -93,7 +97,7 @@ public final class FieldShellBinder {
         left.appendChild(error);
 
         SceneNode right = SceneNode.column();
-        right.setPreferredWidth(ConfigTheme.dp(280));
+        right.setPreferredWidth(ConfigTheme.dp(400));
         right.setMainAxisAlign(MainAxisAlign.CENTER);
         right.setCrossAxisAlign(CrossAxisAlign.END);
         SceneNode control = controlFn.get();
@@ -106,9 +110,30 @@ public final class FieldShellBinder {
 
         row.appendChild(left);
         row.appendChild(right);
+        rt.bind(rt.layoutDoneSignal(), epoch -> Effect.untrack(() -> {
+            LogicalBox viewport = rt.logicalBox().get();
+            if (!viewport.isPresent()) {
+                right.setTransform(Transform.translate(0.0f, 0.0f));
+                return;
+            }
+            AnchorRect box = SceneGeometry.absoluteBox(control, 0, 0);
+            int maxRight = maxRight(control, 0, 0);
+            int overflow = maxRight - (viewport.widthPx() - ConfigTheme.dp(8));
+            int shift = Math.min(Math.max(0, overflow),
+                    Math.max(0, box.getX() - ConfigTheme.dp(8)));
+            right.setTransform(Transform.translate(-shift, 0.0f));
+        }));
         return row;
     }
 
+    private static int maxRight(SceneNode node, int rootX, int rootY) {
+        AnchorRect box = SceneGeometry.absoluteBox(node, rootX, rootY);
+        int right = box.getX() + box.getWidth();
+        for (SceneNode child : node.__getChildren()) {
+            right = Math.max(right, maxRight(child, rootX, rootY));
+        }
+        return right;
+    }
     private static SceneNode text(String value, int color, int fontSize) {
         SceneNode node = new SceneNode();
         node.setText(value);
