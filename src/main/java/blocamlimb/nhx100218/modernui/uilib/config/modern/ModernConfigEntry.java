@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
 
@@ -11,6 +12,7 @@ import blocamlimb.nhx100218.modernui.config.ConfigException;
 import blocamlimb.nhx100218.modernui.config.runtime.ConfigManager;
 import blocamlimb.nhx100218.modernui.config.schema.ConfigSchema;
 import blocamlimb.nhx100218.modernui.config.ui.ConfigScreen;
+import blocamlimb.nhx100218.modernui.config.ui.theme.ConfigTheme;
 import blocamlimb.nhx100218.modernui.uilib.MyMod;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.host.SceneHostAssembly;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.host.lwjgl.LwjglInputSource;
@@ -111,6 +113,9 @@ public final class ModernConfigEntry {
             }
         });
 
+        int guiScale = new ScaledResolution(minecraft, minecraft.displayWidth, minecraft.displayHeight)
+                .getScaleFactor();
+        ConfigTheme.setDensity(Math.max(0.5F, guiScale * 0.5F));
         final PlatformInputSource input = new LwjglInputSource(new LwjglStateReader());
         // fontSort 字段语义为字体优先级排序，行序即配置值；专用 renderer 只展示已发现字体名，
         // 不提供输入框/增删按钮，仍保留拖拽排序支持。

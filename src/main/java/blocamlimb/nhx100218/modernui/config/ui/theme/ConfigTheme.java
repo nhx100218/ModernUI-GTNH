@@ -37,13 +37,13 @@ import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneTheme;
 public final class ConfigTheme {
 
     /** 字段卡片间距 */
-    public static final int FIELD_GAP = SceneChromeTokens.GAP_MD;
+    public static int FIELD_GAP = SceneChromeTokens.GAP_MD;
     /** 输入框行高 */
-    public static final int INPUT_HEIGHT = SceneChromeTokens.INPUT_HEIGHT;
+    public static int INPUT_HEIGHT = SceneChromeTokens.INPUT_HEIGHT;
     /** 按钮高度 */
-    public static final int BUTTON_HEIGHT = SceneChromeTokens.BUTTON_HEIGHT;
+    public static int BUTTON_HEIGHT = SceneChromeTokens.BUTTON_HEIGHT;
     /** 按钮宽度 */
-    public static final int BUTTON_WIDTH = 108;
+    public static int BUTTON_WIDTH = 108;
 
     /** 全屏 Material 暗色遮罩（80% 不透明），世界画面可在其后连续透出。 */
     public static final int ROOT_BG = 0xCC1A110F;
@@ -70,30 +70,42 @@ public final class ConfigTheme {
     public static final int READOUT_BG = SURFACE_CONTAINER_HIGH;
 
     /** 页面内容最大宽度。 */
-    public static final int PAGE_MAX_WIDTH = 1120;
+    public static int PAGE_MAX_WIDTH = 1120;
     /** 单列内容最大宽度。 */
-    public static final int CONTENT_MAX_WIDTH = 860;
+    public static int CONTENT_MAX_WIDTH = 860;
     /** 固定左侧 section navigation 宽度。 */
-    public static final int NAV_PANE_WIDTH = 196;
+    public static int NAV_PANE_WIDTH = 196;
 
     /** 标题条固定高度（压缩后） */
-    public static final int TITLE_BAR_HEIGHT = 44;
+    public static int TITLE_BAR_HEIGHT = 44;
     /** 状态摘要条固定高度（压缩后） */
-    public static final int STATUS_HEIGHT = 28;
+    public static int STATUS_HEIGHT = 28;
     /** 操作条固定高度（压缩后） */
-    public static final int ACTION_BAR_HEIGHT = 46;
+    public static int ACTION_BAR_HEIGHT = 46;
     /** save 反馈独立行固定高度（与 STATUS_HEIGHT 同档，守 grow 求解器不早退） */
-    public static final int SAVE_FEEDBACK_HEIGHT = 24;
+    public static int SAVE_FEEDBACK_HEIGHT = 24;
     /** 横向 Tab 导航段内边距（与 {@code SceneSegmented.SEGMENT_PADDING} 对齐，PAD_LG=10） */
-    public static final int NAV_TAB_PADDING = SceneChromeTokens.PAD_LG;
+    public static int NAV_TAB_PADDING = SceneChromeTokens.PAD_LG;
     /** 横向 Tab 段标签字号（与 {@code SceneSegmented.SEG_LABEL_FONT_SIZE} 对齐） */
-    public static final int NAV_TAB_FONT_SIZE = 16;
+    public static int NAV_TAB_FONT_SIZE = 16;
     /** 根容器内边距（压缩后，原 20） */
-    public static final int ROOT_PADDING = 16;
+    public static int ROOT_PADDING = 16;
     /** 根容器子节点间距（压缩后，原 12） */
-    public static final int ROOT_GAP = 10;
+    public static int ROOT_GAP = 10;
     /** 滚动容器内 viewport 与 scrollbar 列间距（M3，原 0） */
-    public static final int SCROLL_GAP = 3;
+    public static int SCROLL_GAP = 3;
+    /** Navigation rail item height. */
+    public static int NAV_ITEM_HEIGHT = 48;
+    /** Navigation rail icon size. */
+    public static int NAV_ICON_SIZE = 24;
+    /** Navigation rail padding. */
+    public static int NAV_PADDING = 8;
+    /** Navigation rail item gap. */
+    public static int NAV_GAP = 6;
+    /** Navigation rail item horizontal padding. */
+    public static int NAV_ITEM_PADDING_H = 10;
+    /** Navigation rail item vertical padding. */
+    public static int NAV_ITEM_PADDING_V = 6;
 
     /** Material fast Motion。 */
     public static final int MOTION_FAST_MS = SceneChromeTokens.MOTION_FAST_MS;
@@ -104,26 +116,26 @@ public final class ConfigTheme {
 
     // ===== 字号梯度 token（S1，UI 像素）=====
     /** 页标题字号（titleBar 主标题） */
-    public static final int FONT_TITLE = 24;
+    public static int FONT_TITLE = 24;
     /** section 标题/导航字号 */
-    public static final int FONT_SECTION = 18;
+    public static int FONT_SECTION = 18;
     /** 字段 label / 按钮文案字号 */
-    public static final int FONT_LABEL = 16;
+    public static int FONT_LABEL = 16;
     /** helper text 字号 */
-    public static final int FONT_HELPER = 13;
+    public static int FONT_HELPER = 13;
     /** error text 字号 */
-    public static final int FONT_ERROR = 13;
+    public static int FONT_ERROR = 13;
     /** 按钮文案字号 */
-    public static final int FONT_BUTTON = 16;
+    public static int FONT_BUTTON = 16;
     /** 徽标字号 */
-    public static final int FONT_BADGE = 12;
+    public static int FONT_BADGE = 12;
     /** titleBar 副标题（modId）字号 */
-    public static final int FONT_SUBTITLE = 12;
+    public static int FONT_SUBTITLE = 12;
     /** slider 读数字号 */
-    public static final int FONT_READOUT = 14;
+    public static int FONT_READOUT = 14;
 
     /** 桥接 FormTheme 缓存实例：字段卡片相关通用 token 与 {@link FormTheme#defaultDark()} 对齐 */
-    private static final FormTheme FORM_THEME = FormTheme.defaultDark();
+    private static float sDensity = 1.0F;
 
     /**
      * 桥接获取 uilib.form 通用主题 token，供 4 个 FieldRenderer 调
@@ -139,7 +151,7 @@ public final class ConfigTheme {
      * @return 深色档 FormTheme 实例（缓存，恒同一对象）
      */
     public static FormTheme asFormTheme() {
-        return FORM_THEME;
+        return FormTheme.defaultDark();
     }
 
     /**
@@ -342,6 +354,52 @@ public final class ConfigTheme {
 
     private static int withAlpha(int argb, int alpha) {
         return ((Math.max(0, Math.min(0xFF, alpha)) << 24) | (argb & 0x00FFFFFF));
+    }
+    /** @return current config UI density (1.0 = 100%). */
+    public static float density() {
+        return sDensity;
+    }
+
+    /** Applies GUI-scale density to all config dimensions and typography. */
+    public static void setDensity(float density) {
+        sDensity = Math.max(0.5F, Math.min(4.0F, density));
+        FIELD_GAP = dp(SceneChromeTokens.GAP_MD);
+        INPUT_HEIGHT = dp(SceneChromeTokens.INPUT_HEIGHT);
+        BUTTON_HEIGHT = dp(SceneChromeTokens.BUTTON_HEIGHT);
+        BUTTON_WIDTH = dp(108);
+        PAGE_MAX_WIDTH = dp(1120);
+        CONTENT_MAX_WIDTH = dp(860);
+        NAV_PANE_WIDTH = dp(196);
+        TITLE_BAR_HEIGHT = dp(44);
+        STATUS_HEIGHT = dp(28);
+        ACTION_BAR_HEIGHT = dp(46);
+        SAVE_FEEDBACK_HEIGHT = dp(24);
+        NAV_TAB_PADDING = dp(SceneChromeTokens.PAD_LG);
+        NAV_TAB_FONT_SIZE = dp(16);
+        ROOT_PADDING = dp(16);
+        ROOT_GAP = dp(10);
+        SCROLL_GAP = dp(3);
+        NAV_ITEM_HEIGHT = dp(48);
+        NAV_ICON_SIZE = dp(24);
+        NAV_PADDING = dp(8);
+        NAV_GAP = dp(6);
+        NAV_ITEM_PADDING_H = dp(10);
+        NAV_ITEM_PADDING_V = dp(6);
+        FONT_TITLE = dp(24);
+        FONT_SECTION = dp(18);
+        FONT_LABEL = dp(16);
+        FONT_HELPER = dp(13);
+        FONT_ERROR = dp(13);
+        FONT_BUTTON = dp(16);
+        FONT_BADGE = dp(12);
+        FONT_SUBTITLE = dp(12);
+        FONT_READOUT = dp(14);
+        FormThemes.setDensity(sDensity);
+    }
+
+    /** Scales a base pixel value by the current density. */
+    public static int dp(int base) {
+        return Math.max(1, Math.round(base * sDensity));
     }
     private ConfigTheme() {
     }
