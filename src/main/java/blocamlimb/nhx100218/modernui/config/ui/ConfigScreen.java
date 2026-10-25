@@ -374,6 +374,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         if (runtimeTheme != null) {
             SceneThemes.install(runtime, runtimeTheme);
         }
+        runtime.setDensity(ConfigTheme.density());
         runtime.__enableMotion();
 
         // 在 uiOwner 作用域内构造，所有 Computed/Effect 归属 uiOwner，dispose 时统一回收

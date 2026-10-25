@@ -255,25 +255,28 @@ public final class SceneSlider {
             SceneInteractionState interaction = result.interaction();
 
             SceneNode root = result.root();
-            root.setPreferredWidth(TRACK_WIDTH);
+            int trackWidth = rt.dp(TRACK_WIDTH);
+            int fillHeight = rt.dp(FILL_HEIGHT);
+            int thumbSize = rt.dp(THUMB_SIZE);
+            root.setPreferredWidth(trackWidth);
 
             SceneNode track = result.track();
-            track.setPreferredWidth(TRACK_WIDTH);
+            track.setPreferredWidth(trackWidth);
             // track 的边框宽/边框色/圆角/染色/滤镜/实体高度全部由表面绑定器从 INPUT 配方派生
             // （构造期不再静态设 borderWidth/cornerRadius/borderColor，也不另绑状态色或标准边框）。
 
             SceneNode fillBox = result.fillBox();
-            fillBox.setPreferredHeight(FILL_HEIGHT);
+            fillBox.setPreferredHeight(fillHeight);
             // 进度条是控件自持几何（不参与表面采样）：圆角保持静态常量。
             fillBox.setCornerRadius(FILL_RADIUS);
 
             SceneNode thumb = result.thumb();
-            thumb.setPreferredWidth(THUMB_SIZE);
-            thumb.setPreferredHeight(THUMB_SIZE);
+            thumb.setPreferredWidth(thumbSize);
+            thumb.setPreferredHeight(thumbSize);
             // thumb 的圆角来自 INDICATOR 强调配方；不再静态设圆角或三态实色绑定。
 
             // 进度宽度仍由数值驱动（布局语义不变，仅取色改为主题）。
-            rt.bindComputed(() -> computeFillWidth(result.progress().get(), TRACK_WIDTH, THUMB_SIZE),
+            rt.bindComputed(() -> computeFillWidth(result.progress().get(), trackWidth, thumbSize),
                     fillBox::setPreferredWidth);
 
             // 进度填充底色：启用取主题强调色，禁用取主题禁用前景色（不再取 SceneChromeTokens 实色）。

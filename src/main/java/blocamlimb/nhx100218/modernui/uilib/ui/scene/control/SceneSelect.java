@@ -108,7 +108,8 @@ public final class SceneSelect {
             SceneSelectPrimitive.Result result = SceneSelectPrimitive.create(rt, primitiveProps);
 
             SceneNode trigger = result.trigger();
-            trigger.setPadding(TRIGGER_PADDING);
+            trigger.setPadding(rt.dp(TRIGGER_PADDING));
+            trigger.setFontScope(rt.dp(16));
 
             // 唯一外观写入者：background/border/borderWidth/cornerRadius/backdrop/surfaceElevation
             // 全归 INPUT 表面绑定，控件不再静态设边框宽/圆角、不再叠加 SceneStateColors 实色绑定。
@@ -240,7 +241,7 @@ public final class SceneSelect {
 
         @Override
         public void decorateItem(SceneSelectPrimitive.ItemHandle handle) {
-            handle.item().setPadding(ITEM_PADDING);
+            handle.item().setPadding(rt.dp(ITEM_PADDING));
             handle.item().setCursor(SceneCursor.POINTER);
             // 行只做轻量状态覆盖：hover/选中取主题 accent、键盘高亮取主题选区背景，均为半透明染色；
             // 不逐项采样滤镜，默认透明露出浮层玻璃底。

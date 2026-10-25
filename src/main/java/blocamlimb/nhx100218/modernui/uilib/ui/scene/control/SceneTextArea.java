@@ -278,7 +278,7 @@ public final class SceneTextArea {
                     selectionBackground, selectionForeground);
             SceneTextAreaPrimitive.Result result = SceneTextAreaPrimitive.create(rt, primitiveProps);
             SceneNode root = result.root();
-            root.setPadding(PADDING);
+            root.setPadding(rt.dp(PADDING));
             // 控件级字号入口：Props.fontSize() 写控件根的层 2 声明（与句柄入口同一槽，后写者胜出）；
             // 控件内文字沿父链继承，不再逐点接线；值 null = 该声明缺失（回落下一层）。
             final ReadableSignal<Integer> configuredFontSize = props.fontSize();
@@ -296,9 +296,12 @@ public final class SceneTextArea {
                 });
             }
 
+            if (configuredFontSize == null) {
+                root.setFontScope(rt.dp(16));
+            }
             SceneNode viewport = result.viewport();
-            viewport.setPreferredHeight(props.viewportHeight() > 0 ? props.viewportHeight() : DEFAULT_VIEWPORT_HEIGHT);
-            viewport.setPadding(VIEWPORT_PADDING);
+            viewport.setPreferredHeight(rt.dp(props.viewportHeight() > 0 ? props.viewportHeight() : DEFAULT_VIEWPORT_HEIGHT));
+            viewport.setPadding(rt.dp(VIEWPORT_PADDING));
             // 视口不再自绘内层底色（旧 SceneChromeTokens.BG_DEFAULT/BG_DISABLED 已删）：root 的
             // INPUT 玻璃即唯一表面，内层再叠一层实色会挡死玻璃并形成第二个表面。
             viewport.setBackgroundColor(VIEWPORT_TRANSPARENT);
