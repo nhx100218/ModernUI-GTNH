@@ -40,13 +40,13 @@ import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.SceneRuntime;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneButton;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneButtonVariant;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneScrollbar;
-import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneSegmented;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.image.SceneImageSource;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneCursor;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneEventType;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.PlatformInputSource;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.CrossAxisAlign;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.LayoutBox;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.MainAxisAlign;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.SceneGeometry;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneInteractionState;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.node.SceneNode;
@@ -435,8 +435,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 this.topTabsHost = createTopTabs();
                 titleBar.appendChild(topTabsHost);
                 titleBar.setHitTestable(true);
-                titleBar.setPreferredHeight(ConfigTheme.TITLE_BAR_HEIGHT
-                        + ConfigTheme.BUTTON_HEIGHT + ConfigTheme.dp(8));
+                titleBar.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT + ConfigTheme.dp(8));
             }
 
             this.content = createContent();
@@ -569,14 +568,11 @@ public class ConfigScreen extends AbstractSceneHostWidget {
      */
     private SceneNode createTitleBar() {
         SceneNode bar = SceneNode.column();
-        bar.setPreferredHeight(ConfigTheme.TITLE_BAR_HEIGHT);
+        bar.setPreferredHeight(0);
         bar.setFillParentWidth(true);
         bar.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
         bar.setGap(2);
         bar.setHitTestable(false);
-        bar.appendChild(text(schema.title(),
-                Computed.create(() -> Integer.valueOf(formTheme.get().titleColor())),
-                ConfigTheme.FONT_TITLE));
         return bar;
     }
 
@@ -902,31 +898,36 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         for (int i = 0; i < groups.size(); i++) {
             final int groupIndex = i;
             GroupSpec group = groups.get(i);
-            SceneNode item = SceneNode.row();
+            SceneNode item = SceneNode.column();
             item.setFillParentWidth(true);
             item.setPreferredHeight(ConfigTheme.NAV_ITEM_HEIGHT);
             item.setPadding(ConfigTheme.NAV_ITEM_PADDING_H, ConfigTheme.NAV_ITEM_PADDING_V,
                     ConfigTheme.NAV_ITEM_PADDING_H, ConfigTheme.NAV_ITEM_PADDING_V);
-            item.setGap(ConfigTheme.dp(12));
+            item.setGap(ConfigTheme.dp(4));
             item.setCrossAxisAlign(CrossAxisAlign.CENTER);
-            item.setCornerRadius(ConfigTheme.NAV_ITEM_HEIGHT / 2);
             item.setCursor(SceneCursor.POINTER);
 
             ReadableSignal<Boolean> selected = Computed.create(
                     () -> Boolean.valueOf(activeGroupIndex() == groupIndex));
             SceneInteractionState interaction = runtime.interactionState(item);
+            SceneNode iconPill = SceneNode.column();
+            iconPill.setPreferredWidth(ConfigTheme.dp(56));
+            iconPill.setPreferredHeight(ConfigTheme.dp(32));
+            iconPill.setCornerRadius(ConfigTheme.dp(16));
+            iconPill.setCrossAxisAlign(CrossAxisAlign.CENTER);
+            iconPill.setMainAxisAlign(MainAxisAlign.CENTER);
             runtime.bind(Computed.create(() -> {
                 if (selected.get()) {
-                    return Integer.valueOf(0xFF5D4038);
+                    return Integer.valueOf(0x33FFB5A1);
                 }
                 if (interaction.pressed().get()) {
-                    return Integer.valueOf(0x225D4038);
+                    return Integer.valueOf(0x1FFFB5A1);
                 }
                 if (interaction.hovered().get()) {
-                    return Integer.valueOf(0x335D4038);
+                    return Integer.valueOf(0x14FFB5A1);
                 }
                 return Integer.valueOf(0);
-            }), item::setBackgroundColor);
+            }), iconPill::setBackgroundColor);
 
             SceneNode icon = new SceneNode();
             icon.setPreferredWidth(ConfigTheme.NAV_ICON_SIZE);
@@ -936,13 +937,14 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 icon.setImageSource(icons[groupIndex]);
             }
             runtime.bind(Computed.create(
-                            () -> Float.valueOf(selected.get() ? 1.0f : 0.72f)),
+                            () -> Float.valueOf(selected.get() ? 1.0f : 0.55f)),
                     icon::setOpacity);
-            item.appendChild(icon);
+            iconPill.appendChild(icon);
+            item.appendChild(iconPill);
 
             item.appendChild(text(group.title, Computed.create(() ->
-                    Integer.valueOf(selected.get() ? 0xFFFFDBD1 : 0xFFF1DFDA)),
-                    ConfigTheme.FONT_LABEL));
+                    Integer.valueOf(selected.get() ? 0xFFFFB5A1 : 0xFFD8C2BC)),
+                    ConfigTheme.FONT_SUBTITLE));
             runtime.focusable(item, ALWAYS_ENABLED);
             runtime.on(item, SceneEventType.CLICK, (event, context) -> {
                 if (!group.sectionIndices.isEmpty()) {
@@ -1067,29 +1069,47 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     }
 
     private SceneNode createGroupTabs(GroupSpec group) {
-        List<String> labels = new ArrayList<String>();
-        for (Integer index : group.sectionIndices) {
-            labels.add(sections.get(index.intValue()).title());
-        }
-        ReadableSignal<Integer> selected = Computed.create(
-                () -> Integer.valueOf(localSectionIndex(group)));
-        SceneSegmented.Props props = new SceneSegmented.Props(
-                selected,
-                labels,
-                ALWAYS_ENABLED,
-                local -> {
-                    int position = local == null ? 0 : local.intValue();
-                    if (position >= 0 && position < group.sectionIndices.size()) {
-                        activeSectionSignal.set(group.sectionIndices.get(position));
-                    }
-                },
-                Signal.create(Integer.valueOf(ConfigTheme.NAV_TAB_FONT_SIZE)));
         SceneNode host = SceneNode.row();
         host.setFillParentWidth(true);
-        MountHandle handle = runtime.mount(host, SceneSegmented.create(runtime, props));
-        SceneNode tabs = handle.getRoot();
-        if (tabs != null) {
-            tabs.setFillParentWidth(true);
+        host.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
+        host.setGap(ConfigTheme.dp(6));
+        host.setCrossAxisAlign(CrossAxisAlign.STRETCH);
+        host.setMainAxisAlign(MainAxisAlign.CENTER);
+        int maxLabelWidth = ConfigTheme.dp(140);
+        for (int i = 0; i < group.sectionIndices.size(); i++) {
+            final int sectionIndex = group.sectionIndices.get(i).intValue();
+            SceneNode tab = SceneNode.column();
+            tab.setWidthSizing(SceneNode.WidthSizing.SHRINK);
+            tab.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
+            tab.setPadding(0, ConfigTheme.dp(8), 0, ConfigTheme.dp(8));
+            tab.setGap(ConfigTheme.dp(4));
+            tab.setCrossAxisAlign(CrossAxisAlign.CENTER);
+            tab.setMainAxisAlign(MainAxisAlign.CENTER);
+            tab.setCursor(SceneCursor.POINTER);
+            int labelWidth = Math.min(runtime.measureTextWidth(
+                    sections.get(sectionIndex).title(), ConfigTheme.NAV_TAB_FONT_SIZE), maxLabelWidth);
+            tab.setPreferredWidth(labelWidth + ConfigTheme.dp(16));
+            ReadableSignal<Boolean> selected = Computed.create(
+                    () -> Boolean.valueOf(activeSectionSignal.get().intValue() == sectionIndex));
+            SceneNode label = text(sections.get(sectionIndex).title(),
+                    Computed.create(() -> Integer.valueOf(selected.get()
+                            ? 0xFFFFB5A1 : 0xFFD8C2BC)),
+                    ConfigTheme.NAV_TAB_FONT_SIZE);
+            label.setMaxTextWidth(maxLabelWidth);
+            label.setMaxLines(1);
+            label.setEllipsis(true);
+            tab.appendChild(label);
+            SceneNode indicator = new SceneNode();
+            indicator.setPreferredHeight(ConfigTheme.dp(3));
+            indicator.setCornerRadius(ConfigTheme.dp(2));
+            indicator.setPreferredWidth(labelWidth);
+            runtime.bind(Computed.create(() -> Integer.valueOf(selected.get()
+                    ? 0xFFFFB5A1 : 0)), indicator::setBackgroundColor);
+            tab.appendChild(indicator);
+            runtime.focusable(tab, ALWAYS_ENABLED);
+            runtime.on(tab, SceneEventType.CLICK, (event, context) ->
+                    activeSectionSignal.set(Integer.valueOf(sectionIndex)));
+            host.appendChild(tab);
         }
         return host;
     }
