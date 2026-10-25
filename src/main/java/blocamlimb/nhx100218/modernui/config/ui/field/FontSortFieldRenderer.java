@@ -173,8 +173,8 @@ public final class FontSortFieldRenderer implements FieldRenderer {
                 () -> presentation.setFilter(""),
                 SceneButtonVariant.STANDARD);
         SceneNode clearButton = SceneButton.create(rt, clearProps).get();
-        clearButton.setPreferredWidth(CLEAR_BUTTON_SIZE);
-        clearButton.setPreferredHeight(CLEAR_BUTTON_SIZE);
+        clearButton.setPreferredWidth(rt.dp(CLEAR_BUTTON_SIZE));
+        clearButton.setPreferredHeight(rt.dp(CLEAR_BUTTON_SIZE));
         filterBar.appendChild(clearButton);
         root.appendChild(filterBar);
 
