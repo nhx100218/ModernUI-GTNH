@@ -101,11 +101,13 @@ public final class SceneCheckbox {
             SceneInteractionState interaction = result.interaction();
 
             SceneNode root = result.root();
-            root.setGap(GAP);
+            int boxSize = rt.dp(BOX_SIZE);
+            root.setGap(rt.dp(GAP));
+            root.setFontScope(rt.dp(16));
 
             SceneNode box = result.indicator();
-            box.setPreferredWidth(BOX_SIZE);
-            box.setPreferredHeight(BOX_SIZE);
+            box.setPreferredWidth(boxSize);
+            box.setPreferredHeight(boxSize);
             box.setFlexDirection(FlexDirection.ROW);
             box.setCrossAxisAlign(CrossAxisAlign.CENTER);
             box.setMainAxisAlign(MainAxisAlign.CENTER);

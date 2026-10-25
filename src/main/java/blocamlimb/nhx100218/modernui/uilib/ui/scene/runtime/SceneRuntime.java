@@ -262,6 +262,19 @@ public class SceneRuntime implements SceneFontEnvironment {
         return defaultFontSizePx;
     }
 
+    private float density = 1.0F;
+
+    public float density() {
+        return density;
+    }
+
+    public void setDensity(float density) {
+        this.density = Math.max(0.5F, Math.min(4.0F, density));
+    }
+
+    public int dp(int value) {
+        return Math.max(1, Math.round(value * density));
+    }
     /** {@inheritDoc} */
     @Override
     public float fontScale() {

@@ -154,7 +154,10 @@ public final class SceneSegmented {
             SceneSingleSelectPrimitive.Result result = SceneSingleSelectPrimitive.create(rt, primitiveProps);
             SceneNode root = result.root();
             root.setCrossAxisAlign(CrossAxisAlign.STRETCH);
-            root.setGap(SEG_GAP);
+            int segmentPadding = rt.dp(SEGMENT_PADDING);
+            int segmentGap = rt.dp(SEG_GAP);
+            int labelFontSize = rt.dp(SEG_LABEL_FONT_SIZE);
+            root.setGap(segmentGap);
             // 字号唯一真值是 root（与 Button/TextInput/TextArea 同口径）。
             // Props.fontSize() 写 root 的层 2 声明（与句柄入口同一槽，后写者胜出）；
             // 未指定时不写层 2 声明：回落值走层 4a（见下方 setFallbackFontSize），不遮蔽句柄/作用域。
@@ -164,7 +167,7 @@ public final class SceneSegmented {
                     configuredFontSize == null ? null : configuredFontSize.get();
             // 层 4a 回落值：数值与框架层 4b 默认同值（16），本控件自持以表达「未声明时落 16」；
             // 层 1/2/3 均优先于它，故不遮蔽句柄 / 作用域 / 环境默认。
-            root.setFallbackFontSize(SEG_LABEL_FONT_SIZE);
+            root.setFallbackFontSize(labelFontSize);
             if (configuredFontSize != null) {
                 if (configuredFontSizeValue != null) {
                     root.setFontScope(configuredFontSizeValue.intValue());
@@ -185,7 +188,7 @@ public final class SceneSegmented {
             // 条高由字号派生（S5 收口）：setFontSizeMetric 登记即按当前生效字号算一次，
             // 其后仅在「生效字号变化」时由框架重算（同字号去重），不再手写 layoutDone 重算 effect。
             root.setFontSizeMetric((node, fontSizePx) ->
-                    node.setPreferredHeight(rt.lineHeight(fontSizePx) + 2 * SEGMENT_PADDING));
+                    node.setPreferredHeight(rt.lineHeight(fontSizePx) + 2 * segmentPadding));
 
             // 导航底座：TOOLBAR 角色配方。表面绑定器独占 background/border/borderWidth/
             // cornerRadius/backdrop/surfaceElevation；构造期不再静态设边框/圆角，
@@ -208,7 +211,7 @@ public final class SceneSegmented {
                 segment.setFlexDirection(FlexDirection.ROW);
                 segment.setMainAxisAlign(MainAxisAlign.CENTER);
                 segment.setCrossAxisAlign(CrossAxisAlign.CENTER);
-                segment.setPadding(SEGMENT_PADDING);
+                segment.setPadding(segmentPadding);
                 // 段宽 = 标签文本宽 + 2*内边距，由字号派生声明给出（S5 收口）：
                 // setFontSizeMetric 登记即按当前生效字号算一次，其后字号变化由框架重算 —— 不再手写
                 // layoutDone effect，也不再靠「构建期一次性测量」。
@@ -220,7 +223,7 @@ public final class SceneSegmented {
                 final String title = props.options().get(handle.index());
                 segment.setWidthSizing(SceneNode.WidthSizing.SHRINK);
                 segment.setFontSizeMetric((node, fontSizePx) -> node.setPreferredWidth(
-                        rt.measureTextWidth(title, fontSizePx) + 2 * SEGMENT_PADDING));
+                        rt.measureTextWidth(title, fontSizePx) + 2 * segmentPadding));
                 segment.appendChild(handle.label());
 
                 SceneInteractionState interaction = handle.interaction();

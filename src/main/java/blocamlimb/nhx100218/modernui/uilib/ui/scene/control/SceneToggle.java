@@ -127,22 +127,28 @@ public final class SceneToggle {
             SceneInteractionState interaction = result.interaction();
 
             SceneNode root = result.root();
-            root.setGap(GAP);
+            int trackWidth = rt.dp(48);
+            int trackHeight = rt.dp(24);
+            int trackPadding = rt.dp(3);
+            int thumbSize = rt.dp(18);
+            float thumbTravel = trackWidth - 2 * trackPadding - thumbSize;
+            root.setGap(rt.dp(GAP));
+            root.setFontScope(rt.dp(16));
 
             SceneNode track = result.indicator();
             track.setFlexDirection(FlexDirection.ROW);
             track.setCrossAxisAlign(CrossAxisAlign.CENTER);
             track.setMainAxisAlign(MainAxisAlign.START);
-            track.setPreferredWidth(TRACK_WIDTH);
-            track.setPreferredHeight(TRACK_HEIGHT);
-            track.setPadding(TRACK_PADDING);
+            track.setPreferredWidth(trackWidth);
+            track.setPreferredHeight(trackHeight);
+            track.setPadding(trackPadding);
             // 边框宽/圆角/四态染色/滤镜/实体高度全部由表面绑定器从选中配方派生：
             // 构造期不再静态设 borderWidth/cornerRadius，也不另绑状态色或标准边框。
 
             // thumb：layout 永远靠左；视觉位置只走 translateX，不移动交互根或布局盒。
             SceneNode thumb = new SceneNode();
-            thumb.setPreferredWidth(THUMB_SIZE);
-            thumb.setPreferredHeight(THUMB_SIZE);
+            thumb.setPreferredWidth(thumbSize);
+            thumb.setPreferredHeight(thumbSize);
             thumb.setCornerRadius(THUMB_RADIUS);
             thumb.setHitTestable(false);
             track.appendChild(thumb);
@@ -154,7 +160,7 @@ public final class SceneToggle {
             SceneSurfaceBinder.bind(rt, track, surface, props.enabled(), interaction);
 
             rt.__bindAnimatedFloat(
-                    () -> Float.valueOf(Boolean.TRUE.equals(props.on().get()) ? THUMB_TRAVEL : 0.0f),
+                    () -> Float.valueOf(Boolean.TRUE.equals(props.on().get()) ? thumbTravel : 0.0f),
                     x -> thumb.setTransform(Transform.translate(x.floatValue(), 0.0f)),
                     SceneChromeTokens.MOTION_STANDARD_MS);
 
