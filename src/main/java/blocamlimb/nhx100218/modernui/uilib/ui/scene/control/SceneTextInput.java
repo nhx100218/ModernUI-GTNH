@@ -407,7 +407,7 @@ public final class SceneTextInput {
             });
         }
         if (configuredFontSize == null) {
-            root.setFontScope(rt.dp(16));
+            root.setFallbackFontSize(rt.dp(16));
         }
         SceneInteractionState interaction = rt.interactionState(root);
 

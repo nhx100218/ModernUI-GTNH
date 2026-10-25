@@ -276,7 +276,7 @@ public final class SceneButton {
             }
 
             if (configuredFontSize == null) {
-                root.setFontScope(rt.dp(16));
+                root.setFallbackFontSize(rt.dp(16));
             }
             final SceneButtonVariant variant = props.variant() == null
                     ? SceneButtonVariant.STANDARD : props.variant();
