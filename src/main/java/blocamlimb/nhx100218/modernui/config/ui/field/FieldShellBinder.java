@@ -4,58 +4,34 @@ import java.util.function.Supplier;
 
 import blocamlimb.nhx100218.modernui.config.schema.FieldSpec;
 import blocamlimb.nhx100218.modernui.config.ui.DraftSignalAdapter;
+import blocamlimb.nhx100218.modernui.config.ui.theme.ConfigTheme;
+import blocamlimb.nhx100218.modernui.uilib.ui.reactive.ReadableSignal;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormFieldShell;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormTheme;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormThemes;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.CrossAxisAlign;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.MainAxisAlign;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.node.SceneNode;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.SceneRuntime;
 
-/**
- * 字段外壳装配薄 helper：收口 8 个 {@link FieldRenderer} 重复的
- * 「{@code labelOf(spec)} + {@code spec.helper()} +
- *  {@code adapter.errorSignal(path)} + {@code adapter.dirtySignal(path)} +
- *  {@link FormFieldShell#build}」调用序列。
- *
- * <p><b>config 层专用工具</b>：本类吃 {@link FieldSpec} / {@link DraftSignalAdapter} 等 config 类型，
- * 把 FormFieldShell 需要的「拆解后的标题 / error signal / dirty signal / 控件槽」预填好再下沉，
- * <b>不得下沉到 {@code uilib.ui.scene.form}</b>——后者对外承诺零 config 依赖
- * （守 U1 / form 子包 {@code package-info} 零业务依赖契约 / scene 边界门禁断言 3）。
- * FormFieldShell 仍是只吃 {@code String}/{@code ReadableSignal}/{@code Supplier}/{@code FormTheme}
- * 的纯泛型组合层，本 helper 落在适配层避免污染其依赖面。</p>
- *
- * <p>两个重载对偶 {@link FormFieldShell#build} 的两个 <b>theme-aware</b>（不传 FormTheme）重载：
- * 单行字段（input / segmented / select / toggle）走来源主题的 {@code inputHeight}，多行字段
- * （simple_list / fontSort / characterRule）传显式 {@code controlHeight}（纯 int 布局入参，由各
- * Renderer 以 {@code FormTheme.defaultDark()} 同源常量直读提供；契约 §4「主题不接管布局」）。
- * 字段卡片表面与标题/helper/error/dirty 语义色全部跟随当前来源主题（{@code FormFieldShell}
- * 默认路径），主题切换只重派生、不重建节点。</p>
- *
- * <p><b>G15/收口</b>：本 helper 曾按 G15/Support 裁决②保留 {@code theme} 兼容占位形参
- * （默认路径早已不消费，Renderer 实例期间禁自行摘参）。8 个 Renderer（含 CharacterRule）全部
- * 并入后，收口实例已将该形参从两个重载<b>直接删除</b>（4.0 施工期分支，不留 @Deprecated
- * 缓冲）：装配唯一路径就是 theme-aware 默认路径，本类既不接收整主题对象、也不在任何主题信号
- * 上做 {@code .get()} 快照（G15/Theme 书面警示）；多行字段高度只经 {@code controlHeight}
- * 纯 int 入参传递。</p>
- */
+/** Wraps FieldSpec/adapter signals into a field shell. */
 public final class FieldShellBinder {
 
-    /** 工具类，禁止实例化 */
+    private static boolean sRowMode;
+
     private FieldShellBinder() {
     }
 
-    /**
-     * 装配字段外壳并挂载控件（默认路径：外观与控件高度均跟随当前来源主题）。
-     *
-     * <p>等价于 {@link FormFieldShell#build} 的 theme-aware 6 参重载（控件高度取来源主题
-     * {@code inputHeight}），由本 helper 预先把 spec / adapter 拆解为
-     * title / helper / errorSignal / dirtySignal 后下调。</p>
-     *
-     * @param rt        场景运行时
-     * @param spec      字段元数据（取 path / label / helper）
-     * @param adapter   草稿 signal 适配器（取 errorSignal / dirtySignal）
-     * @param controlFn 控件构建函数（{@code SceneXxx.create(rt, props)} 产物）
-     * @return 字段卡片节点（已挂载控件）
-     */
+    /** Config screen row mode: label/helper left, control right, no per-field card. */
+    public static void setRowMode(boolean rowMode) {
+        sRowMode = rowMode;
+    }
+
     public static SceneNode build(SceneRuntime rt, FieldSpec spec, DraftSignalAdapter adapter,
                                   Supplier<SceneNode> controlFn) {
+        if (sRowMode) {
+            return buildRow(rt, spec, adapter, controlFn, -1);
+        }
         String path = spec.path();
         return FormFieldShell.build(rt,
                 FieldRenderSupport.labelOf(spec), spec.helper(),
@@ -63,28 +39,82 @@ public final class FieldShellBinder {
                 controlFn);
     }
 
-    /**
-     * 装配字段外壳并挂载控件（默认路径外观跟随来源主题），按字段自带高度设定控件根
-     * preferredHeight。
-     *
-     * <p>等价于 {@link FormFieldShell#build} 的 theme-aware 7 参重载。多行字段（SIMPLE_LIST 等）传
-     * {@code FormTheme.defaultDark().listHeight()} 同源纯 int（G15/收口：本 helper 不再接收
-     * 整主题对象）——controlHeight 是纯 int 布局入参，主题不接管布局。由本 helper 预先把
-     * spec / adapter 拆解为 title / helper / errorSignal / dirtySignal 后下调。</p>
-     *
-     * @param rt            场景运行时
-     * @param spec          字段元数据（取 path / label / helper）
-     * @param adapter       草稿 signal 适配器（取 errorSignal / dirtySignal）
-     * @param controlFn     控件构建函数（{@code SceneXxx.create(rt, props)} 产物）
-     * @param controlHeight 控件根 preferredHeight；{@code <=0} 时不设，让控件/容器决定
-     * @return 字段卡片节点（已挂载控件）
-     */
     public static SceneNode build(SceneRuntime rt, FieldSpec spec, DraftSignalAdapter adapter,
                                   Supplier<SceneNode> controlFn, int controlHeight) {
+        if (sRowMode) {
+            return buildRow(rt, spec, adapter, controlFn, controlHeight);
+        }
         String path = spec.path();
         return FormFieldShell.build(rt,
                 FieldRenderSupport.labelOf(spec), spec.helper(),
                 adapter.errorSignal(path), adapter.dirtySignal(path),
                 controlFn, controlHeight);
+    }
+
+    private static SceneNode buildRow(SceneRuntime rt, FieldSpec spec, DraftSignalAdapter adapter,
+                                      Supplier<SceneNode> controlFn, int controlHeight) {
+        String path = spec.path();
+        ReadableSignal<FormTheme> themeSignal = FormThemes.resolve(rt);
+        FormTheme theme = themeSignal.get();
+
+        SceneNode row = SceneNode.row();
+        row.setFillParentWidth(true);
+        row.setPadding(theme.cardPad());
+        row.setGap(theme.cardPad());
+        row.setCrossAxisAlign(CrossAxisAlign.CENTER);
+
+        SceneNode left = SceneNode.column();
+        left.setFlexGrow(1);
+        left.setGap(ConfigTheme.dp(2));
+        left.setMainAxisAlign(MainAxisAlign.CENTER);
+
+        SceneNode label = text(FieldRenderSupport.labelOf(spec), theme.textColor(), theme.fontLabel());
+        label.setMaxTextWidth(ConfigTheme.dp(520));
+        label.setMaxLines(1);
+        label.setEllipsis(true);
+        rt.bindComputed(() -> Integer.valueOf(themeSignal.get().textColor()), label::setTextColor);
+        left.appendChild(label);
+
+        if (spec.helper() != null && !spec.helper().isEmpty()) {
+            SceneNode helper = text(spec.helper(), theme.mutedColor(), theme.fontHelper());
+            helper.setMaxTextWidth(ConfigTheme.dp(520));
+            helper.setMaxLines(2);
+            helper.setEllipsis(true);
+            rt.bindComputed(() -> Integer.valueOf(themeSignal.get().mutedColor()), helper::setTextColor);
+            left.appendChild(helper);
+        }
+
+        SceneNode error = text("", theme.errorColor(), theme.fontError());
+        error.setMaxTextWidth(ConfigTheme.dp(520));
+        error.setMaxLines(2);
+        error.setEllipsis(true);
+        rt.bind(adapter.errorSignal(path), error::setText);
+        rt.bindComputed(() -> Integer.valueOf(themeSignal.get().errorColor()), error::setTextColor);
+        left.appendChild(error);
+
+        SceneNode right = SceneNode.column();
+        right.setPreferredWidth(ConfigTheme.dp(280));
+        right.setMainAxisAlign(MainAxisAlign.CENTER);
+        right.setCrossAxisAlign(CrossAxisAlign.END);
+        SceneNode control = controlFn.get();
+        if (control != null) {
+            if (controlHeight > 0) {
+                control.setPreferredHeight(controlHeight);
+            }
+            right.appendChild(control);
+        }
+
+        row.appendChild(left);
+        row.appendChild(right);
+        return row;
+    }
+
+    private static SceneNode text(String value, int color, int fontSize) {
+        SceneNode node = new SceneNode();
+        node.setText(value);
+        node.setFontSize(fontSize);
+        node.setTextColor(color);
+        node.setHitTestable(false);
+        return node;
     }
 }

@@ -104,6 +104,8 @@ public final class DraftSignalAdapter {
      */
     private final Map<String, Object> presentationSeeds;
     /** 当前修订号 */
+    /** Called after a field edit; the screen uses it to auto-apply. */
+    private Runnable onFieldEdited;
     private int revision;
 
     /**
@@ -543,6 +545,9 @@ public final class DraftSignalAdapter {
      * @param path  字段全路径
      * @param value 新的草稿值
      */
+    public void setOnFieldEdited(Runnable onFieldEdited) {
+        this.onFieldEdited = onFieldEdited;
+    }
     public void onFieldEdit(String path, Object value) {
         assertOwnerThread();
         Signal<Object> sig = draftSignals.get(path);
@@ -562,6 +567,9 @@ public final class DraftSignalAdapter {
             writeSubmitValidation(ValidationResult.ok());
         }
         bumpRevision();
+        if (onFieldEdited != null) {
+            onFieldEdited.run();
+        }
     }
 
     /**

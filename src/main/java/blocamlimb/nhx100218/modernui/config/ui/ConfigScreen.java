@@ -21,6 +21,7 @@ import blocamlimb.nhx100218.modernui.config.schema.ConfigSchema;
 import blocamlimb.nhx100218.modernui.config.schema.FieldSpec;
 import blocamlimb.nhx100218.modernui.config.schema.SectionSpec;
 import blocamlimb.nhx100218.modernui.config.ui.field.FieldRenderer;
+import blocamlimb.nhx100218.modernui.config.ui.field.FieldShellBinder;
 import blocamlimb.nhx100218.modernui.config.ui.field.FieldRendererRegistry;
 import blocamlimb.nhx100218.modernui.config.ui.theme.ConfigTheme;
 import blocamlimb.nhx100218.modernui.config.ui.theme.ConfigThemePreference;
@@ -168,6 +169,8 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private Consumer<Integer> setScroll;
     /** 滚轮平滑滚动的 keyed Motion。 */
     private final Object scrollMotionKey = new Object();
+    private final Object autosaveKey = new Object();
+    private boolean autosavePending;
     /** 输入 handler 只递增 intent；同帧 flush 再应用 Motion/节点，守 signal-first。 */
     private final Signal<Integer> scrollIntentRevision = Signal.create(Integer.valueOf(0));
     /** 同帧连续输入合并后的目标。 */
@@ -371,6 +374,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         this.registry = registry;
         this.schema = adapter.draft().schema();
         this.restorePolicy = restorePolicy;
+        adapter.setOnFieldEdited(this::scheduleAutosave);
         if (runtimeTheme != null) {
             SceneThemes.install(runtime, runtimeTheme);
         }
@@ -420,7 +424,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             pageRoot.appendChild(titleBar);
 
             // 操作条固定在页面底部，保存始终位于视觉终点且不随内容滚动。
-            this.actionBar = createActionBar();
 
 
             this.sections = schema.sections();
@@ -464,16 +467,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 pageRoot.appendChild(scrollContainer);
             }
 
-            // S4：save 反馈独立行，rt.show 懒挂载（saveFeedbackSignal 非 NONE 时显示，NONE 时隐藏不占高——未激活子树不参与布局/绘制）。
-            // 挂在 scrollContainer 之后（页壳 COLUMN 内）——反馈靠近底部，actionBar 已在顶部，反馈不挤占操作行视觉。
-            rt().show(pageRoot,
-                    Computed.create(() -> {
-                        SaveFeedback fb = adapter.saveFeedbackSignal().get();
-                        return Boolean.valueOf(fb != null && !fb.isNone());
-                    }),
-                    this::createSaveFeedbackBar);
-
-            pageRoot.appendChild(actionBar);
 
             // ===== BUG2 修复：per-section scroll state（section 切换不丢失滚动位置）=====
             // 每个 section 独立持有一个 Signal<Integer>，切换 section 时显示源切到对应 signal，
@@ -1162,37 +1155,45 @@ public class ConfigScreen extends AbstractSceneHostWidget {
      * @return section 面板节点
      */
     private SceneNode buildSectionPanel(SectionSpec section) {
-        SceneNode sectionNode = SceneNode.column();
-        sectionNode.setGap(ConfigTheme.FIELD_GAP);
-        sectionNode.setFillParentWidth(true);
-        SceneNode sectionTitle = text(section.title(),
-                Computed.create(() -> Integer.valueOf(formTheme.get().titleColor())),
-                ConfigTheme.FONT_SECTION);
-        sectionNode.appendChild(sectionTitle);
+        SceneNode card = SceneNode.column();
+        card.setFillParentWidth(true);
+        card.setGap(0);
+        bindGroupSurface(runtime, card);
         List<SceneNode> revealTargets = new ArrayList<SceneNode>();
-        revealTargets.add(sectionTitle);
-        for (FieldSpec field : section.fields()) {
-            FieldRenderer renderer = registry.resolve(field);
-            if (renderer != null) {
-                SceneNode card = renderer.render(runtime, field, adapter);
-                // Presentation shell 独占页面级位移；字段卡片本身不承担 reveal 状态。
-                SceneNode presentation = SceneNode.column();
-                presentation.setFillParentWidth(true);
-                presentation.setHitTestable(false);
-                presentation.appendChild(card);
-                sectionNode.appendChild(presentation);
-                revealTargets.add(presentation);
+        List<FieldSpec> fields = section.fields();
+        FieldShellBinder.setRowMode(true);
+        try {
+        for (int i = 0; i < fields.size(); i++) {
+            FieldRenderer renderer = registry.resolve(fields.get(i));
+            if (renderer == null) {
+                continue;
             }
+            SceneNode row = renderer.render(runtime, fields.get(i), adapter);
+            SceneNode presentation = SceneNode.column();
+            presentation.setFillParentWidth(true);
+            presentation.setHitTestable(false);
+            presentation.appendChild(row);
+            card.appendChild(presentation);
+            revealTargets.add(presentation);
+            if (i + 1 < fields.size()) {
+                SceneNode divider = new SceneNode();
+                divider.setPreferredHeight(1);
+                divider.setFillParentWidth(true);
+                divider.setMargin(0, ConfigTheme.dp(12), 0, ConfigTheme.dp(12));
+                divider.setBackgroundColor(0x2253433F);
+                card.appendChild(divider);
+            }
+        }
+        } finally {
+            FieldShellBinder.setRowMode(false);
         }
         runtime.__staggeredReveal(revealTargets,
                 SECTION_REVEAL_START_OFFSET_Y,
                 SECTION_REVEAL_MS,
                 SECTION_REVEAL_ITEM_DELAY_MS,
                 SECTION_REVEAL_MAX_DELAY_MS);
-        return sectionNode;
+        return card;
     }
-
-    /** 在 sectionOwner 下挂载指定 panel，确保动态切换仍归 ConfigScreen 生命周期。 */
     private SceneNode mountSectionPanel(int sectionIndex) {
         MountHandle[] next = new MountHandle[1];
         SectionSpec section = sections.get(sectionIndex);
@@ -1348,6 +1349,23 @@ public class ConfigScreen extends AbstractSceneHostWidget {
      * <p>冲突走 {@link DraftSignalAdapter#applySaveFailure}（读 conflictType，禁止英文匹配）；
      * requiresReload 时不注入字段 error/errorCount，保存保持禁用；不自动 reload/重试/覆盖。</p>
      */
+    private void scheduleAutosave() {
+        autosavePending = true;
+        runtime.__cancelMotion(autosaveKey);
+        runtime.__startMotion(autosaveKey, 140, progress -> { }, this::flushAutosave);
+    }
+
+    private void flushAutosave() {
+        if (!autosavePending) {
+            return;
+        }
+        autosavePending = false;
+        if (adapter.requiresReload() || adapter.draft().hasError()
+                || !adapter.draft().isDirtyAny()) {
+            return;
+        }
+        saveChanges();
+    }
     private void saveChanges() {
         DraftBuffer draft = adapter.draft();
         lastSaveOutcome = manager.save(draft);
@@ -1571,6 +1589,10 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     @Override
     public void dispose() {
         try {
+            if (autosavePending) {
+                runtime.__cancelMotion(autosaveKey);
+                flushAutosave();
+            }
             runtime.__cancelMotion(scrollMotionKey);
             try {
                 adapter.dispose();
