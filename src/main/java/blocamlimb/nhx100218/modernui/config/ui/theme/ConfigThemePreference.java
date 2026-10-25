@@ -11,8 +11,8 @@ import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneTheme;
  */
 public final class ConfigThemePreference {
 
-    private static final SceneTheme FLAT = SceneTheme.solidDark();
-    private static final SceneTheme GLASS = SceneTheme.liquidGlassDark();
+    private static final SceneTheme FLAT = ConfigTheme.modernDark();
+    private static final SceneTheme GLASS = ConfigTheme.modernGlass();
     private static final Signal<SceneTheme> THEME = Signal.create(FLAT);
 
     private ConfigThemePreference() {}

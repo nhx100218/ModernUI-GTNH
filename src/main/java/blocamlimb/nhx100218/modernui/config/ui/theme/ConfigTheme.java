@@ -1,10 +1,14 @@
 package blocamlimb.nhx100218.modernui.config.ui.theme;
 
 import blocamlimb.nhx100218.modernui.uilib.ui.reactive.ReadableSignal;
+import blocamlimb.nhx100218.modernui.uilib.ui.render.UiBackdrop;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormTheme;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormThemes;
+import blocamlimb.nhx100218.modernui.uilib.ui.render.UiGlassMaterial;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.paint.SceneChromeTokens;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.SceneRuntime;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneSurfaceStyle;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneTheme;
 
 /**
  * 配置页 UI 主题的「配置包内消费入口」：双路径，与 {@code FormTheme}/{@code FormThemes}
@@ -42,26 +46,26 @@ public final class ConfigTheme {
     public static final int BUTTON_WIDTH = 108;
 
     /** 全屏 Material 暗色遮罩（80% 不透明），世界画面可在其后连续透出。 */
-    public static final int ROOT_BG = 0xCC111318;
+    public static final int ROOT_BG = 0xCC1A110F;
     /** Material dark surface container。 */
-    public static final int VIEWPORT_BG = 0xFF1B1B1F;
+    public static final int VIEWPORT_BG = 0xFF1A110F;
     /** 导航与底部操作区的 tonal surface。 */
-    public static final int SURFACE_CONTAINER = 0xFF211F26;
+    public static final int SURFACE_CONTAINER = 0xFF231917;
     /** 字段与状态读数的高一级 tonal surface。 */
-    public static final int SURFACE_CONTAINER_HIGH = 0xFF2B2930;
+    public static final int SURFACE_CONTAINER_HIGH = 0xFF322825;
 
     /** 标题文本色 */
-    public static final int TITLE_COLOR = 0xFFE6E1E5;
+    public static final int TITLE_COLOR = 0xFFF1DFDA;
     /** 正文文本色 */
-    public static final int TEXT_COLOR = 0xFFE6E1E5;
+    public static final int TEXT_COLOR = 0xFFF1DFDA;
     /** 次要文本色（helper/副标题） */
-    public static final int MUTED_COLOR = 0xFFCAC4D0;
+    public static final int MUTED_COLOR = 0xFFD8C2BC;
     /** 错误文本色 */
     public static final int ERROR_COLOR = 0xFFFFB4AB;
     /** 正常态文本色 */
     public static final int OK_COLOR = 0xFFA8DAB5;
     /** 脏态文本色（primary） */
-    public static final int DIRTY_COLOR = 0xFFD0BCFF;
+    public static final int DIRTY_COLOR = 0xFFFFB5A1;
     /** 徽标底色 */
     public static final int READOUT_BG = SURFACE_CONTAINER_HIGH;
 
@@ -159,6 +163,186 @@ public final class ConfigTheme {
     }
 
     /** 纯常量类，禁止实例化 */
+    // ModernUI default Material 3 dark palette (SystemTheme subclass 0).
+    private static final int SURFACE = 0xFF1A110F;
+    private static final int SURFACE_LOWEST = 0xFF140C0A;
+    private static final int SURFACE_LOW = 0xFF231917;
+    private static final int SURFACE_CONTAINER_TONE = 0xFF271D1B;
+    private static final int SURFACE_HIGH = 0xFF322825;
+    private static final int SURFACE_HIGHEST = 0xFF3D3230;
+    private static final int ON_SURFACE = 0xFFF1DFDA;
+    private static final int ON_SURFACE_VARIANT = 0xFFD8C2BC;
+    private static final int OUTLINE = 0xFFA08C87;
+    private static final int OUTLINE_VARIANT = 0xFF53433F;
+    private static final int PRIMARY = 0xFFFFB5A1;
+    private static final int ON_PRIMARY = 0xFF561F10;
+    private static final int PRIMARY_CONTAINER = 0xFF723523;
+    private static final int ON_PRIMARY_CONTAINER = 0xFFFFDBD1;
+    private static final int PRIMARY_INVERSE = 0xFF8F4B39;
+    private static final int SECONDARY = 0xFFE7BDB2;
+    private static final int SECONDARY_CONTAINER = 0xFF5D4038;
+    private static final int TERTIARY = 0xFFD9C58D;
+    private static final int ERROR = 0xFFFFB4AB;
+    private static final int ON_ERROR = 0xFF690005;
+    private static final int ERROR_CONTAINER = 0xFF93000A;
+
+    /** Solid ModernUI/Material 3 dark theme for the flat config page. */
+    public static SceneTheme modernDark() {
+        return modernTheme(false);
+    }
+
+    /** Translucent ModernUI/Material 3 dark theme for the glass config page. */
+    public static SceneTheme modernGlass() {
+        return modernTheme(true);
+    }
+
+    private static SceneTheme modernTheme(boolean glass) {
+        SceneTheme.Builder builder = SceneTheme.builder()
+                .foreground(ON_SURFACE)
+                .mutedForeground(ON_SURFACE_VARIANT)
+                .disabledForeground(OUTLINE)
+                .onAccentForeground(ON_PRIMARY)
+                .accent(PRIMARY)
+                .accentHover(PRIMARY_CONTAINER)
+                .accentPressed(PRIMARY_INVERSE)
+                .selectionBackground(PRIMARY_CONTAINER)
+                .selectionForeground(ON_PRIMARY_CONTAINER)
+                .borderDefault(OUTLINE)
+                .borderFocus(PRIMARY)
+                .borderDisabled(OUTLINE_VARIANT)
+                .danger(ERROR)
+                .errorText(ERROR)
+                .warningText(TERTIARY)
+                .warningSubtle(0x22D9C58D);
+        for (SceneTheme.Role role : SceneTheme.Role.values()) {
+            builder.surface(role, glass ? glassSurface(role) : solidSurface(role));
+        }
+        return builder.build();
+    }
+
+    private static SceneSurfaceStyle solidSurface(SceneTheme.Role role) {
+        switch (role) {
+            case PANEL:
+                return solid(SURFACE, SURFACE_LOW, SURFACE_LOWEST, OUTLINE_VARIANT, 12);
+            case TOOLBAR:
+                return solid(SURFACE_LOW, SURFACE_CONTAINER_TONE, SURFACE, OUTLINE_VARIANT, 12);
+            case INPUT:
+                return solid(SURFACE_LOWEST, SURFACE_LOW, SURFACE, OUTLINE, 8);
+            case GROUP:
+                return solid(SURFACE_CONTAINER_TONE, SURFACE_HIGH, SURFACE_LOW, OUTLINE_VARIANT, 12);
+            case OVERLAY:
+                return solid(SURFACE_HIGH, SURFACE_HIGHEST, SURFACE_CONTAINER_TONE, OUTLINE, 16);
+            case INDICATOR:
+                return indicatorSolid();
+            case BUTTON_STANDARD:
+                return solid(SURFACE_HIGH, SURFACE_HIGHEST, SURFACE_CONTAINER_TONE, OUTLINE_VARIANT, 20);
+            case BUTTON_PRIMARY:
+                return solid(PRIMARY, PRIMARY_CONTAINER, PRIMARY_INVERSE, PRIMARY, 20);
+            case BUTTON_DANGER:
+                return solid(ERROR, 0xFFFFDAD6, ERROR_CONTAINER, ERROR, 20);
+            default:
+                return solid(SURFACE_CONTAINER_TONE, SURFACE_HIGH, SURFACE_LOW, OUTLINE_VARIANT, 12);
+        }
+    }
+
+    private static SceneSurfaceStyle indicatorSolid() {
+        return SceneSurfaceStyle.builder()
+                .backdrop(null)
+                .cornerRadius(SceneTheme.PILL_RADIUS)
+                .borderWidth(0)
+                .focusEdge(PRIMARY)
+                .idle(new SceneSurfaceStyle.StateStyle(0x005D4038, 0, 0.0F, 0.0F))
+                .hovered(new SceneSurfaceStyle.StateStyle(0x335D4038, 0, 0.0F, 0.0F))
+                .pressed(new SceneSurfaceStyle.StateStyle(0x225D4038, 0, 0.0F, 0.0F))
+                .disabled(new SceneSurfaceStyle.StateStyle(0x005D4038, 0, 0.0F, 0.0F))
+                .build();
+    }
+    private static SceneSurfaceStyle glassSurface(SceneTheme.Role role) {
+        if (role == SceneTheme.Role.INDICATOR) {
+            return SceneSurfaceStyle.builder()
+                    .backdrop(UiBackdrop.liquidGlass(UiGlassMaterial.DARK_THIN, 8, 0.6F))
+                    .cornerRadius(SceneTheme.PILL_RADIUS)
+                    .borderWidth(0)
+                    .focusEdge(PRIMARY)
+                    .idle(new SceneSurfaceStyle.StateStyle(0x005D4038, 0x00E7BDB2, 0.5F, 0.85F))
+                    .hovered(new SceneSurfaceStyle.StateStyle(0x335D4038, 0x66E7BDB2, 1.0F, 1.0F))
+                    .pressed(new SceneSurfaceStyle.StateStyle(0x225D4038, 0x44E7BDB2, 0.0F, 0.60F))
+                    .disabled(new SceneSurfaceStyle.StateStyle(0x005D4038, 0x00E7BDB2, 0.35F, 0.65F))
+                    .build();
+        }
+        int radius = role == SceneTheme.Role.INDICATOR ? SceneTheme.PILL_RADIUS
+                : role == SceneTheme.Role.OVERLAY ? 16
+                : role == SceneTheme.Role.BUTTON_STANDARD || role == SceneTheme.Role.BUTTON_PRIMARY
+                        || role == SceneTheme.Role.BUTTON_DANGER ? 20 : 12;
+        int idle;
+        int edge;
+        switch (role) {
+            case PANEL:
+                idle = SURFACE;
+                edge = OUTLINE_VARIANT;
+                break;
+            case TOOLBAR:
+                idle = SURFACE_LOW;
+                edge = OUTLINE_VARIANT;
+                break;
+            case INPUT:
+                idle = SURFACE_LOWEST;
+                edge = OUTLINE;
+                break;
+            case GROUP:
+                idle = SURFACE_CONTAINER_TONE;
+                edge = OUTLINE_VARIANT;
+                break;
+            case OVERLAY:
+                idle = SURFACE_HIGH;
+                edge = OUTLINE;
+                break;
+            case INDICATOR:
+                idle = SECONDARY_CONTAINER;
+                edge = SECONDARY;
+                break;
+            case BUTTON_PRIMARY:
+                idle = PRIMARY;
+                edge = PRIMARY;
+                break;
+            case BUTTON_DANGER:
+                idle = ERROR;
+                edge = ERROR;
+                break;
+            case BUTTON_STANDARD:
+            default:
+                idle = SURFACE_HIGH;
+                edge = OUTLINE_VARIANT;
+                break;
+        }
+        return SceneSurfaceStyle.builder()
+                .backdrop(UiBackdrop.liquidGlass(UiGlassMaterial.DARK_THIN, 8, 0.6F))
+                .cornerRadius(radius)
+                .borderWidth(1)
+                .focusEdge(PRIMARY)
+                .idle(new SceneSurfaceStyle.StateStyle(withAlpha(idle, 0xCC), withAlpha(edge, 0x66), 0.5F, 0.85F))
+                .hovered(new SceneSurfaceStyle.StateStyle(withAlpha(idle, 0xEE), withAlpha(edge, 0x99), 1.0F, 1.0F))
+                .pressed(new SceneSurfaceStyle.StateStyle(withAlpha(idle, 0xAA), withAlpha(edge, 0x55), 0.0F, 0.60F))
+                .disabled(new SceneSurfaceStyle.StateStyle(withAlpha(idle, 0x66), withAlpha(edge, 0x33), 0.35F, 0.65F))
+                .build();
+    }
+
+    private static SceneSurfaceStyle solid(int idle, int hover, int pressed, int edge, int radius) {
+        return SceneSurfaceStyle.builder()
+                .backdrop(null)
+                .cornerRadius(radius)
+                .borderWidth(1)
+                .focusEdge(PRIMARY)
+                .idle(new SceneSurfaceStyle.StateStyle(idle, edge, 0.0F, 0.0F))
+                .hovered(new SceneSurfaceStyle.StateStyle(hover, edge, 0.0F, 0.0F))
+                .pressed(new SceneSurfaceStyle.StateStyle(pressed, edge, 0.0F, 0.0F))
+                .disabled(new SceneSurfaceStyle.StateStyle(SURFACE_LOWEST, OUTLINE_VARIANT, 0.0F, 0.0F))
+                .build();
+    }
+
+    private static int withAlpha(int argb, int alpha) {
+        return ((Math.max(0, Math.min(0xFF, alpha)) << 24) | (argb & 0x00FFFFFF));
+    }
     private ConfigTheme() {
     }
 }
