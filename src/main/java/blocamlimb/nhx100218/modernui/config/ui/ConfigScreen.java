@@ -1,10 +1,18 @@
 package blocamlimb.nhx100218.modernui.config.ui;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+
+import javax.imageio.ImageIO;
 
 import blocamlimb.nhx100218.modernui.config.runtime.ConfigManager;
 import blocamlimb.nhx100218.modernui.config.runtime.DraftBuffer;
@@ -31,9 +39,10 @@ import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.MountHandle;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.SceneRuntime;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneButton;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneButtonVariant;
-import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneNavList;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneScrollbar;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneSegmented;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.image.SceneImageSource;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneCursor;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneEventType;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.PlatformInputSource;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.CrossAxisAlign;
@@ -120,12 +129,14 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private static final int SCROLL_MOTION_MS = ConfigTheme.MOTION_STANDARD_MS;
     /** 玻璃底座恒定启用（页壳/反馈条无禁用态），供表面绑定器判定状态档。 */
     private static final ReadableSignal<Boolean> ALWAYS_ENABLED = () -> Boolean.TRUE;
+
+    private static SceneImageSource[] sNavIcons;
     /** MD3 top-level pages: general, interface, advanced. */
     private static final String[] GROUP_TITLES = {
             "\u5e38\u89c4", "\u754c\u9762", "\u9ad8\u7ea7"
     };
     private static final String[][] GROUP_SECTION_IDS = {
-            {"tooltip", "waila", "chat"},
+            {"general", "tooltip", "waila", "chat"},
             {"smoothscroll", "screentransition", "zoom", "ui"},
             {"textselection", "emoji", "performance"}
     };
@@ -409,8 +420,10 @@ public class ConfigScreen extends AbstractSceneHostWidget {
 
             this.sections = schema.sections();
             this.groups = createGroups(this.sections);
-            this.activeSectionSignal = Signal.create(Integer.valueOf(0));
-            this.displayedSectionIndex = 0;
+            int initialSection = groups.isEmpty() ? 0
+                    : groups.get(0).sectionIndices.get(0).intValue();
+            this.activeSectionSignal = Signal.create(Integer.valueOf(initialSection));
+            this.displayedSectionIndex = initialSection;
             this.sectionOwner = uiOwner.createChild();
 
             if (sections.size() > 1) {
@@ -915,54 +928,117 @@ public class ConfigScreen extends AbstractSceneHostWidget {
      * @return navPane 根节点（已 mount 到 parent）
      */
     private SceneNode createSidebarNav(SceneNode parent, List<GroupSpec> groups) {
-        List<String> titles = new ArrayList<String>();
-        for (GroupSpec group : groups) {
-            titles.add(group.title);
+        SceneNode nav = SceneNode.column();
+        nav.setPreferredWidth(ConfigTheme.NAV_PANE_WIDTH);
+        nav.setFillParentHeight(true);
+        nav.setPadding(8);
+        nav.setGap(6);
+        SceneInteractionState navInteraction = runtime.interactionState(nav);
+        navInteraction.hovered();
+        navInteraction.pressed();
+        navInteraction.focused();
+        SceneSurfaceBinder.bind(runtime, nav,
+                SceneThemes.surface(runtime, SceneTheme.Role.TOOLBAR),
+                ALWAYS_ENABLED, navInteraction);
+
+        SceneImageSource[] icons = navIcons();
+        ReadableSignal<Integer> foreground = SceneThemes.foreground(runtime);
+        for (int i = 0; i < groups.size(); i++) {
+            final int groupIndex = i;
+            GroupSpec group = groups.get(i);
+            SceneNode item = SceneNode.row();
+            item.setFillParentWidth(true);
+            item.setPreferredHeight(48);
+            item.setPadding(10, 6, 10, 6);
+            item.setGap(12);
+            item.setCrossAxisAlign(CrossAxisAlign.CENTER);
+            item.setCornerRadius(24);
+            item.setCursor(SceneCursor.POINTER);
+
+            ReadableSignal<Boolean> selected = Computed.create(
+                    () -> Boolean.valueOf(activeGroupIndex() == groupIndex));
+            SceneInteractionState interaction = runtime.interactionState(item);
+            SceneSurfaceBinder.bind(runtime, item,
+                    SceneThemes.selectableSurface(runtime, SceneTheme.Role.INDICATOR, selected),
+                    ALWAYS_ENABLED, interaction);
+
+            SceneNode icon = new SceneNode();
+            icon.setPreferredWidth(24);
+            icon.setPreferredHeight(24);
+            icon.setHitTestable(false);
+            if (icons != null && groupIndex < icons.length) {
+                icon.setImageSource(icons[groupIndex]);
+            }
+            runtime.bind(Computed.create(
+                            () -> Float.valueOf(selected.get() ? 1.0f : 0.72f)),
+                    icon::setOpacity);
+            item.appendChild(icon);
+
+            item.appendChild(text(group.title, foreground, ConfigTheme.FONT_LABEL));
+            runtime.focusable(item, ALWAYS_ENABLED);
+            runtime.on(item, SceneEventType.CLICK, (event, context) -> {
+                if (!group.sectionIndices.isEmpty()) {
+                    activeSectionSignal.set(group.sectionIndices.get(0));
+                }
+            });
+            nav.appendChild(item);
         }
-        ReadableSignal<Integer> selectedGroup = Computed.create(
-                () -> Integer.valueOf(activeGroupIndex()));
-        SceneNavList.Props props = new SceneNavList.Props(
-                selectedGroup,
-                titles,
-                ALWAYS_ENABLED,
-                idx -> {
-                    int groupIndex = idx == null ? 0 : idx.intValue();
-                    if (groupIndex >= 0 && groupIndex < groups.size()) {
-                        GroupSpec group = groups.get(groupIndex);
-                        if (!group.sectionIndices.isEmpty()) {
-                            activeSectionSignal.set(group.sectionIndices.get(0));
-                        }
-                    }
-                },
-                null);
-        MountHandle handle = runtime.mount(parent, SceneNavList.create(runtime, props));
-        SceneNode nav = handle.getRoot();
-        if (nav != null) {
-            nav.setPreferredWidth(ConfigTheme.NAV_PANE_WIDTH);
-            nav.setFillParentHeight(true);
-            nav.setPadding(8);
-        }
+        parent.appendChild(nav);
         return nav;
     }
 
-    /**
-     * 创建视口内容容器。
-     *
-     * @return 内容节点
-     */
+    private static SceneImageSource[] navIcons() {
+        if (sNavIcons != null) {
+            return sNavIcons;
+        }
+        try (InputStream in = ConfigScreen.class.getResourceAsStream(
+                "/assets/modernui/textures/gui/new_icon_white.png")) {
+            if (in == null) {
+                return null;
+            }
+            BufferedImage sheet = ImageIO.read(in);
+            if (sheet == null) {
+                return null;
+            }
+            Class<?> host = Class.forName(
+                    "blocamlimb.nhx100218.modernui.uilib.ui.image.HostImageSource");
+            Method factory = host.getMethod("bufferedImage", BufferedImage.class, String.class);
+            int[] columns = {0, 5, 6};
+            SceneImageSource[] icons = new SceneImageSource[columns.length];
+            for (int i = 0; i < columns.length; i++) {
+                BufferedImage crop = sheet.getSubimage(columns[i] * 72, 0, 72, 72);
+                icons[i] = (SceneImageSource) factory.invoke(null, crop,
+                        "modernui:gui/nav_icon_" + i);
+            }
+            sNavIcons = icons;
+        } catch (IOException | ReflectiveOperationException | LinkageError ignored) {
+        }
+        return sNavIcons;
+    }
     private List<GroupSpec> createGroups(List<SectionSpec> sections) {
         List<GroupSpec> result = new ArrayList<GroupSpec>();
         for (String title : GROUP_TITLES) {
             result.add(new GroupSpec(title));
         }
         int fallback = GROUP_TITLES.length - 1;
+        Map<String, Integer> byName = new HashMap<String, Integer>();
         for (int i = 0; i < sections.size(); i++) {
-            String name = sections.get(i).name();
-            int group = groupForSection(name);
-            if (group < 0 || group >= result.size()) {
-                group = fallback;
+            byName.put(sections.get(i).name(), Integer.valueOf(i));
+        }
+        boolean[] assigned = new boolean[sections.size()];
+        for (int i = 0; i < GROUP_SECTION_IDS.length; i++) {
+            for (String id : GROUP_SECTION_IDS[i]) {
+                Integer index = byName.get(id);
+                if (index != null && !assigned[index.intValue()]) {
+                    result.get(i).sectionIndices.add(index);
+                    assigned[index.intValue()] = true;
+                }
             }
-            result.get(group).sectionIndices.add(Integer.valueOf(i));
+        }
+        for (int i = 0; i < sections.size(); i++) {
+            if (!assigned[i]) {
+                result.get(fallback).sectionIndices.add(Integer.valueOf(i));
+            }
         }
         for (int i = result.size() - 1; i >= 0; i--) {
             if (result.get(i).sectionIndices.isEmpty()) {
@@ -1059,7 +1135,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     /** 初始挂载单槽 section panel；后续切换沿用同一个 sectionOwner。 */
     private void renderFields(List<SectionSpec> sections) {
         if (!sections.isEmpty()) {
-            mountSectionPanel(0);
+            mountSectionPanel(displayedSectionIndex);
         }
     }
 
