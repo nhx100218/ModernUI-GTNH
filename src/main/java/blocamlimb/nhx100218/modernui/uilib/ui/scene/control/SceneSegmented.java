@@ -157,6 +157,7 @@ public final class SceneSegmented {
             int segmentPadding = rt.dp(SEGMENT_PADDING);
             int segmentGap = rt.dp(SEG_GAP);
             int labelFontSize = rt.dp(SEG_LABEL_FONT_SIZE);
+            int maxLabelWidth = rt.dp(120);
             root.setGap(segmentGap);
             // 字号唯一真值是 root（与 Button/TextInput/TextArea 同口径）。
             // Props.fontSize() 写 root 的层 2 声明（与句柄入口同一槽，后写者胜出）；
@@ -222,8 +223,12 @@ public final class SceneSegmented {
                 // 段宽取 options（构建期常量）测量，与标签文本时序解耦，首帧即正确。
                 final String title = props.options().get(handle.index());
                 segment.setWidthSizing(SceneNode.WidthSizing.SHRINK);
+                handle.label().setMaxTextWidth(maxLabelWidth);
+                handle.label().setMaxLines(1);
+                handle.label().setEllipsis(true);
                 segment.setFontSizeMetric((node, fontSizePx) -> node.setPreferredWidth(
-                        rt.measureTextWidth(title, fontSizePx) + 2 * segmentPadding));
+                        Math.min(rt.measureTextWidth(title, fontSizePx), maxLabelWidth)
+                                + 2 * segmentPadding));
                 segment.appendChild(handle.label());
 
                 SceneInteractionState interaction = handle.interaction();
