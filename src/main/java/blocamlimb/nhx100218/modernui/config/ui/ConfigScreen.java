@@ -136,9 +136,9 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             "\u5e38\u89c4", "\u754c\u9762", "\u9ad8\u7ea7"
     };
     private static final String[][] GROUP_SECTION_IDS = {
-            {"general", "tooltip", "waila", "chat"},
+            {"tooltip", "waila", "chat"},
             {"smoothscroll", "screentransition", "zoom", "ui"},
-            {"textselection", "emoji", "performance"}
+            {"general", "textselection", "emoji", "performance"}
     };
 
     /** 配置管理器，保存事务入口 */
