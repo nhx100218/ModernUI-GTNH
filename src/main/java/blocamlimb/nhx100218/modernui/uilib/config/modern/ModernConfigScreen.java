@@ -1,7 +1,10 @@
 package blocamlimb.nhx100218.modernui.uilib.config.modern;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
+
+import blocamlimb.nhx100218.modernui.config.ui.ConfigScreen;
 
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.UiSurface;
 import blocamlimb.nhx100218.modernui.uilib.ui.screen.McScreenBridge;
@@ -29,12 +32,15 @@ public class ModernConfigScreen extends McScreenBridge {
      */
     public ModernConfigScreen(GuiScreen parentScreen, UiSurface surface) {
         super(parentScreen, surface);
+        if (surface instanceof ConfigScreen) {
+            ((ConfigScreen) surface).setWorldBackdrop(hasWorldContext());
+        }
     }
 
     @Override
     public void drawDefaultBackground() {
         if (!hasWorldContext()) {
-            super.drawDefaultBackground();
+            Gui.drawRect(0, 0, width, height, 0xFF000000);
         }
     }
 

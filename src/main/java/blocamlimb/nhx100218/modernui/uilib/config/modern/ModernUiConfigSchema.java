@@ -32,8 +32,6 @@ public final class ModernUiConfigSchema {
                         .label(tr.apply("modernui.config.general.netTransport")).helper(tr.apply("modernui.config.general.netTransport.tooltip")).build()
                     .choice("pickerDensity").options("auto", "compact", "standard", "roomy").defaultValue("auto")
                         .label(tr.apply("modernui.config.general.pickerDensity")).helper(tr.apply("modernui.config.general.pickerDensity.tooltip")).build()
-                    .choice("configPageTheme").options("flat", "glass").defaultValue("flat")
-                        .label(tr.apply("modernui.config.general.configPageTheme")).helper(tr.apply("modernui.config.general.configPageTheme.tooltip")).build()
                     .choice("backdropQuality").options("full", "eco", "solid").defaultValue("full")
                         .label(tr.apply("modernui.config.general.backdropQuality")).helper(tr.apply("modernui.config.general.backdropQuality.tooltip")).build()
                 .endSection()

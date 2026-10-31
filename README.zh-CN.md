@@ -34,89 +34,84 @@
 
 </p>
 
-面向 **GTNH**（Minecraft 1.7.10）的客户端界面美化与字体渲染mod。作为Modern UI mod在1.7.10的部分移植。
+面向 GTNH（Minecraft 1.7.10）的客户端界面与字体 mod。项目移植了 Modern UI 的部分功能，并加入 GTNH 适配和一些额外选项。
 
-## 主要特性
+## 改动内容
 
-- **界面与动效优化**：参考Zoomfiy和SommthGUI mod制作。
-- **ToolTip**：还原原版Modern UI。
-- **现代字体渲染**：更加现代化的字体渲染引擎，参考自[Qz-UILib](https://github.com/QuanhuZeYu/Qz-UILib)制作。
-- **内置字体**：随mod打包 Inter Frozen 与思源黑体，为从高版本下来的玩家提供适应。
-- **配置界面还原**：我正在尝试制作原版的MD3配置界面，请期待。
+### 提示框
 
-## 功能
+圆角提示框支持调整圆角半径、边框宽度、四角渐变填充和边框颜色，使用 SDF 渲染。边框颜色可跟随物品稀有度或名称颜色，也可以随时间循环。可与 NEI、ModularUI2、Tinkers' Construct、Waila、Better Questing 和 Chromatic Tooltips 配合。
 
-### 提示框（Tooltip）
-- 圆角、渐变提示框，可配置圆角半径、边框宽度和四角渐变填充 / 边框颜色，SDF渲染完全使用。
+### 界面与动画
 
-*自适应边框颜色（跟随物品稀有度 / 名称颜色），可选边框颜色循环动画。*
-- 适配 **NEI**、**ModularUI2**、**匠魂**、**Waila**、**Better Questing** 和 **Chromatic Tooltips**。
-
-
-### 界面与动效
-- 界面打开 / 关闭过渡的非线性动画。
-- 按C键住缩放。
-- 原版滚动列表的平滑滚动。
-- 自定义文本选择高亮（*可惜有点小小的偏移*）。
-- 文本框撤销 / 重做的功能。
-- 单人游戏中打开界面时暂停世界（*其实我不知道这玩意有啥用*）。
+- 配置界面采用 Material 3 布局，包含纯色面板、分区导航、页面切换动画和自动保存。
+- 界面打开和关闭使用非线性动画。
+- 按住 C 缩放。
+- 原版滚动列表支持平滑滚动。
+- 文本选择框使用 ModernUI 配色，位置仍可能略有偏移。
+- 文本框支持撤销和重做。
+- 界面设置里可以开启容器暂停，默认关闭。
 
 ### 聊天
-- 聊天框淡入动画。
-- 聊天消息显示发送者皮肤的头像。
-- Emoji 短代码转换（`:name:` 转为 emoji，需要系统 emoji 字体）。
+
+- 聊天栏打开时有淡入动画。
+- 聊天消息旁显示玩家皮肤头像。
+- 系统安装了 emoji 字体时，`:name:` 这类短代码会转换为 emoji。
 
 ### 字体渲染
-- 用自现代化字形管线替换原版字体渲染。
-- 字形生成分辨率与游戏字符大小可调，别调太高卡死你。
+
+- 使用现代字形管线替换原版字体渲染，支持现代字体文件。
+- 内置 Inter Frozen 和思源黑体，方便从高版本 Minecraft 转过来的玩家。
+- 字形生成分辨率和游戏字符大小可以调整。数值太高可能导致游戏卡死。
 
 ### 性能
-- 窗口失焦时自动降低帧率与音量，不过与GTNH的不少mod重合了。
 
-## 环境要求
+Minecraft 窗口失去焦点时，mod 会降低帧率和音量。部分 GTNH mod 也有类似功能，效果可能叠加。
+
+## 运行要求
 
 | 类型 | 版本 |
 |------|------|
 | Minecraft | 1.7.10（GTNH） |
 | 运行侧 | 客户端 |
 
-
 ## 安装
 
 1. 从 [Releases](https://github.com/nhx100218/ModernUI-GTNH/releases) 下载最新的 `modernui-gtnh-*.jar`。
 2. 放入 GTNH 整合包的 `mods/` 目录。
-3. 启动游戏。首次启动会自动释放内置字体，略有卡顿。
+3. 启动游戏。首次启动会释放内置字体，可能出现短暂卡顿。
 
 ## 配置
 
-- 配置文件：`config/modernui.yaml`。
-- 通过mod列表的 **Config** 按钮或 **Ctrl+K** 打开配置页。
-- 配置页同时包含界面增强选项与字体渲染选项 **（与ModernUI暂时不同，需要注意）**。
+- 配置文件位于 `config/modernui.yaml`。
+- 通过 mod 列表的 **Config** 按钮或 **Ctrl+K** 打开配置页。
+- 修改会自动保存。配置页同时包含界面增强和字体渲染选项。
+- 页面布局与上游 ModernUI 并非完全一致。
 
 ## 从源码构建
 
-需要 JDK 21 或更高版本。推荐 JDK 25+。
+需要 JDK 21 或更高版本，推荐 JDK 25+。
 
 ```bash
 ./gradlew build
 ```
 
-
 ## 作者
 
 - 原作者：BloCamLimb
 - GTNH 移植与合并：nhx100218
-- Qz-UILib作为整体参考：QuanhuZeYu
+- 整体参考：QuanhuZeYu 的 Qz-UILib
 
 ## 致谢
 
-感谢 BloCamLimb 的 ModernUI 原始项目，以及 GTNH mod开发工具链。
-感谢 QuanhuZeYu 的 Qz-UILib，作为项目的实现基本。
+感谢 BloCamLimb 的 ModernUI 原始项目，以及 GTNH mod 工具链。
+
+感谢 QuanhuZeYu 的 Qz-UILib，它为本项目的实现提供了基础。
 
 ## 许可证
 
-本项目基于 [LGPL-3.0](LICENSE) 开源，再次fork需要接着开源。
+本项目基于 [LGPL-3.0](LICENSE) 开源。Fork 也需要保持开源。
 
-## CI 产物
+## CI
 
-GitHub Action 会构建mod并发布唯一的主mod jar，防止有些笨蛋下错。
+GitHub Actions 会构建 mod，并且只发布主 mod jar，避免下载错文件。

@@ -3,7 +3,6 @@ package blocamlimb.nhx100218.modernui.uilib.config.modern;
 import java.util.List;
 
 import blocamlimb.nhx100218.modernui.config.runtime.Authority;
-import blocamlimb.nhx100218.modernui.config.ui.theme.ConfigThemePreference;
 import blocamlimb.nhx100218.modernui.config.schema.FieldConstraints;
 import blocamlimb.nhx100218.modernui.config.schema.FieldSpec;
 import blocamlimb.nhx100218.modernui.uilib.Config;
@@ -19,7 +18,6 @@ import blocamlimb.nhx100218.modernui.uilib.util.UiNumbers;
  * 并把非静态字段形态的进程级偏好回灌进各自信号载体：
  * {@code general.pickerDensity} → {@link PickerDensityPreferences}、
  * {@code general.backdropQuality} → {@link BackdropQualityService}、
- * {@code general.configPageTheme} → {@link ConfigThemePreference}、
  *
  * <p>解决阶段 C P0 缺口：新栈 {@code ConfigManager} 保存后值只落 Authority Map + YAML，
  * 从不写 {@code FontConfig.xxx} / {@code Config.xxx} 静态字段；而运行时读取者
@@ -100,7 +98,6 @@ public final class ConfigValueBridge {
 
         // characterRuleSet 是 private，Bridge 喂完 characterFontRules 后委托 FontConfig 刷新派生态
         FontConfig.refreshDerivedRuleSet();
-        MyMod.LOG.debug("Bridge 回灌完成: Config 4 + FontConfig 20 字段 + 进程级偏好信号（pickerDensity / backdropQuality / configPageTheme）");
     }
 
     /**
@@ -118,7 +115,6 @@ public final class ConfigValueBridge {
         ProcessUiEnvironment.publishUiDebug(Config.uiDebug);
         Config.fontRuntimeDebug = authority.getBool("general.fontRuntimeDebug");
         Config.netTransport = authority.getString("general.netTransport");
-        ConfigThemePreference.applyConfigured(authority.getString("general.configPageTheme"));
         // 密度偏好不是静态字段而是进程级信号（P5 §1.4「配置 → 信号 → 面板」）：面板经依赖追踪消费，
         // 保存 / 磁盘热更 / 配置页 initial apply 三条既有通道都经本方法回灌，无需重开面板。
         // 值非法（手改配置/缺键）时由 PickerDensityPreferences 回落 auto（= 现状档）并留 WARN。

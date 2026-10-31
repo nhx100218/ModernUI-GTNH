@@ -4,9 +4,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,21 +23,18 @@ import blocamlimb.nhx100218.modernui.config.ui.field.FieldShellBinder;
 import blocamlimb.nhx100218.modernui.config.ui.field.FieldRendererRegistry;
 import blocamlimb.nhx100218.modernui.config.ui.theme.ConfigTheme;
 import blocamlimb.nhx100218.modernui.config.ui.theme.ConfigThemePreference;
-import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormActionBar;
+import blocamlimb.nhx100218.modernui.uilib.MyMod;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormPageShell;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormTheme;
 import blocamlimb.nhx100218.modernui.uilib.ui.env.UiEnvironment;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.host.AbstractSceneHostWidget;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.host.SceneHostAssembly;
 import blocamlimb.nhx100218.modernui.uilib.ui.reactive.Computed;
-import blocamlimb.nhx100218.modernui.uilib.ui.reactive.Effect;
 import blocamlimb.nhx100218.modernui.uilib.ui.reactive.Owner;
 import blocamlimb.nhx100218.modernui.uilib.ui.reactive.ReadableSignal;
 import blocamlimb.nhx100218.modernui.uilib.ui.reactive.Signal;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.MountHandle;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.SceneRuntime;
-import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneButton;
-import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneButtonVariant;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneScrollbar;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.image.SceneImageSource;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneCursor;
@@ -59,73 +54,15 @@ import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneTheme;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneThemes;
 
 /**
- * 配置页 UI 骨架，extends {@link AbstractSceneHostWidget}。
+ * Config screen shell: nav rail, top tabs, auto-saving field rows and page-flip transitions.
  *
- * <p>Material settings page 结构；section 使用专用 Owner 单槽，并在完整布局发布后执行
- * 标题/字段 presentation shell 的满 opacity 级联进入：</p>
- * <pre>
- * mask (root: COLUMN, fillParent, translucent bg=ROOT_BG——专用世界遮罩，只负责遮罩)
- *   └ pageRoot (FormPageShell PANEL 玻璃页壳: COLUMN, centered, fillParentHeight)
- *       ├ titleBar        schema.title() + modId（主题语义色）
- *       ├ statusSummary   dirty/error 状态（主题语义色徽标）
- *       ├ bodyRow         多 section 时固定左侧 navigation + PANEL 玻璃 viewport
- *       │   ├ navPane     SceneNavList（自身已装 TOOLBAR 底座）
- *       │   └ scrollContainer
- *       │       ├ viewport → content → active section Setting Rows
- *       │       └ scrollbarColumn
- *       ├ saveFeedbackBar (按状态懒挂载，GROUP 玻璃底座)
- *       └ actionBar       FormActionBar 默认路径（TOOLBAR 玻璃底座），底部固定
- * </pre>
- *
- * <h3>G15/Shell 液态玻璃迁移要点</h3>
- * <ul>
- *   <li>页壳/操作条走 theme-aware 无 {@code FormTheme} 参重载：表面（染色/边框/圆角/
- *       浮雕/滤镜）由 {@link SceneSurfaceBinder} 独占、按来源主题 PANEL/TOOLBAR 配方逐项绑定，
- *       主题切换只重派生、不重建节点、不丢草稿/分类/滚动。</li>
- *   <li>语义色经 {@link ConfigTheme#asFormTheme(SceneRuntime)} 默认路径信号派生
- *       （title/muted/text/error/dirty），不用 {@code .get()} 快照喂显式 build。</li>
- *   <li>{@code ROOT_BG} 专用世界遮罩与玻璃分层：遮罩是独立外层节点、静态专用语义，
- *       不装玻璃配方；绘制顺序上先于（位于）玻璃表面，不遮挡玻璃采样。</li>
- *   <li>状态徽标按契约 §7.3「明确不迁移」保留显式底色/几何，仅状态描边色随主题语义色。</li>
- * </ul>
- *
- * <h3>项2/3 布局语义</h3>
- * <ul>
- *   <li>navPane 固定不参与滚动；0/1 section 时省略。</li>
- *   <li>actionBar 在滚动容器外并固定于页面底部，save/cancel/restore 始终可见。</li>
- *   <li>标题、状态、body 与 action bar 都居中并受页面最大宽度约束。</li>
- * </ul>
- *
- * <h3>关键守不变量</h3>
- * <ul>
- *   <li>signal-first：导航目标与 saveFeedback 经 signal 驱动；Motion phase 不写事务历史</li>
- *   <li>生命周期纪律：section 单槽严格先 dispose outgoing Owner 再 mount incoming</li>
- *   <li>未激活 section 子树不参与布局/绘制</li>
- *   <li>handler 边界：导航点击 handler 只 activeSectionSignal.set，不直接改 SceneNode</li>
- * </ul>
- *
- * <h3>按钮回调</h3>
- * <ul>
- *   <li>保存 → {@code mgr.save(draft)} + {@code adapter.afterSaveSync()} + 写 saveFeedbackSignal</li>
- *   <li>取消 → {@code adapter.resetToCurrent()}</li>
- *   <li>恢复默认 → 按 {@link FieldRestorePolicy} 逐字段跳过、自定义或 {@code resetFieldToDefault(path)}</li>
- * </ul>
- *
- * <p>构造器接受可为 null 的 {@link PlatformInputSource}（headless 测试传 null）。
- * 逻辑与渲染解耦：构造器只建 signal 树和 mount，构造末尾 flush 让所有 Computed 物化。</p>
+ * <p>Fields are mounted through a dedicated section owner. Switching sections disposes the
+ * outgoing mount before mounting the incoming section.</p>
  */
 public class ConfigScreen extends AbstractSceneHostWidget {
 
     /** bodyRow 横向间距 */
     private static final int BODY_ROW_GAP = 12;
-    /** 标题与字段 presentation shell 使用 emphasized 级联进入。 */
-    private static final int SECTION_REVEAL_MS = ConfigTheme.MOTION_EMPHASIZED_MS;
-    /** 从上方明显落位；全程满 opacity，不制造白/透明闪帧。 */
-    private static final float SECTION_REVEAL_START_OFFSET_Y = -22.0f;
-    /** 相邻标题/卡片的启动间隔。 */
-    private static final int SECTION_REVEAL_ITEM_DELAY_MS = 36;
-    /** 长 section 的最大级联窗口，避免尾项等待数秒。 */
-    private static final int SECTION_REVEAL_MAX_DELAY_MS = 252;
     /** 配置主视口滚轮平滑收敛时长。 */
     private static final int SCROLL_MOTION_MS = ConfigTheme.MOTION_STANDARD_MS;
     /** 玻璃底座恒定启用（页壳/反馈条无禁用态），供表面绑定器判定状态档。 */
@@ -151,7 +88,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     /** 关联的 schema */
     private final ConfigSchema schema;
     /** 恢复默认字段策略，可为 null（全部走默认恢复） */
-    private final FieldRestorePolicy restorePolicy;
 
     /** 场景树根节点：专用世界遮罩（静态 {@code ROOT_BG}，只负责遮罩，不装玻璃）。 */
     private SceneNode root;
@@ -170,6 +106,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     /** 滚轮平滑滚动的 keyed Motion。 */
     private final Object scrollMotionKey = new Object();
     private final Object autosaveKey = new Object();
+    private final Object pageFlipKey = new Object();
     private boolean autosavePending;
     /** 输入 handler 只递增 intent；同帧 flush 再应用 Motion/节点，守 signal-first。 */
     private final Signal<Integer> scrollIntentRevision = Signal.create(Integer.valueOf(0));
@@ -230,12 +167,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     /** 最近一次保存结果，供测试探针 */
     private SaveOutcome lastSaveOutcome;
     /** 操作请求经三跳 effect 晚于字段终态收敛执行，避免同帧 UP→Save/Cancel 读取旧 Draft。 */
-    private final Signal<ActionRequest> actionRequested = Signal.create(null);
-    private final Signal<ActionRequest> actionSettling = Signal.create(null);
-    private final Signal<ActionRequest> actionReady = Signal.create(null);
     /** signal 合并只负责唤醒；FIFO 队列保留同帧每次 CLICK 的顺序。 */
-    private final Deque<ActionRequest> actionQueue = new ArrayDeque<ActionRequest>();
-    private int actionRevision;
 
     private static final class GroupSpec {
         private final String title;
@@ -245,21 +177,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             this.title = title;
         }
     }
-    private enum ActionKind {
-        RESTORE,
-        CANCEL,
-        SAVE
-    }
 
-    private static final class ActionRequest {
-        private final ActionKind kind;
-        private final int revision;
-
-        private ActionRequest(ActionKind kind, int revision) {
-            this.kind = kind;
-            this.revision = revision;
-        }
-    }
 
     /**
      * 创建配置页 UI 骨架。
@@ -374,7 +292,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         this.adapter = adapter;
         this.registry = registry;
         this.schema = adapter.draft().schema();
-        this.restorePolicy = restorePolicy;
         adapter.setOnFieldEdited(this::scheduleAutosave);
         if (runtimeTheme != null) {
             SceneThemes.install(runtime, runtimeTheme);
@@ -384,7 +301,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
 
         // 在 uiOwner 作用域内构造，所有 Computed/Effect 归属 uiOwner，dispose 时统一回收
         uiOwner.run(() -> {
-            bindActionPipeline();
 
             // 页壳语义色的唯一来源：构建期经 G15/Theme 默认路径桥解析一次并持有信号
             // （禁止 .get() 快照喂显式 build；见 ConfigTheme 类头双路径文档）。
@@ -446,6 +362,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             this.content = createContent();
             viewport.appendChild(content);
             renderFields(sections);
+            animatePageFlip();
             // 导航请求立即替换单槽；新 Owner 自带 layout-ready 级联，快速重选会自动取消旧序列。
             runtime.bind(activeSectionSignal, this::requestSectionTransition);
             // 滚动容器（ROW：viewport + scrollbar 列），承载 viewport 并在其右侧叠加滚动条。
@@ -592,134 +509,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
      *
      * @return save 反馈条节点（condition 为 true 时显示）
      */
-    private SceneNode createSaveFeedbackBar() {
-        SceneNode col = SceneNode.column();
-        col.setGap(6);
-        col.setHitTestable(true);
-        col.setFillParentWidth(true);
-        col.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
-        col.setPadding(8);
-        // 固定 preferredHeight：作为页壳 COLUMN 内固定子，未设则 grow 求解器 UNCONSTRAINED 早退。
-        // 预留 reload 按钮行高度（即使当前不显示，高度略余可接受；冲突态可完整显示按钮）。
-        col.setPreferredHeight(ConfigTheme.SAVE_FEEDBACK_HEIGHT + 6 + ConfigTheme.BUTTON_HEIGHT);
-        // GROUP 玻璃底座：染色/边框/圆角/浮雕/滤镜唯一写入者 = 表面绑定器（主题路径）。
-        bindGroupSurface(runtime, col);
-
-        SceneNode row = SceneNode.row();
-        row.setGap(8);
-        row.setHitTestable(false);
-        row.setPreferredHeight(ConfigTheme.SAVE_FEEDBACK_HEIGHT);
-        SceneNode feedback = text("", Computed.create(() -> {
-                    FormTheme theme = formTheme.get();
-                    SaveFeedback fb = adapter.saveFeedbackSignal().get();
-                    if (fb == null || fb.isNone()) {
-                        return Integer.valueOf(theme.mutedColor());
-                    }
-                    return Integer.valueOf(
-                            fb.isError() ? theme.errorColor() : theme.dirtyColor());
-                }),
-                ConfigTheme.FONT_ERROR);
-        runtime.bindComputed(() -> {
-                    SaveFeedback fb = adapter.saveFeedbackSignal().get();
-                    return fb == null ? "" : fb.message();
-                },
-                feedback::setText);
-        row.appendChild(feedback);
-        col.appendChild(row);
-
-        // reload 按钮：condition = requiresReload；Supplier 只跑一次建按钮
-        rt().show(col,
-                Computed.create(() -> Boolean.valueOf(adapter.requiresReload())),
-                this::createReloadButtonRow);
-
-        return col;
-    }
-
-    /**
-     * 创建「丢弃编辑并重新加载」按钮行（仅 requiresReload 时由 rt.show 挂载一次）。
-     *
-     * @return 按钮行节点
-     */
-    private SceneNode createReloadButtonRow() {
-        SceneNode row = SceneNode.row();
-        row.setGap(8);
-        row.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
-        SceneButton.Props props = new SceneButton.Props(
-                Signal.create("丢弃编辑并重新加载"),
-                Signal.create(Boolean.TRUE),
-                this::discardEditsAndReload,
-                SceneButtonVariant.STANDARD);
-        MountHandle handle = runtime.mount(row, SceneButton.create(runtime, props));
-        SceneNode btnRoot = handle.getRoot();
-        if (btnRoot != null) {
-            btnRoot.setPreferredWidth(ConfigTheme.BUTTON_WIDTH + ConfigTheme.dp(40));
-            btnRoot.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
-        }
-        return row;
-    }
-
-    /**
-     * 丢弃当前编辑并从磁盘重新加载（{@link ConfigManager#reloadDraftFromDisk}），
-     * 经 {@link DraftSignalAdapter#replaceDraft} 保持 Signal identity；恢复可保存。
-     * 不得自动 merge / 静默覆盖 Authority。
-     *
-     * <p>IO / 校验 / 冲突失败时：按 {@link ConfigReloadException.Reason} 结构化显示
-     *（禁止英文匹配）；失败保留编辑 / requiresReload 冲突态；不静默折叠 NUMBER 为 0.0、
-     * 不推进 Authority。</p>
-     */
-    private void discardEditsAndReload() {
-        try {
-            DraftBuffer fresh = manager.reloadDraftFromDisk();
-            adapter.replaceDraft(fresh);
-        } catch (blocamlimb.nhx100218.modernui.config.runtime.ConfigConflictException e) {
-            // 通知期等：保留冲突与编辑
-            adapter.setSaveFeedback(SaveFeedback.forConflict(e.conflictType()));
-        } catch (blocamlimb.nhx100218.modernui.config.runtime.ConfigReloadException e) {
-            SaveFeedback.Status status;
-            String prefix;
-            switch (e.reason()) {
-                case VALIDATION:
-                    status = SaveFeedback.Status.INVALID;
-                    prefix = "重新加载校验失败";
-                    break;
-                case CONFLICT:
-                    status = SaveFeedback.Status.CONFLICT;
-                    if (e.conflictType() != null
-                            && e.conflictType() != blocamlimb.nhx100218.modernui.config.runtime.SaveOutcome.ConflictType.NONE) {
-                        adapter.setSaveFeedback(SaveFeedback.forConflict(e.conflictType()));
-                        return;
-                    }
-                    prefix = "重新加载冲突";
-                    break;
-                case IO:
-                default:
-                    status = SaveFeedback.Status.IO_FAILED;
-                    prefix = "重新加载失败";
-                    break;
-            }
-            adapter.setSaveFeedback(new SaveFeedback(
-                    status,
-                    prefix + "。当前编辑已保留。"));
-        } catch (blocamlimb.nhx100218.modernui.config.ConfigException e) {
-            // 兼容其它 ConfigException：按 IO 友好反馈，不匹配英文
-            adapter.setSaveFeedback(new SaveFeedback(
-                    SaveFeedback.Status.IO_FAILED,
-                    "重新加载失败。当前编辑已保留。"));
-        }
-    }
-
-
-    /**
-     * null 安全计数读取（flush 前 Computed 可能返回 null）。
-     *
-     * @param v 计数 signal 值
-     * @return 非 null 计数
-     */
-    private static int safeCount(Integer v) {
-        return v == null ? 0 : v.intValue();
-    }
-
-    /** 滚轮目标合并到当前 section authority，并从当前显示位置平滑收敛。 */
     private boolean smoothScrollByWheelDelta(int wheelDelta) {
         // Signal.set 在 flush 前不可见；运行中或同帧 pending 目标承担连续事件累计基准。
         int currentTarget = scrollIntentPending
@@ -811,7 +600,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         // 动态内容收缩可能让旧目标越界；同步收敛字段，避免按旧值重复重建同一 clamp 段。
         smoothScrollTarget = to;
         if (from == to) {
-            runtime.__cancelMotion(scrollMotionKey);
+        runtime.__cancelMotion(scrollMotionKey);
             smoothScrollRunning = false;
             return;
         }
@@ -936,13 +725,13 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         iconPill.setMainAxisAlign(MainAxisAlign.CENTER);
         runtime.bind(Computed.create(() -> {
             if (selected.get()) {
-                return Integer.valueOf(0x33FFB5A1);
+                return Integer.valueOf(0xFF3A2A27);
             }
             if (interaction.pressed().get()) {
-                return Integer.valueOf(0x1FFFB5A1);
+                return Integer.valueOf(0xFF44312C);
             }
             if (interaction.hovered().get()) {
-                return Integer.valueOf(0x14FFB5A1);
+                return Integer.valueOf(0xFF2A1F1D);
             }
             return Integer.valueOf(0);
         }), iconPill::setBackgroundColor);
@@ -954,9 +743,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         if (icons != null && iconIndex < icons.length) {
             icon.setImageSource(icons[iconIndex]);
         }
-        runtime.bind(Computed.create(
-                        () -> Float.valueOf(selected.get() ? 1.0f : 0.55f)),
-                icon::setOpacity);
         iconPill.appendChild(icon);
         item.appendChild(iconPill);
 
@@ -1134,7 +920,8 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         SceneNode left = dashboardCard();
         left.setFlexGrow(1);
         left.appendChild(dashboardTitle(ConfigText.tr("modernui.dashboard.title")));
-        left.appendChild(dashboardBody(ConfigText.tr("modernui.dashboard.about")));
+        left.appendChild(dashboardBody(ConfigText.tr("modernui.dashboard.about")
+                .replace("%version%", MyMod.VERSION)));
 
         SceneNode right = dashboardCard();
         right.setFlexGrow(1);
@@ -1226,7 +1013,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         card.setFillParentWidth(true);
         card.setGap(0);
         bindGroupSurface(runtime, card);
-        List<SceneNode> revealTargets = new ArrayList<SceneNode>();
         List<FieldSpec> fields = section.fields();
         FieldShellBinder.setRowMode(true);
         try {
@@ -1241,24 +1027,18 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             presentation.setHitTestable(false);
             presentation.appendChild(row);
             card.appendChild(presentation);
-            revealTargets.add(presentation);
             if (i + 1 < fields.size()) {
                 SceneNode divider = new SceneNode();
                 divider.setPreferredHeight(1);
                 divider.setFillParentWidth(true);
                 divider.setMargin(0, ConfigTheme.dp(12), 0, ConfigTheme.dp(12));
-                divider.setBackgroundColor(0x2253433F);
+                divider.setBackgroundColor(0xFF322825);
                 card.appendChild(divider);
             }
         }
         } finally {
             FieldShellBinder.setRowMode(false);
         }
-        runtime.__staggeredReveal(revealTargets,
-                SECTION_REVEAL_START_OFFSET_Y,
-                SECTION_REVEAL_MS,
-                SECTION_REVEAL_ITEM_DELAY_MS,
-                SECTION_REVEAL_MAX_DELAY_MS);
         return card;
     }
     private SceneNode mountSectionPanel(int sectionIndex) {
@@ -1282,6 +1062,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         }
         // 即使两个 section 的 offset 相同，旧 hoveredNode 也已随 outgoing 子树卸载。
         runtime.__requestHoverReconcileAfterScroll();
+        animatePageFlip();
         return incoming;
     }
 
@@ -1294,128 +1075,23 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         return runtime;
     }
 
-    /**
-     * 创建固定操作条：委托 {@link FormActionBar}（恢复默认 / spacer / 取消 + 保存 primary）。
-     *
-     * <p>S3：左右分区——恢复默认置最左（弱化低频破坏性操作），取消+保存置最右，
-     * 保存在最右末位（主操作落在视线终点）。中间插 flexGrow=1 的 spacer 节点撑开剩余宽度
-     * （scene MainAxisAlign 无 SPACE_BETWEEN，用 spacer 方案）。</p>
-     *
-     * <p>该固定行位于页壳根末尾，save/cancel/restore 始终可见、不随内容滚动。</p>
-     *
-     * <p>G15/Shell：改用 {@link FormActionBar} 的 theme-aware 无 {@code FormTheme} 参重载
-     * （TOOLBAR 一颗玻璃底座，内部按钮走 BUTTON_STANDARD/PRIMARY 角色），删除旧的
-     * {@code SURFACE_CONTAINER}/{@code RADIUS_LG} 后缀静态设色——表面唯一写入者是
-     * {@code FormActionBar} 内部的 {@link SceneSurfaceBinder}（G11/ActionBar 遗留裁决，本次执行）。
-     * 仅保留布局属性（fillParentWidth/maxWidth/padding/子按钮尺寸）。</p>
-     *
-     * @return 操作条节点
-     */
-    private SceneNode createActionBar() {
-        ReadableSignal<Boolean> cancelEnabled = () -> {
-            adapter.isDirtySignal().get();
-            return Boolean.valueOf(adapter.draft().isDirtyAny());
-        };
-        ReadableSignal<Boolean> saveEnabled = () -> {
-            adapter.canSaveSignal().get();
-            return Boolean.valueOf(adapter.canSaveNow());
-        };
-        SceneNode bar = FormActionBar.build(runtime,
-                Signal.create(Boolean.TRUE), () -> requestAction(ActionKind.RESTORE),
-                cancelEnabled, () -> requestAction(ActionKind.CANCEL),
-                saveEnabled, () -> requestAction(ActionKind.SAVE),
-                ConfigTheme.ACTION_BAR_HEIGHT, ConfigTheme.dp(10),
-                ConfigTheme.BUTTON_WIDTH, ConfigTheme.BUTTON_HEIGHT);
-        SceneNode cancelButton = bar.__getChildren().get(2);
-        SceneNode saveButton = bar.__getChildren().get(3);
-        // list 拖拽终态尚未 flush 时按钮仍呈 disabled；先接收 CLICK，收敛后再按即时 Draft 判定。
-        runtime.on(cancelButton, SceneEventType.CLICK, (event, context) -> {
-            if (!adapter.draft().isDirtyAny()) {
-                requestAction(ActionKind.CANCEL);
-            }
-        });
-        runtime.on(saveButton, SceneEventType.CLICK, (event, context) -> {
-            if (!adapter.canSaveNow()) {
-                requestAction(ActionKind.SAVE);
-            }
-        });
-        // 仅布局：宽度约束与内边距归 caller；表面（background/cornerRadius/…）由 FormActionBar
-        // 内 TOOLBAR 绑定独占，此处不再静态设色。
-        bar.setFillParentWidth(true);
-        bar.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
-        bar.setPadding(6);
-        return bar;
-    }
-
-    private void requestAction(ActionKind kind) {
-        ActionRequest request = new ActionRequest(kind, ++actionRevision);
-        actionQueue.addLast(request);
-        actionRequested.set(request);
-    }
-
-    /** 安装三跳收敛链；调用点位于 uiOwner scope，bindings 随 screen 一并释放。 */
-    private void bindActionPipeline() {
-        runtime.bind(actionRequested, request -> forwardAction(request, actionSettling));
-        runtime.bind(actionSettling, request -> forwardAction(request, actionReady));
-        runtime.bind(actionReady, request -> {
-            if (request != null) {
-                Effect.untrack(() -> drainActionQueue(request.revision));
-            }
+    private void animatePageFlip() {
+        runtime.__cancelMotion(pageFlipKey);
+        runtime.__startEaseOutMotion(pageFlipKey, ConfigTheme.MOTION_EMPHASIZED_MS, progress -> {
+            content.setTransform(new Transform(0.0F, 0.0F, 0.0F,
+                    0.70710677F + 0.29289323F * progress, 1.0F, 0.5F, 0.5F));
+        }, () -> {
+            content.setTransform(Transform.scale(1.0F, 1.0F));
         });
     }
 
-    private static void forwardAction(ActionRequest request, Signal<ActionRequest> nextStage) {
-        if (request != null) {
-            nextStage.set(request);
+    /** Applies the world-aware backdrop: transparent in a save, black at the menus. */
+    public void setWorldBackdrop(boolean inWorld) {
+        if (root != null) {
+            root.setBackgroundColor(inWorld ? 0x00000000 : ConfigTheme.ROOT_BG);
         }
     }
 
-    private void drainActionQueue(int readyRevision) {
-        try {
-            while (!actionQueue.isEmpty()
-                    && actionQueue.peekFirst().revision <= readyRevision) {
-                executeAction(actionQueue.removeFirst().kind);
-            }
-        } catch (RuntimeException | Error failure) {
-            discardActionsThrough(readyRevision);
-            throw failure;
-        }
-    }
-
-    /** 失败动作所属批次不得留在队列中被未来 CLICK 迟到重放。 */
-    private void discardActionsThrough(int readyRevision) {
-        while (!actionQueue.isEmpty()
-                && actionQueue.peekFirst().revision <= readyRevision) {
-            actionQueue.removeFirst();
-        }
-    }
-
-    private void executeAction(ActionKind kind) {
-        switch (kind) {
-            case RESTORE:
-                restoreDefaults();
-                break;
-            case CANCEL:
-                if (adapter.draft().isDirtyAny()) {
-                    cancelChanges();
-                }
-                break;
-            case SAVE:
-                if (adapter.canSaveNow()) {
-                    saveChanges();
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
-    /**
-     * 保存：mgr.save(draft) + 结构化冲突/校验接入 + saveFeedbackSignal。
-     *
-     * <p>冲突走 {@link DraftSignalAdapter#applySaveFailure}（读 conflictType，禁止英文匹配）；
-     * requiresReload 时不注入字段 error/errorCount，保存保持禁用；不自动 reload/重试/覆盖。</p>
-     */
     private void scheduleAutosave() {
         autosavePending = true;
         runtime.__cancelMotion(autosaveKey);
@@ -1444,39 +1120,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         adapter.applySaveFailure(lastSaveOutcome);
     }
 
-    /**
-     * 取消：adapter.resetToCurrent()。
-     */
-    private void cancelChanges() {
-        adapter.resetToCurrent();
-    }
-
-    /**
-     * 恢复默认：按策略逐字段跳过、自定义或 adapter.resetFieldToDefault(path)。
-     */
-    private void restoreDefaults() {
-        for (FieldSpec field : schema.allFields()) {
-            String path = field.path();
-            if (restorePolicy != null && restorePolicy.isSkipped(path)) {
-                continue;
-            }
-            Consumer<DraftSignalAdapter> custom = restorePolicy != null ? restorePolicy.getCustom(path) : null;
-            if (custom != null) {
-                custom.accept(adapter);
-            } else {
-                adapter.resetFieldToDefault(path);
-            }
-        }
-    }
-
-    /**
-     * 创建跟随主题的文字节点（前景经 {@code bind} 响应式写入，主题切换自动重派生）。
-     *
-     * @param value     文本
-     * @param color     前景色信号（来源 {@code formTheme} 语义色派生）
-     * @param fontSize  字号（UI 像素）
-     * @return 文字节点
-     */
     private SceneNode text(String value, ReadableSignal<Integer> color, int fontSize) {
         SceneNode node = new SceneNode();
         node.setText(value);
@@ -1538,10 +1181,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     }
 
 
-    /** @return 操作条节点 */
-    SceneNode __getActionBar() {
-        return actionBar;
-    }
 
     /** @return 固定左侧导航根节点；0/1 section 时为 null */
     SceneNode __getNavRoot() {
@@ -1629,20 +1268,8 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         saveChanges();
     }
 
-    /** 测试探针：触发取消 */
-    void __cancelChanges() {
-        cancelChanges();
-    }
 
-    /** 测试探针：触发恢复默认 */
-    void __restoreDefaults() {
-        restoreDefaults();
-    }
 
-    /** 测试探针：触发丢弃编辑并重新加载 */
-    void __discardEditsAndReload() {
-        discardEditsAndReload();
-    }
 
     @Override
     protected SceneNode getRoot() {
@@ -1660,6 +1287,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 runtime.__cancelMotion(autosaveKey);
                 flushAutosave();
             }
+            runtime.__cancelMotion(pageFlipKey);
             runtime.__cancelMotion(scrollMotionKey);
             try {
                 adapter.dispose();

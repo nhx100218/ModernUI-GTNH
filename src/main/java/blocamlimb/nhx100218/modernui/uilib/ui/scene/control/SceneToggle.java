@@ -127,10 +127,10 @@ public final class SceneToggle {
             SceneInteractionState interaction = result.interaction();
 
             SceneNode root = result.root();
-            int trackWidth = rt.dp(48);
-            int trackHeight = rt.dp(24);
-            int trackPadding = rt.dp(3);
-            int thumbSize = rt.dp(18);
+            int trackWidth = rt.dp(52);
+            int trackHeight = rt.dp(32);
+            int trackPadding = rt.dp(4);
+            int thumbSize = rt.dp(24);
             float thumbTravel = trackWidth - 2 * trackPadding - thumbSize;
             root.setGap(rt.dp(GAP));
             root.setFallbackFontSize(rt.dp(16));

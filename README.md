@@ -34,44 +34,39 @@
 
 </p>
 
-A client-side interface beautification and font rendering mod for **GTNH** (Minecraft 1.7.10). It's a partial port of Modern UI to 1.7.10.
+A client-side interface and font mod for GTNH on Minecraft 1.7.10. It ports part of Modern UI and adds GTNH-specific integration plus a few extra options.
 
-## Highlights
-
-- **Interface and motion**: made with reference to Zoomify and SmoothGUI.
-- **ToolTips**: restores the original Modern UI look.
-- **Modern font rendering**: a more modern font rendering engine, made with reference to [Qz-UILib](https://github.com/QuanhuZeYu/Qz-UILib).
-- **Bundled fonts**: ships Inter Frozen and Source Han Sans with the mod, to help players coming from newer versions.
-- **Config screen restoration**: I'm working on recreating the original MD3 config screen. Stay tuned.
-
-## Features
+## What it changes
 
 ### Tooltips
-- Rounded, gradient tooltips with configurable corner radius, border width, and four-corner gradient fill / border colors. Fully SDF-rendered.
 
-*Adaptive border color (follows item rarity / name color), with optional animated border color cycling.*
-- Works with **NEI**, **ModularUI2**, **Tinkers' Construct**, **Waila**, **Better Questing**, and **Chromatic Tooltips**.
-
+Rounded tooltips with adjustable corner radius, border width, and four-corner gradient fill and border colors. They use SDF rendering. Border color can follow item rarity or name color, and it can cycle over time. The tooltips work with NEI, ModularUI2, Tinkers' Construct, Waila, Better Questing, and Chromatic Tooltips.
 
 ### Interface and motion
-- Non-linear open / close transition animations.
+
+- The config screen uses a Material 3 layout with solid panels, section navigation, page transitions, and automatic saving.
+- Screens use non-linear open and close animations.
 - Hold C to zoom.
-- Smooth scrolling for vanilla scroll lists.
-- Custom text selection highlight (*unfortunately it's a bit offset*).
-- Text field undo / redo.
-- Pauses the world when opening a screen in singleplayer (*honestly I don't know what this is good for*).
+- Vanilla scroll lists support smooth scrolling.
+- Text selection uses ModernUI colors. Its alignment can still be slightly off.
+- Text fields support undo and redo.
+- Container pause is available in the interface settings. It is off by default.
 
 ### Chat
-- Chat fade-in animation.
-- Sender skin heads in chat.
-- Emoji shortcode conversion (`:name:` to emoji; requires a system emoji font).
+
+- Chat fades in when it opens.
+- Player skin heads appear next to chat messages.
+- Emoji shortcodes such as `:name:` are converted when a system emoji font is available.
 
 ### Font rendering
-- Replaces vanilla font rendering with a modern glyph pipeline.
-- Glyph generation resolution and game character size are adjustable. Don't set them too high or your game will freeze.
+
+- Replaces the vanilla font renderer with a glyph pipeline that supports modern font files.
+- Ships Inter Frozen and Source Han Sans for players coming from newer Minecraft versions.
+- Glyph generation resolution and character size are adjustable. High values can freeze the game.
 
 ### Performance
-- Lowers framerate and volume when the window is unfocused. This overlaps with quite a few GTNH mods, though.
+
+The mod lowers the frame rate and volume when the Minecraft window is not focused. Some GTNH mods already do the same, so the effects can overlap.
 
 ## Requirements
 
@@ -80,27 +75,26 @@ A client-side interface beautification and font rendering mod for **GTNH** (Mine
 | Minecraft | 1.7.10 (GTNH) |
 | Side | Client |
 
-
 ## Installation
 
 1. Download the latest `modernui-gtnh-*.jar` from [Releases](https://github.com/nhx100218/ModernUI-GTNH/releases).
-2. Put it into the GTNH modpack's `mods/` folder.
-3. Launch the game. The bundled fonts are released automatically on first launch, with a little stutter.
+2. Put it in the GTNH modpack's `mods/` folder.
+3. Launch the game. The bundled fonts are released on first launch and may cause a short stutter.
 
 ## Configuration
 
-- Config file: `config/modernui.yaml`.
+- The config file is `config/modernui.yaml`.
 - Open the config page from the mod list's **Config** button or with **Ctrl+K**.
-- The page has both the interface enhancement options and the font rendering options **(currently different from ModernUI, keep that in mind)**.
+- Changes save automatically. The page covers both interface enhancements and font rendering options.
+- The layout is not identical to upstream ModernUI in every detail.
 
 ## Building from source
 
-Requires JDK 21 or newer. JDK 25+ recommended.
+Requires JDK 21 or newer. JDK 25 or newer is recommended.
 
 ```bash
 ./gradlew build
 ```
-
 
 ## Authors
 
@@ -110,8 +104,9 @@ Requires JDK 21 or newer. JDK 25+ recommended.
 
 ## Acknowledgements
 
-Thanks to BloCamLimb for the original ModernUI project, and the GTNH modding toolchain.
-Thanks to QuanhuZeYu for Qz-UILib, the foundation of this project's implementation.
+Thanks to BloCamLimb for the original ModernUI project, and to the GTNH modding toolchain.
+
+Thanks to QuanhuZeYu for Qz-UILib, which provided the foundation for this project's implementation.
 
 ## License
 

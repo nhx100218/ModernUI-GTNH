@@ -16,7 +16,7 @@ import net.minecraft.client.renderer.Tessellator;
  * 用半透明浅蓝填充替换原版 {@code drawCursorVertical} 的 XOR 蓝色选中框（风格参照 ModernUI EditBox，
  * 其选中色为 0x3833B5E5，无白边）。
  */
-@Mixin(GuiTextField.class)
+@Mixin(value = GuiTextField.class, priority = 500)
 public class MixinGuiTextFieldSelection {
 
     @Shadow
@@ -42,20 +42,29 @@ public class MixinGuiTextFieldSelection {
             right = maxX;
         }
 
+        boolean textureEnabled = GL11.glIsEnabled(GL11.GL_TEXTURE_2D);
         Tessellator tessellator = Tessellator.instance;
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        tessellator.startDrawingQuads();
-        tessellator.setColorRGBA_I(UiConfig.selectionColor, UiConfig.selectionAlpha);
-        tessellator.addVertex((double) left, (double) bottom, 0.0D);
-        tessellator.addVertex((double) right, (double) bottom, 0.0D);
-        tessellator.addVertex((double) right, (double) top, 0.0D);
-        tessellator.addVertex((double) left, (double) top, 0.0D);
-        tessellator.draw();
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_BLEND);
+        try {
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            tessellator.startDrawingQuads();
+            tessellator.setColorRGBA_I(UiConfig.selectionColor, UiConfig.selectionAlpha);
+            tessellator.addVertex((double) left, (double) bottom, 0.0D);
+            tessellator.addVertex((double) right, (double) bottom, 0.0D);
+            tessellator.addVertex((double) right, (double) top, 0.0D);
+            tessellator.addVertex((double) left, (double) top, 0.0D);
+            tessellator.draw();
+        } finally {
+            GL11.glEnable(GL11.GL_BLEND);
+            if (textureEnabled) {
+                GL11.glEnable(GL11.GL_TEXTURE_2D);
+            } else {
+                GL11.glDisable(GL11.GL_TEXTURE_2D);
+            }
+        }
 
         ci.cancel();
     }
+
 }

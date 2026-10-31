@@ -1,12 +1,10 @@
 package blocamlimb.nhx100218.modernui.uilib.mixin.early.network;
 
-import blocamlimb.nhx100218.modernui.uilib.internal.chat3.input.ChatInputScreen;
 import blocamlimb.nhx100218.modernui.uilib.net.transport.vanilla.VanillaMixinTransport;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.S3APacketTabComplete;
 import net.minecraft.network.play.server.S3FPacketCustomPayload;
 import net.minecraft.util.IChatComponent;
 import org.spongepowered.asm.mixin.Mixin;
@@ -56,19 +54,5 @@ public abstract class MixinNetHandlerPlayClient {
     @Inject(method = "onDisconnect", at = @At("HEAD"))
     private void modernui$onClientDisconnected(IChatComponent reason, CallbackInfo ci) {
         VanillaMixinTransport.onClientDisconnected(reason);
-    }
-
-    /**
-     * 服务端命令补全响应转交聊天输入屏幕(原版只转交 GuiChat,我们的屏幕不是 GuiChat)。
-     *
-     * @param packetIn 补全响应包
-     * @param ci 回调
-     */
-    @Inject(method = "handleTabComplete", at = @At("HEAD"))
-    private void modernui$routeTabCompleteToChatInput(S3APacketTabComplete packetIn, CallbackInfo ci) {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc != null && mc.currentScreen instanceof ChatInputScreen) {
-            ((ChatInputScreen) mc.currentScreen).onAutocompleteResponse(packetIn.func_149630_c());
-        }
     }
 }

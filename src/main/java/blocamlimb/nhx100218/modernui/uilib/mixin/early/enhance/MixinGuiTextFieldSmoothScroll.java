@@ -13,6 +13,7 @@ import blocamlimb.nhx100218.modernui.enhance.vanilla.SmoothScrollModel;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 
 /**
@@ -42,8 +43,17 @@ public abstract class MixinGuiTextFieldSmoothScroll {
     private void modernui$head(CallbackInfo ci) {
         modernui$savedOffset = lineScrollOffset;
         modernui$pushed = false;
+        if (modernui$isXaeroScreen()) {
+            return;
+        }
         FontRenderer font = Minecraft.getMinecraft().fontRenderer;
         if (!SmoothScrollConfig.enabled || SmoothScrollConfig.textSmoothness == 0 || text == null || font == null) {
+            return;
+        }
+        if (lineScrollOffset <= 0) {
+            // No horizontal scrolling is active. Reset the model so a field reused after
+            // long text cannot scroll short input out of view.
+            modernui$model.snap(0.0D);
             return;
         }
         double target = font.getStringWidth(modernui$prefix(text, lineScrollOffset));
@@ -74,6 +84,17 @@ public abstract class MixinGuiTextFieldSmoothScroll {
             GL11.glPopMatrix();
             modernui$pushed = false;
         }
+    }
+
+    @Unique
+    private static boolean modernui$isXaeroScreen() {
+        Minecraft minecraft = Minecraft.getMinecraft();
+        GuiScreen screen = minecraft == null ? null : minecraft.currentScreen;
+        if (screen == null) {
+            return false;
+        }
+        String name = screen.getClass().getName();
+        return name.startsWith("xaero.") || name.startsWith("com.gtnh.xaeroport.");
     }
 
     @Unique

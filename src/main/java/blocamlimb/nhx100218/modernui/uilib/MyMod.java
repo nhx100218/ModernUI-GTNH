@@ -27,6 +27,7 @@ public class MyMod {
 
     public static final String MODID = "modernuigtnh";
     public static final String MOD_NAME = "ModernUI-GTNH";
+    public static final String VERSION = Tags.VERSION;
     public static final String CLIENT_PROXY = "blocamlimb.nhx100218.modernui.uilib.ClientProxy";
     public static final String COMMON_PROXY = "blocamlimb.nhx100218.modernui.uilib.CommonProxy";
     public static final String GUI_FACTORY = "blocamlimb.nhx100218.modernui.uilib.config.ModGuiFactory";

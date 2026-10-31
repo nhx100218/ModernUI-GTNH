@@ -258,6 +258,8 @@ public final class SceneSlider {
             int trackWidth = rt.dp(TRACK_WIDTH);
             int fillHeight = rt.dp(FILL_HEIGHT);
             int thumbSize = rt.dp(THUMB_SIZE);
+            int thumbWidth = rt.dp(4);
+            int thumbHeight = rt.dp(24);
             root.setPreferredWidth(trackWidth);
 
             SceneNode track = result.track();
@@ -271,12 +273,12 @@ public final class SceneSlider {
             fillBox.setCornerRadius(FILL_RADIUS);
 
             SceneNode thumb = result.thumb();
-            thumb.setPreferredWidth(thumbSize);
-            thumb.setPreferredHeight(thumbSize);
+            thumb.setPreferredWidth(thumbWidth);
+            thumb.setPreferredHeight(thumbHeight);
             // thumb 的圆角来自 INDICATOR 强调配方；不再静态设圆角或三态实色绑定。
 
             // 进度宽度仍由数值驱动（布局语义不变，仅取色改为主题）。
-            rt.bindComputed(() -> computeFillWidth(result.progress().get(), trackWidth, thumbSize),
+            rt.bindComputed(() -> computeFillWidth(result.progress().get(), trackWidth, thumbWidth),
                     fillBox::setPreferredWidth);
 
             // 进度填充底色：启用取主题强调色，禁用取主题禁用前景色（不再取 SceneChromeTokens 实色）。

@@ -336,7 +336,7 @@ public class SceneToggleTest {
         int onThumbX = thumbBox().getX();
 
         Assert.assertEquals("thumb LayoutBox 不移动", offThumbX, onThumbX);
-        Assert.assertEquals("on 端点 translateX=24", 24.0f, thumbNode().getTransform().translateX, 0.0001f);
+        Assert.assertEquals("on 端点 translateX=20", 20.0f, thumbNode().getTransform().translateX, 0.0001f);
         Assert.assertEquals("on/off 不触发布局", 0, result.getRelayoutCount());
     }
 
@@ -351,7 +351,7 @@ public class SceneToggleTest {
         runtime.__sampleMotion(1_000_000L);
         runtime.__sampleMotion(81_000_000L);
 
-        Assert.assertEquals("standard 半程 translateX=12", 12.0f,
+        Assert.assertEquals("standard 半程 translateX=10", 10.0f,
                 thumbNode().getTransform().translateX, 0.0001f);
         Assert.assertTrue(thumbNode().__isCompositeDirty());
         Assert.assertFalse(thumbNode().__isSelfLayoutDirty());
@@ -359,7 +359,7 @@ public class SceneToggleTest {
         Assert.assertEquals("Motion sample 零重排", 0, result.getRelayoutCount());
 
         runtime.__sampleMotion(161_000_000L);
-        Assert.assertEquals(24.0f, thumbNode().getTransform().translateX, 0.0001f);
+        Assert.assertEquals(20.0f, thumbNode().getTransform().translateX, 0.0001f);
     }
 
     // ==================== 验收 6：交互根 SHRINK，命中宽=内容宽，行尾空白不命中 ====================
@@ -375,7 +375,7 @@ public class SceneToggleTest {
         doLayout();
 
         LayoutBox rootBox = (LayoutBox) toggleRoot.getCachedLayout();
-        int expectedWidth = 48 + SceneChromeTokens.GAP_MD + ("Night".length() * STUB_CHAR_WIDTH);
+        int expectedWidth = 52 + SceneChromeTokens.GAP_MD + ("Night".length() * STUB_CHAR_WIDTH);
         Assert.assertTrue("root 宽应严格小于 canvas，证明非 FILL 吞全宽",
                 rootBox.getWidth() < CANVAS_WIDTH);
         Assert.assertEquals("root 宽 = track + gap + label 内容宽",

@@ -168,7 +168,7 @@ modernui.config.group.interface=Interface
 modernui.config.group.advanced=Advanced
 modernui.dashboard.title=Modern UI Control Center
 modernui.dashboard.changelog=Changelog
-modernui.dashboard.about=ModernUI-GTNH\nModern UI port for Minecraft 1.7.10\n\nVersion 1.1.1\nSource: nhx100218/ModernUI-GTNH\nOriginal author: BloCamLimb
+modernui.dashboard.about=ModernUI-GTNH\nModern UI port for Minecraft 1.7.10\n\nVersion %version%\nSource: nhx100218/ModernUI-GTNH\nOriginal author: BloCamLimb
 modernui.dashboard.changes=• Modern UI style config layout\n• Changes apply immediately\n• GUI scale aware controls\n• Hover tooltips for descriptions\n• Navigation and tabs aligned with Modern UI
 
 modernui.config.general.useDebug=Debug Output
@@ -181,8 +181,6 @@ modernui.config.general.netTransport=Network Transport
 modernui.config.general.netTransport.tooltip=Select vanilla early-mixin transport or the Forge transport.
 modernui.config.general.pickerDensity=Picker Density
 modernui.config.general.pickerDensity.tooltip=Picker layout density: auto, compact, standard or roomy.
-modernui.config.general.configPageTheme=Config Theme
-modernui.config.general.configPageTheme.tooltip=Flat uses solid panels; glass uses translucent panels.
 modernui.config.general.backdropQuality=Backdrop Quality
 modernui.config.general.backdropQuality.tooltip=Backdrop quality: full, eco (power saving) or solid (disabled).
 
