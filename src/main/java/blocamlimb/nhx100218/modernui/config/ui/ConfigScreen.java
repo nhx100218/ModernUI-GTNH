@@ -134,7 +134,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private static SceneImageSource[] sNavIcons;
     /** MD3 top-level pages: general, interface, advanced. */
     private static final String[] GROUP_TITLES = {
-            "\u5e38\u89c4", "\u754c\u9762", "\u9ad8\u7ea7"
+            "modernui.config.group.general", "modernui.config.group.interface", "modernui.config.group.advanced"
     };
     private static final String[][] GROUP_SECTION_IDS = {
             {"tooltip", "waila", "chat"},
@@ -896,7 +896,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 ALWAYS_ENABLED, navInteraction);
 
         SceneImageSource[] icons = navIcons();
-        nav.appendChild(createNavItem(icons, 3, "主页",
+        nav.appendChild(createNavItem(icons, 3, "modernui.config.group.home",
                 Computed.create(() -> Boolean.TRUE.equals(dashboardSignal.get())),
                 () -> dashboardSignal.set(Boolean.TRUE)));
         for (int i = 0; i < groups.size(); i++) {
@@ -960,7 +960,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         iconPill.appendChild(icon);
         item.appendChild(iconPill);
 
-        item.appendChild(text(title, Computed.create(() ->
+        item.appendChild(text(ConfigText.tr(title), Computed.create(() ->
                 Integer.valueOf(selected.get() ? 0xFFFFB5A1 : 0xFFD8C2BC)),
                 ConfigTheme.FONT_SUBTITLE));
         runtime.focusable(item, ALWAYS_ENABLED);
@@ -1133,13 +1133,13 @@ public class ConfigScreen extends AbstractSceneHostWidget {
 
         SceneNode left = dashboardCard();
         left.setFlexGrow(1);
-        left.appendChild(dashboardTitle("Modern UI 操作中心"));
-        left.appendChild(dashboardBody("ModernUI-GTNH\nModern UI 的 1.7.10 移植\n\n版本 1.0.0\n源码: nhx100218/ModernUI-GTNH\n原作者: BloCamLimb"));
+        left.appendChild(dashboardTitle(ConfigText.tr("modernui.dashboard.title")));
+        left.appendChild(dashboardBody(ConfigText.tr("modernui.dashboard.about")));
 
         SceneNode right = dashboardCard();
         right.setFlexGrow(1);
-        right.appendChild(dashboardTitle("更新内容"));
-        right.appendChild(dashboardBody("• 配置页改为 MD3 大圆角面板\n• 修改立即生效并自动保存\n• 控件跟随 GUI Scale 缩放\n• 描述改为悬停 Tooltip\n• 导航栏和 Tab 对齐 ModernUI"));
+        right.appendChild(dashboardTitle(ConfigText.tr("modernui.dashboard.changelog")));
+        right.appendChild(dashboardBody(ConfigText.tr("modernui.dashboard.changes")));
 
         root.appendChild(left);
         root.appendChild(right);
@@ -1166,7 +1166,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
 
     private SceneNode dashboardBody(String body) {
         SceneNode node = new SceneNode();
-        node.setText(body);
+        node.setText(body.replace("\\n", "\n"));
         node.setFontSize(ConfigTheme.FONT_LABEL);
         node.setTextColor(0xFFD8C2BC);
         node.setMaxLines(12);

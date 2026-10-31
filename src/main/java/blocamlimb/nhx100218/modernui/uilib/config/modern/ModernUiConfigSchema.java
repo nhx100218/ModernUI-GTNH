@@ -6,140 +6,94 @@ import java.util.function.Function;
 
 import blocamlimb.nhx100218.modernui.config.schema.ConfigSchema;
 
-/**
- * uilib 自身配置的新架构 Schema 声明（实验性并行接入）。
- *
- * <p>用 {@link ConfigSchema#builder(String)} DSL 把 uilib 现有 Forge 配置
- * （{@link blocamlimb.nhx100218.modernui.uilib.Config} + {@link blocamlimb.nhx100218.modernui.uilib.font.config.FontConfig}）
- * 的标量字段重新声明为新架构 {@code ConfigSchema}，供 {@link blocamlimb.nhx100218.modernui.config.runtime.ConfigManager}
- * 端到端实验使用。</p>
- *
- * <h3>合规边界</h3>
- * <ul>
- *   <li>本类位于 {@code blocamlimb.nhx100218.modernui.uilib.config.modern}（uilib 的"mod 配置接入"专门包），
- *       非 {@code uilib.ui.*} 通用组件包。</li>
- *   <li>只 import {@code blocamlimb.nhx100218.modernui.config.schema.*}（核心层），合法使用。</li>
- *   <li>不 import {@code blocamlimb.nhx100218.modernui.config.ui.*}（UI 层），守反向依赖红线。</li>
- * </ul>
- *
- * <h3>字段映射</h3>
- * <p>从现有 Forge 配置映射标量字段。{@code fontSort} / {@code characterFontRules} 是
- * {@code String[]} 数组，经 {@link blocamlimb.nhx100218.modernui.config.schema.FieldType#SIMPLE_LIST} 接入；前者由
- * 专用 renderer 约束为已发现字体的固定集合并支持拖拽/全局索引排序，后者允许编辑规则行。</p>
- *
- * <p>新架构配置文件独立于 Forge cfg，使用 YAML 格式，路径由接入入口
- * {@link ModernConfigEntry} 决定，避免与 Forge 配置互相覆盖。</p>
- */
+/** Schema for the uilib/ModernUI configuration screen. */
 public final class ModernUiConfigSchema {
 
     private ModernUiConfigSchema() {
     }
 
-    /**
-     * 构建 uilib 自身配置的新架构 Schema。
-     *
-     * @return 不可变 ConfigSchema
-     */
     public static ConfigSchema create() {
         return create(key -> key);
     }
 
-    /**
-     * 构建合并后的 ModernUI-GTNH 配置 Schema。
-     *
-     * @param tr 语言键翻译器（启动期传 {@code key -> key}）
-     * @return 不可变 ConfigSchema
-     */
     public static ConfigSchema create(Function<String, String> tr) {
         return blocamlimb.nhx100218.modernui.enhance.Config.appendTo(
                 ConfigSchema.builder("modernui"), tr)
-                .title("ModernUI 配置")
+                .title(tr.apply("modernui.config.screenTitle"))
                 .section("general")
                     .title(tr.apply("modernui.md.tab.general"))
                     .bool("useDebug").defaultValue(Boolean.FALSE)
-                        .label("useDebug").helper("是否启用调试输出").build()
+                        .label(tr.apply("modernui.config.general.useDebug")).helper(tr.apply("modernui.config.general.useDebug.tooltip")).build()
                     .bool("uiDebug").defaultValue(Boolean.FALSE)
-                        .label("uiDebug").helper("是否在屏幕右上角显示当前页面类名").build()
+                        .label(tr.apply("modernui.config.general.uiDebug")).helper(tr.apply("modernui.config.general.uiDebug.tooltip")).build()
                     .bool("fontRuntimeDebug").defaultValue(Boolean.FALSE)
-                        .label("fontRuntimeDebug").helper("是否启用字体运行时高频诊断日志；默认关闭").build()
+                        .label(tr.apply("modernui.config.general.fontRuntimeDebug")).helper(tr.apply("modernui.config.general.fontRuntimeDebug.tooltip")).build()
                     .choice("netTransport").options("vanilla", "forge").defaultValue("vanilla")
-                        .label("netTransport").helper("网络传输适配器：vanilla 默认 early mixin 路径，forge 仅兼容排障").build()
+                        .label(tr.apply("modernui.config.general.netTransport")).helper(tr.apply("modernui.config.general.netTransport.tooltip")).build()
                     .choice("pickerDensity").options("auto", "compact", "standard", "roomy").defaultValue("auto")
-                        .label("pickerDensity").helper("选择器面板密度档位：auto 自动求解（默认，不低于现状）；"
-                                + "compact 紧凑 / standard 标准 / roomy 宽松为显式覆盖，三档同样受不低于现状约束。"
-                                + "改档位即时生效，无需重开配置页或选择器。").build()
+                        .label(tr.apply("modernui.config.general.pickerDensity")).helper(tr.apply("modernui.config.general.pickerDensity.tooltip")).build()
                     .choice("configPageTheme").options("flat", "glass").defaultValue("flat")
-                        .label("配置页主题").helper("flat 平面（默认，不使用背景模糊或玻璃材质）；"
-                                + "glass 液态玻璃。保存后更新已打开的配置页，无需重开。"
-                                + "液态玻璃的滤镜质量由 backdropQuality 控制。").build()
+                        .label(tr.apply("modernui.config.general.configPageTheme")).helper(tr.apply("modernui.config.general.configPageTheme.tooltip")).build()
                     .choice("backdropQuality").options("full", "eco", "solid").defaultValue("full")
-                        .label("backdropQuality").helper("背景滤镜（液态玻璃模糊）档位："
-                                + "full 完整＝现状液态玻璃（默认，观感零变化）；"
-                                + "eco 省电＝减少模糊核采样抽头数（片元采样约 −31%，观感轻微变化）；"
-                                + "solid 关闭＝玻璃链路整体早退，页面改用实色替代底（GPU 成本归零，观感变为实色）。"
-                                + "笔记本 / 低端 GPU 建议 eco 或 solid。"
-                                + "改档位即时生效：已构建页面自动重派生外观，无需重开配置页或页面。").build()
+                        .label(tr.apply("modernui.config.general.backdropQuality")).helper(tr.apply("modernui.config.general.backdropQuality.tooltip")).build()
                 .endSection()
                 .section("fontSystem")
                     .title(tr.apply("modernui.md.tab.fontsystem"))
                     .number("lerpMode").defaultValue(Double.valueOf(3.0)).range(0, 3)
-                        .label("lerpMode").helper("插值模式").build()
+                        .label(tr.apply("modernui.config.font.lerpMode")).helper(tr.apply("modernui.config.font.lerpMode.tooltip")).build()
                     .number("aaMode").defaultValue(Double.valueOf(2.0)).range(1, 2)
-                        .label("aaMode").helper("AA 模式").build()
+                        .label(tr.apply("modernui.config.font.aaMode")).helper(tr.apply("modernui.config.font.aaMode.tooltip")).build()
                     .number("brightnessGain").defaultValue(Double.valueOf(2.0))
-                        .label("brightnessGain").helper("HSV 亮度增强，仅增强亮度并保持原有颜色倾向").build()
+                        .label(tr.apply("modernui.config.font.brightnessGain")).helper(tr.apply("modernui.config.font.brightnessGain.tooltip")).build()
                     .number("spaceWidth").defaultValue(Double.valueOf(4.0))
-                        .label("spaceWidth").helper("空格宽度").build()
+                        .label(tr.apply("modernui.config.font.spaceWidth")).helper(tr.apply("modernui.config.font.spaceWidth.tooltip")).build()
                     .number("characterSpacing").defaultValue(Double.valueOf(0.1))
-                        .label("characterSpacing").helper("字间距").build()
+                        .label(tr.apply("modernui.config.font.characterSpacing")).helper(tr.apply("modernui.config.font.characterSpacing.tooltip")).build()
                     .number("shadowOffsetX").defaultValue(Double.valueOf(0.5))
-                        .label("shadowOffsetX").helper("阴影 X 偏移").build()
+                        .label(tr.apply("modernui.config.font.shadowOffsetX")).helper(tr.apply("modernui.config.font.shadowOffsetX.tooltip")).build()
                     .number("shadowOffsetY").defaultValue(Double.valueOf(0.5))
-                        .label("shadowOffsetY").helper("阴影 Y 偏移").build()
+                        .label(tr.apply("modernui.config.font.shadowOffsetY")).helper(tr.apply("modernui.config.font.shadowOffsetY.tooltip")).build()
                     .number("renderOffset").defaultValue(Double.valueOf(0.0))
-                        .label("renderOffset").helper("渲染 Z 偏移").build()
+                        .label(tr.apply("modernui.config.font.renderOffset")).helper(tr.apply("modernui.config.font.renderOffset.tooltip")).build()
                     .number("smoothRangeMin").defaultValue(Double.valueOf(0.0)).range(0, 1)
-                        .label("smoothRangeMin").helper("平滑下界").build()
+                        .label(tr.apply("modernui.config.font.smoothRangeMin")).helper(tr.apply("modernui.config.font.smoothRangeMin.tooltip")).build()
                     .number("smoothRangeMax").defaultValue(Double.valueOf(0.9)).range(0, 1)
-                        .label("smoothRangeMax").helper("平滑上界").build()
-                    .number("drawStageUploadIntervalMs").defaultValue(Double.valueOf(20.0))
-                        .range(0, 1000)
-                        .label("drawStageUploadIntervalMs").helper("drawString 阶段补充上传的最短间隔（毫秒）").build()
-                    .number("drawStageUploadLimitPerSecond").defaultValue(Double.valueOf(20.0))
-                        .range(0, 1000)
-                        .label("drawStageUploadLimitPerSecond").helper("drawString 阶段每秒最多补充上传次数").build()
-                    .number("drawStageUploadBatchSize").defaultValue(Double.valueOf(2.0))
-                        .range(0, 256)
-                        .label("drawStageUploadBatchSize").helper("drawString 阶段每次最多补充上传字符数").build()
+                        .label(tr.apply("modernui.config.font.smoothRangeMax")).helper(tr.apply("modernui.config.font.smoothRangeMax.tooltip")).build()
+                    .number("drawStageUploadIntervalMs").defaultValue(Double.valueOf(20.0)).range(0, 1000)
+                        .label(tr.apply("modernui.config.font.drawStageUploadIntervalMs")).helper(tr.apply("modernui.config.font.drawStageUploadIntervalMs.tooltip")).build()
+                    .number("drawStageUploadLimitPerSecond").defaultValue(Double.valueOf(20.0)).range(0, 1000)
+                        .label(tr.apply("modernui.config.font.drawStageUploadLimitPerSecond")).helper(tr.apply("modernui.config.font.drawStageUploadLimitPerSecond.tooltip")).build()
+                    .number("drawStageUploadBatchSize").defaultValue(Double.valueOf(2.0)).range(0, 256)
+                        .label(tr.apply("modernui.config.font.drawStageUploadBatchSize")).helper(tr.apply("modernui.config.font.drawStageUploadBatchSize.tooltip")).build()
                     .number("aaStrength").defaultValue(Double.valueOf(12.0)).range(1, 120)
-                        .label("aaStrength").helper("AA 强度").build()
+                        .label(tr.apply("modernui.config.font.aaStrength")).helper(tr.apply("modernui.config.font.aaStrength.tooltip")).build()
                     .bool("replaceOrigin").defaultValue(Boolean.TRUE)
-                        .label("replaceOrigin").helper("是否替换原版字体渲染").build()
+                        .label(tr.apply("modernui.config.font.replaceOrigin")).helper(tr.apply("modernui.config.font.replaceOrigin.tooltip")).build()
                     .bool("customInvCountFont").defaultValue(Boolean.FALSE)
-                        .label("customInvCountFont").helper("是否接管物品数量字体").build()
+                        .label(tr.apply("modernui.config.font.customInvCountFont")).helper(tr.apply("modernui.config.font.customInvCountFont.tooltip")).build()
                     .simpleList("fontSort").defaultValue(new ArrayList<String>(Arrays.asList("Inter Frozen Medium", "Source Han Sans CN Medium")))
-                        .label("fontSort").helper("字库排序优先级，靠前者优先匹配。拖动把手或输入全局序号调整顺序；列表固定为当前已发现字体，不能添加、删除或改名。").build()
+                        .label(tr.apply("modernui.config.font.fontSort")).helper(tr.apply("modernui.config.font.fontSort.tooltip")).build()
                     .simpleList("characterFontRules").defaultValue(new ArrayList<String>())
-                        .label("characterFontRules").helper("字符字体规则，每行\"选择器=字体名\"。选择器支持单字符(a)、Unicode码点(U+0041)、连续范围(a-z 或 U+4E00-U+9FFF)。禁用某条规则加 disabled: 前缀。").build()
+                        .label(tr.apply("modernui.config.font.characterFontRules")).helper(tr.apply("modernui.config.font.characterFontRules.tooltip")).build()
                     .string("westernNormalFont").defaultValue("")
-                        .label("西文·正常").helper("西文（拉丁等）正常体字体族名；留空自动。从已发现字体中选择。").build()
+                        .label(tr.apply("modernui.config.font.westernNormalFont")).helper(tr.apply("modernui.config.font.westernNormalFont.tooltip")).build()
                     .string("westernBoldFont").defaultValue("")
-                        .label("西文·粗体").helper("西文粗体字体族名；留空自动匹配粗体字面。").build()
+                        .label(tr.apply("modernui.config.font.westernBoldFont")).helper(tr.apply("modernui.config.font.westernBoldFont.tooltip")).build()
                     .string("westernItalicFont").defaultValue("")
-                        .label("西文·斜体").helper("西文斜体字体族名；指派后斜体文本使用该族真实斜体字面（关闭几何斜切）。").build()
+                        .label(tr.apply("modernui.config.font.westernItalicFont")).helper(tr.apply("modernui.config.font.westernItalicFont.tooltip")).build()
                     .string("cjkNormalFont").defaultValue("")
-                        .label("中文·正常").helper("中文（CJK）正常体字体族名；留空自动。").build()
+                        .label(tr.apply("modernui.config.font.cjkNormalFont")).helper(tr.apply("modernui.config.font.cjkNormalFont.tooltip")).build()
                     .string("cjkBoldFont").defaultValue("")
-                        .label("中文·粗体").helper("中文粗体字体族名；留空自动匹配粗体字面。").build()
+                        .label(tr.apply("modernui.config.font.cjkBoldFont")).helper(tr.apply("modernui.config.font.cjkBoldFont.tooltip")).build()
                     .string("cjkItalicFont").defaultValue("")
-                        .label("中文·斜体").helper("中文斜体字体族名；指派后斜体文本使用该族真实斜体字面（关闭几何斜切）。").build()
+                        .label(tr.apply("modernui.config.font.cjkItalicFont")).helper(tr.apply("modernui.config.font.cjkItalicFont.tooltip")).build()
                 .endSection()
                 .section("fontSizeSetting")
                     .title(tr.apply("modernui.md.tab.fontsize"))
                     .number("glyphGenerationSize").legacyAliases("awtCharSize").defaultValue(Double.valueOf(48.0)).range(8, 256)
-                        .label("glyphGenerationSize").helper("字形生成分辨率（atlas 坐标系）；与 gameCharSize 的比值是显示侧缩放因子，调高更清晰但图集显存随之增大").build()
+                        .label(tr.apply("modernui.config.font.glyphGenerationSize")).helper(tr.apply("modernui.config.font.glyphGenerationSize.tooltip")).build()
                     .number("gameCharSize").legacyAliases("charSize").defaultValue(Double.valueOf(8.0)).range(1, 72)
-                        .label("gameCharSize").helper("游戏字符大小：原版字符的默认显示字号，同时是宽度与行高折算的基准；改它等于改原版观感并触发字形重建").build()
+                        .label(tr.apply("modernui.config.font.gameCharSize")).helper(tr.apply("modernui.config.font.gameCharSize.tooltip")).build()
                 .endSection()
                 .build();
     }
