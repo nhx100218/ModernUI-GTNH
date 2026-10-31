@@ -12,6 +12,7 @@ import blocamlimb.nhx100218.modernui.config.ConfigException;
 import blocamlimb.nhx100218.modernui.config.runtime.ConfigManager;
 import blocamlimb.nhx100218.modernui.config.schema.ConfigSchema;
 import blocamlimb.nhx100218.modernui.config.ui.ConfigScreen;
+import blocamlimb.nhx100218.modernui.config.ui.ConfigText;
 import blocamlimb.nhx100218.modernui.config.ui.theme.ConfigTheme;
 import blocamlimb.nhx100218.modernui.uilib.MyMod;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.host.SceneHostAssembly;
@@ -88,6 +89,7 @@ public final class ModernConfigEntry {
             return parent;
         }
         final File configFile = new File(minecraft.mcDataDir, ModernConfigAssembly.CONFIG_RELATIVE_PATH);
+        ConfigText.setTranslator(I18n::format);
         final ConfigSchema schema = ModernUiConfigSchema.create(I18n::format);
 
         final ConfigManager manager;
