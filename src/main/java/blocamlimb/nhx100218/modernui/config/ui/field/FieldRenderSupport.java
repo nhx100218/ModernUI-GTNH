@@ -1,5 +1,8 @@
 package blocamlimb.nhx100218.modernui.config.ui.field;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import blocamlimb.nhx100218.modernui.config.schema.FieldSpec;
 import blocamlimb.nhx100218.modernui.config.schema.IntegerCodec;
 import blocamlimb.nhx100218.modernui.uilib.ui.reactive.Computed;
@@ -95,7 +98,7 @@ public final class FieldRenderSupport {
      * {@code draftSignal<Object>} → {@code ReadableSignal<String>}：NUMBER 字段文本输入场景。
      *
      * <p>语义复刻 {@code NumberFieldRenderer.renderTextInput} 原内联 {@code Computed}：
-     * {@code null} → {@code ""}；{@link Number} 经 {@link #formatReadout(double)} 去整{@code .0}，
+     * {@code null} → {@code ""}；{@link Number} 经 {@link #formatNumberText(double)} 去整{@code .0}，
      * 其余调 {@link String#valueOf(Object)}（parse 失败存原 String 透出，由 DraftBuffer 校验报错）。</p>
      *
      * @param source draft 原始 Object signal
@@ -107,7 +110,7 @@ public final class FieldRenderSupport {
 
     /**
      * draft 值 → NUMBER 字段显示文本（{@link #toNumberStringSignal} 的同步同口径版本）：
-     * {@code null} → {@code ""}；{@link Number} → {@link #formatReadout(double)}（整数值去 {@code .0}）；
+     * {@code null} → {@code ""}；{@link Number} → {@link #formatNumberText(double)}（整数值去 {@code .0}）；
      * 其余 {@link String#valueOf(Object)}（draft 里 parse 失败的原文原样透出）。
      *
      * <p><b>为何要有同步版本</b>：{@code Computed.create(Supplier)} 的初值是 {@code null}，
@@ -177,7 +180,7 @@ public final class FieldRenderSupport {
                 return "";
             }
             if (value instanceof Number) {
-                return formatReadout(((Number) value).doubleValue());
+                return formatNumberText(((Number) value).doubleValue());
             }
             return String.valueOf(value);
         }
@@ -268,14 +271,11 @@ public final class FieldRenderSupport {
     }
 
     /**
-     * 把 Object 安全转为 {@code double}。
+     * Safely converts a value to a double. Numbers are read directly; strings are parsed and
+     * invalid values fall back to zero so slider/codec paths do not throw.
      *
-     * <p>{@link Number} 直接取 {@code doubleValue()}；其余经 {@link String#valueOf(Object)}
-     * 再 {@link Double#parseDouble(String)}，失败返回 {@code 0.0}（语义：缺失 / 非法 → 0，
-     * slider 不崩、文本框由 DraftBuffer 校验报错）。</p>
-     *
-     * @param v 原始值
-     * @return double 值，无法解析返回 0.0
+     * @param v raw value
+     * @return parsed double, or zero when conversion fails
      */
     public static double toDouble(Object v) {
         if (v instanceof Number) {
@@ -289,18 +289,40 @@ public final class FieldRenderSupport {
     }
 
     /**
-     * 格式化数字读数：整数值去 {@code .0}（如 {@code 5.0} → {@code "5"}），浮点保留原值。
+     * Formats a numeric readout for display: integers stay plain, finite decimals are rounded
+     * to at most three places and trailing zeros are removed. Very large/small values keep
+     * their exact machine representation.
      *
-     * <p>用于 slider 读数文本与 NUMBER 文本输入显示，复刻原
-     * {@code NumberFieldRenderer.formatReadout} 语义。</p>
-     *
-     * @param v 当前值
-     * @return 读数字符串（整数去 {@code .0}）
+     * @param v numeric value
+     * @return display text
      */
-    public static String formatReadout(double v) {
+    /**
+     * Canonical text for number input fields. Unlike the compact slider readout this keeps the
+     * exact double representation so editing never silently loses precision.
+     *
+     * @param v numeric value
+     * @return canonical text
+     */
+    public static String formatNumberText(double v) {
         if (v == Math.floor(v) && !Double.isInfinite(v)) {
             return Long.toString((long) v);
         }
         return Double.toString(v);
+    }
+    public static String formatReadout(double v) {
+        if (Double.isNaN(v) || Double.isInfinite(v)) {
+            return Double.toString(v);
+        }
+        if (v == Math.floor(v) && Math.abs(v) < 9.0E15D) {
+            return Long.toString((long) v);
+        }
+        double magnitude = Math.abs(v);
+        if (magnitude >= 1.0E9D || magnitude < 1.0E-4D) {
+            return Double.toString(v);
+        }
+        return BigDecimal.valueOf(v)
+                .setScale(3, RoundingMode.HALF_UP)
+                .stripTrailingZeros()
+                .toPlainString();
     }
 }

@@ -841,38 +841,6 @@ public class SceneRuntime implements SceneFontEnvironment {
         motionDriver.startEaseOut(key, durationMillis, applier, completion);
     }
 
-    /**
-     * 登记一组等待 layout-ready 后启动的 Owner-bound 级联位移。
-     *
-     * <p>targets 应是 identity transform 且独占 internal presentation offset 的 shell；
-     * 初态与终态均保持 {@code opacity=1}。当前 Owner 卸载时自动取消全部 delay/active 轨道并归零位移，
-     * 其它页面无需复制 key、layout observer 与 cleanup 状态机。双下划线表示 internal bridge，
-     * 不形成公共兼容承诺。</p>
-     *
-     * @param targets 按视觉顺序排列的 presentation shell
-     * @param startOffsetY 初始 Y 位移，可为负值
-     * @param durationMillis 每项运行时长
-     * @param itemDelayMillis 相邻项启动间隔
-     * @param maxDelayMillis 整组最大启动延迟，避免长列表尾项等待过久
-     */
-    public void __staggeredReveal(List<SceneNode> targets,
-                                  float startOffsetY,
-                                  int durationMillis,
-                                  int itemDelayMillis,
-                                  int maxDelayMillis) {
-        if (!UiNumbers.isFinite(startOffsetY)) {
-            throw new IllegalArgumentException("startOffsetY 必须是有限值");
-        }
-        if (durationMillis < 0 || itemDelayMillis < 0 || maxDelayMillis < 0) {
-            throw new IllegalArgumentException("duration/itemDelay/maxDelay 不可为负数");
-        }
-        Owner current = Owner.current();
-        Owner targetOwner = current != null ? current : rootOwner;
-        SceneStaggeredReveal.install(motionDriver, layoutDoneSignal, targetOwner, targets,
-                startOffsetY, durationMillis, itemDelayMillis, maxDelayMillis,
-                inputRouter::__requestHoverReconcile);
-    }
-
     /** 取消指定 keyed Motion。 */
     public void __cancelMotion(Object key) {
         if (key != null) {

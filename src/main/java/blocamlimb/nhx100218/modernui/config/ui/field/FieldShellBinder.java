@@ -86,7 +86,7 @@ public final class FieldShellBinder {
         if (spec.helper() != null && !spec.helper().isEmpty()) {
             SceneTooltip.attach(rt, new SceneTooltip.Props(label,
                     Signal.create(spec.helper()), null, 350,
-                    ConfigTheme.dp(260), 6));
+                    ConfigTheme.dp(420), 0, true));
         }
 
         SceneNode error = text("", theme.errorColor(), theme.fontError());

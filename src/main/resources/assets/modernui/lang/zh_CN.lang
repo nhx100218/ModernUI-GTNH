@@ -168,7 +168,7 @@ modernui.config.group.interface=界面
 modernui.config.group.advanced=高级
 modernui.dashboard.title=Modern UI 操作中心
 modernui.dashboard.changelog=更新内容
-modernui.dashboard.about=ModernUI-GTNH\nModern UI 的 1.7.10 移植\n\n版本 1.1.1\n源码: nhx100218/ModernUI-GTNH\n原作者: BloCamLimb
+modernui.dashboard.about=ModernUI-GTNH\nModern UI 的 1.7.10 移植\n\n版本 %version%\n源码: nhx100218/ModernUI-GTNH\n原作者: BloCamLimb
 modernui.dashboard.changes=• 配置页改为 MD3 大圆角面板\n• 修改立即生效并自动保存\n• 控件跟随 GUI Scale 缩放\n• 描述改为悬停 Tooltip\n• 导航栏和 Tab 对齐 ModernUI
 
 modernui.config.general.useDebug=调试输出
@@ -181,8 +181,6 @@ modernui.config.general.netTransport=网络传输
 modernui.config.general.netTransport.tooltip=选择 vanilla early mixin 或 Forge 传输。
 modernui.config.general.pickerDensity=选择器密度
 modernui.config.general.pickerDensity.tooltip=选择器布局密度：自动、紧凑、标准或宽松。
-modernui.config.general.configPageTheme=配置页主题
-modernui.config.general.configPageTheme.tooltip=flat 使用实色面板，glass 使用半透明面板。
 modernui.config.general.backdropQuality=背景质量
 modernui.config.general.backdropQuality.tooltip=full 高质量、eco 省电、solid 关闭。
 

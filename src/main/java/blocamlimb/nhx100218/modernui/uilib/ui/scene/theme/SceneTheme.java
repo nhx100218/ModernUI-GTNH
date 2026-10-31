@@ -76,6 +76,7 @@ public final class SceneTheme {
     private final int errorText;
     private final int warningText;
     private final int warningSubtle;
+    private final int selectionTintAlpha;
 
     private SceneTheme(Builder builder) {
         EnumMap<Role, SceneSurfaceStyle> copy = new EnumMap<Role, SceneSurfaceStyle>(Role.class);
@@ -111,6 +112,7 @@ public final class SceneTheme {
         errorText = builder.errorText;
         warningText = builder.warningText;
         warningSubtle = builder.warningSubtle;
+        selectionTintAlpha = builder.selectionTintAlpha;
     }
 
     /** @return 新 builder（默认取深色液态玻璃档） */
@@ -164,6 +166,9 @@ public final class SceneTheme {
      * 否则主题切换不会重派生。与危险家族的 {@code DANGER_BG_SUBTLE} 同构造口径（低 alpha 叠加）。</p>
      */
     public int warningSubtle() { return warningSubtle; }
+
+    /** @return alpha byte used when tinting selected control surfaces. */
+    public int selectionTintAlpha() { return selectionTintAlpha; }
 
     /**
      * 以本主题当前值为起点的构建器：全部语义色与九份角色配方按现值预置，可逐项覆盖。
@@ -388,6 +393,7 @@ public final class SceneTheme {
         private int errorText = 0xFFFFB4AB;
         private int warningText = 0xFFFBBF24;
         private int warningSubtle = 0x22FBBF24;
+        private int selectionTintAlpha = 0x59;
 
         private Builder() {
             // 默认深色液态玻璃角色配方：builder() 与各静态工厂共用同一套起点。
@@ -426,6 +432,9 @@ public final class SceneTheme {
         /** 设置警告级弱底语义槽（重复徽章底等）。 */
         public Builder warningSubtle(int value) { warningSubtle = value; return this; }
 
+        /** Overrides the alpha byte applied to selected control tints. */
+        public Builder selectionTintAlpha(int value) { selectionTintAlpha = value; return this; }
+
         /** @return 不可变主题 */
         public SceneTheme build() { return new SceneTheme(this); }
     }
@@ -445,6 +454,7 @@ public final class SceneTheme {
                 && borderDisabled == that.borderDisabled && danger == that.danger
                 && errorText == that.errorText && warningText == that.warningText
                 && warningSubtle == that.warningSubtle
+                && selectionTintAlpha == that.selectionTintAlpha
                 && surfaces.equals(that.surfaces);
     }
     @Override
@@ -452,7 +462,7 @@ public final class SceneTheme {
         return Objects.hash(surfaces, foreground, mutedForeground, disabledForeground, onAccentForeground,
                 accent, accentHover, accentPressed, selectionBackground, selectionForeground,
                 borderDefault, borderFocus, borderDisabled, danger, errorText, warningText,
-                warningSubtle);
+                warningSubtle, selectionTintAlpha);
     }
     @Override
     public String toString() {

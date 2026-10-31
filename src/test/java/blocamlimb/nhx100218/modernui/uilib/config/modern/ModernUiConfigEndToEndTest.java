@@ -312,7 +312,7 @@ public class ModernUiConfigEndToEndTest {
 
     /** Schema 保留各配置分组；配置页主题在旧文件缺键时默认平面。 */
     @Test
-    public void schemaKeepsSectionsAndDefaultsMissingThemeToFlat() throws Exception {
+    public void schemaKeepsSections() throws Exception {
         ConfigSchema schema = ModernUiConfigSchema.create();
         assertEquals("modernui", schema.modId());
         assertEquals(13, schema.sections().size());
@@ -320,8 +320,6 @@ public class ModernUiConfigEndToEndTest {
         assertEquals("general", schema.sections().get(10).name());
         assertEquals("fontSystem", schema.sections().get(11).name());
         assertEquals("fontSizeSetting", schema.sections().get(12).name());
-        assertEquals("flat", blocamlimb.nhx100218.modernui.config.runtime.Authority.load((File) null, schema)
-                .getString("general.configPageTheme"));
     }
 
     // ===== range 上界边界回归测试 =====

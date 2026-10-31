@@ -401,7 +401,7 @@ public final class SceneThemes {
     }
 
     /**
-     * 强调版角色配方：tint 的 RGB 换成主题强调色、alpha 取 {@link #SELECTED_TINT_ALPHA}，
+     * 强调版角色配方：tint 的 RGB 换成主题强调色、alpha 取 {@link SceneTheme#selectionTintAlpha()}，
      * edge/elevation/lens/圆角保持角色配方。
      *
      * @param rt   目标 runtime，不可为 null
@@ -451,9 +451,9 @@ public final class SceneThemes {
 
     private static SceneSurfaceStyle accentOf(SceneSurfaceStyle style, SceneTheme theme) {
         return style.toBuilder()
-                .idle(tinted(style.getIdle(), theme.accent()))
-                .hovered(tinted(style.getHovered(), theme.accentHover()))
-                .pressed(tinted(style.getPressed(), theme.accentPressed()))
+                .idle(tinted(style.getIdle(), theme.accent(), theme.selectionTintAlpha()))
+                .hovered(tinted(style.getHovered(), theme.accentHover(), theme.selectionTintAlpha()))
+                .pressed(tinted(style.getPressed(), theme.accentPressed(), theme.selectionTintAlpha()))
                 .build();
     }
 
@@ -461,10 +461,9 @@ public final class SceneThemes {
      * 选中/强调表面的染色强度：角色配方自带的 alpha（如 INDICATOR 的 0x0E≈5.5%）只适合
      * 未选中态，选中态必须用更高 alpha 才能读出「已选中」，否则只剩色相差。
      */
-    private static final int SELECTED_TINT_ALPHA = 0x59;
 
-    private static SceneSurfaceStyle.StateStyle tinted(SceneSurfaceStyle.StateStyle state, int argb) {
-        return new SceneSurfaceStyle.StateStyle((SELECTED_TINT_ALPHA << 24) | (argb & 0xFFFFFF),
+    private static SceneSurfaceStyle.StateStyle tinted(SceneSurfaceStyle.StateStyle state, int argb, int alpha) {
+        return new SceneSurfaceStyle.StateStyle(((alpha & 0xFF) << 24) | (argb & 0xFFFFFF),
                 state.getEdge(), state.getElevation(), state.getLensFactor());
     }
 

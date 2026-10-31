@@ -1,38 +1,18 @@
 package blocamlimb.nhx100218.modernui.config.ui.theme;
 
 import blocamlimb.nhx100218.modernui.uilib.ui.reactive.ReadableSignal;
-import blocamlimb.nhx100218.modernui.uilib.ui.render.UiBackdrop;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormTheme;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.form.FormThemes;
-import blocamlimb.nhx100218.modernui.uilib.ui.render.UiGlassMaterial;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.paint.SceneChromeTokens;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.SceneRuntime;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneSurfaceStyle;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneTheme;
 
 /**
- * 配置页 UI 主题的「配置包内消费入口」：双路径，与 {@code FormTheme}/{@code FormThemes}
- * 的 G11 双路径同构。
+ * Config page theme values and helpers.
  *
- * <p><b>默认路径</b>（全库液态玻璃外观）：{@link #asFormTheme(SceneRuntime)} 经
- * {@link FormThemes} 既有桥把当前来源主题（页面 {@code SceneThemes.withTheme} 局部主题 &gt;
- * runtime 默认主题 &gt; 库默认液态玻璃档）派生为 {@link FormTheme}，主题切换自动重派生；
- * 页壳语义色同样直接经 {@link blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneThemes} 的冻结便捷入口消费。
- * 本类<b>不是</b>颜色权威：不复制、不改写任何色板，只做配置包内的消费收口。</p>
- *
- * <p><b>显式路径</b>（旧语义，完整保留）：本类静态常量与无参 {@link #asFormTheme()} 保持
- * 「配置包内共享的显式旧主题」语义——固定值、不感知主题切换，供尚未迁移的调用点继续使用
- * （契约 §4.2：{@code FormTheme}/{@code ConfigTheme} 保留旧显式主题语义；新增默认解析走主题）。
- * {@code ConfigScreen} 与字段渲染器按 G15 序列在后续实例逐个转入默认路径。</p>
- *
- * <p><b>方向纪律</b>：配置包只消费 UILib 主题/模板，不反向成为主题中心——本类不得被
- * {@code ui.scene.theme}/{@code ui.scene.form} 引用，桥接逻辑一律复用既有
- * {@link FormThemes}，不新建第二份解析。</p>
- *
- * <p><b>访问说明</b>：概念上仅 config.ui 内部使用；因 Java 跨包访问限制
- * （{@code ConfigScreen} 在 {@code config.ui}，{@code FieldRenderer} 实现在
- * {@code config.ui.field}），常量需跨包可见，故类与常量设为 public。
- * 不属于对外公开 API。</p>
+ * <p>The config screen uses a solid Material 3 palette. Form widgets resolve their colors
+ * through {@link FormThemes}; no glass/backdrop variant is exposed here.</p>
  */
 public final class ConfigTheme {
 
@@ -45,8 +25,8 @@ public final class ConfigTheme {
     /** 按钮宽度 */
     public static int BUTTON_WIDTH = 108;
 
-    /** 全屏 Material 暗色遮罩（80% 不透明），世界画面可在其后连续透出。 */
-    public static final int ROOT_BG = 0xCC1A110F;
+    /** Opaque black fallback; the screen makes this transparent while a world is loaded. */
+    public static final int ROOT_BG = 0xFF000000;
     /** Material dark surface container。 */
     public static final int VIEWPORT_BG = 0xFF1A110F;
     /** 导航与底部操作区的 tonal surface。 */
@@ -200,15 +180,9 @@ public final class ConfigTheme {
 
     /** Solid ModernUI/Material 3 dark theme for the flat config page. */
     public static SceneTheme modernDark() {
-        return modernTheme(false);
+        return modernTheme();
     }
-
-    /** Translucent ModernUI/Material 3 dark theme for the glass config page. */
-    public static SceneTheme modernGlass() {
-        return modernTheme(true);
-    }
-
-    private static SceneTheme modernTheme(boolean glass) {
+    private static SceneTheme modernTheme() {
         SceneTheme.Builder builder = SceneTheme.builder()
                 .foreground(ON_SURFACE)
                 .mutedForeground(ON_SURFACE_VARIANT)
@@ -225,9 +199,10 @@ public final class ConfigTheme {
                 .danger(ERROR)
                 .errorText(ERROR)
                 .warningText(TERTIARY)
-                .warningSubtle(0x22D9C58D);
+                .warningSubtle(0xFF3B3220)
+                .selectionTintAlpha(0xFF);
         for (SceneTheme.Role role : SceneTheme.Role.values()) {
-            builder.surface(role, glass ? glassSurface(role) : solidSurface(role));
+            builder.surface(role, solidSurface(role));
         }
         return builder.build();
     }
@@ -263,82 +238,12 @@ public final class ConfigTheme {
                 .cornerRadius(SceneTheme.PILL_RADIUS)
                 .borderWidth(0)
                 .focusEdge(PRIMARY)
-                .idle(new SceneSurfaceStyle.StateStyle(0x005D4038, 0, 0.0F, 0.0F))
-                .hovered(new SceneSurfaceStyle.StateStyle(0x335D4038, 0, 0.0F, 0.0F))
-                .pressed(new SceneSurfaceStyle.StateStyle(0x225D4038, 0, 0.0F, 0.0F))
-                .disabled(new SceneSurfaceStyle.StateStyle(0x005D4038, 0, 0.0F, 0.0F))
+                .idle(new SceneSurfaceStyle.StateStyle(0xFF322825, 0, 0.0F, 0.0F))
+                .hovered(new SceneSurfaceStyle.StateStyle(0xFF3D3230, 0, 0.0F, 0.0F))
+                .pressed(new SceneSurfaceStyle.StateStyle(0xFF44312C, 0, 0.0F, 0.0F))
+                .disabled(new SceneSurfaceStyle.StateStyle(0xFF231917, 0, 0.0F, 0.0F))
                 .build();
     }
-    private static SceneSurfaceStyle glassSurface(SceneTheme.Role role) {
-        if (role == SceneTheme.Role.INDICATOR) {
-            return SceneSurfaceStyle.builder()
-                    .backdrop(UiBackdrop.liquidGlass(UiGlassMaterial.DARK_THIN, 8, 0.6F))
-                    .cornerRadius(SceneTheme.PILL_RADIUS)
-                    .borderWidth(0)
-                    .focusEdge(PRIMARY)
-                    .idle(new SceneSurfaceStyle.StateStyle(0x005D4038, 0x00E7BDB2, 0.5F, 0.85F))
-                    .hovered(new SceneSurfaceStyle.StateStyle(0x335D4038, 0x66E7BDB2, 1.0F, 1.0F))
-                    .pressed(new SceneSurfaceStyle.StateStyle(0x225D4038, 0x44E7BDB2, 0.0F, 0.60F))
-                    .disabled(new SceneSurfaceStyle.StateStyle(0x005D4038, 0x00E7BDB2, 0.35F, 0.65F))
-                    .build();
-        }
-        int radius = role == SceneTheme.Role.INDICATOR ? SceneTheme.PILL_RADIUS
-                : role == SceneTheme.Role.OVERLAY ? 16
-                : role == SceneTheme.Role.BUTTON_STANDARD || role == SceneTheme.Role.BUTTON_PRIMARY
-                        || role == SceneTheme.Role.BUTTON_DANGER ? 20 : 12;
-        int idle;
-        int edge;
-        switch (role) {
-            case PANEL:
-                idle = SURFACE;
-                edge = OUTLINE_VARIANT;
-                break;
-            case TOOLBAR:
-                idle = SURFACE_LOW;
-                edge = OUTLINE_VARIANT;
-                break;
-            case INPUT:
-                idle = SURFACE_LOWEST;
-                edge = OUTLINE;
-                break;
-            case GROUP:
-                idle = SURFACE_CONTAINER_TONE;
-                edge = OUTLINE_VARIANT;
-                break;
-            case OVERLAY:
-                idle = SURFACE_HIGH;
-                edge = OUTLINE;
-                break;
-            case INDICATOR:
-                idle = SECONDARY_CONTAINER;
-                edge = SECONDARY;
-                break;
-            case BUTTON_PRIMARY:
-                idle = PRIMARY;
-                edge = PRIMARY;
-                break;
-            case BUTTON_DANGER:
-                idle = ERROR;
-                edge = ERROR;
-                break;
-            case BUTTON_STANDARD:
-            default:
-                idle = SURFACE_HIGH;
-                edge = OUTLINE_VARIANT;
-                break;
-        }
-        return SceneSurfaceStyle.builder()
-                .backdrop(UiBackdrop.liquidGlass(UiGlassMaterial.DARK_THIN, 8, 0.6F))
-                .cornerRadius(radius)
-                .borderWidth(1)
-                .focusEdge(PRIMARY)
-                .idle(new SceneSurfaceStyle.StateStyle(withAlpha(idle, 0xCC), withAlpha(edge, 0x66), 0.5F, 0.85F))
-                .hovered(new SceneSurfaceStyle.StateStyle(withAlpha(idle, 0xEE), withAlpha(edge, 0x99), 1.0F, 1.0F))
-                .pressed(new SceneSurfaceStyle.StateStyle(withAlpha(idle, 0xAA), withAlpha(edge, 0x55), 0.0F, 0.60F))
-                .disabled(new SceneSurfaceStyle.StateStyle(withAlpha(idle, 0x66), withAlpha(edge, 0x33), 0.35F, 0.65F))
-                .build();
-    }
-
     private static SceneSurfaceStyle solid(int idle, int hover, int pressed, int edge, int radius) {
         return SceneSurfaceStyle.builder()
                 .backdrop(null)
@@ -352,9 +257,6 @@ public final class ConfigTheme {
                 .build();
     }
 
-    private static int withAlpha(int argb, int alpha) {
-        return ((Math.max(0, Math.min(0xFF, alpha)) << 24) | (argb & 0x00FFFFFF));
-    }
     /** @return current config UI density (1.0 = 100%). */
     public static float density() {
         return sDensity;

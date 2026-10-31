@@ -21,7 +21,7 @@ public class McScreenBridgeTest {
             "src/main/java/blocamlimb/nhx100218/modernui/uilib/ui/host/UiHostRenderSupport.java");
 
     @Test
-    public void modernConfigKeepsFullSurfaceAndOnlySuppressesWorldBackground() throws Exception {
+    public void modernConfigKeepsFullSurfaceAndUsesWorldAwareBackground() throws Exception {
         String bridge = source(BRIDGE_SOURCE);
         String modernConfig = source(MODERN_CONFIG_SOURCE);
 
@@ -48,7 +48,9 @@ public class McScreenBridgeTest {
         Assert.assertTrue("世界内背景抑制必须收窄在 ModernConfigScreen",
                 modernConfig.contains("public void drawDefaultBackground()")
                         && modernConfig.contains("if (!hasWorldContext())")
-                        && modernConfig.contains("super.drawDefaultBackground()"));
+                        && modernConfig.contains("Gui.drawRect(0, 0, width, height, 0xFF000000)"));
+        Assert.assertTrue("save 内背景应为透明，菜单内为黑色",
+                modernConfig.contains("setWorldBackdrop(hasWorldContext())"));
     }
 
     private static String source(Path path) throws Exception {
