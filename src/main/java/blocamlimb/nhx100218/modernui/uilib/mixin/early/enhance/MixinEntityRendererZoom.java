@@ -39,12 +39,7 @@ public abstract class MixinEntityRendererZoom {
         // 额外再慢一点
         zoom *= Math.max(1.0F, blocamlimb.nhx100218.modernui.enhance.vanilla.ZoomConfig.sensitivity);
         // lwjgl3ify 下视角走 FloatMouseHelper 的 float 增量，两个都缩放。
-        if (mc.mouseHelper instanceof me.eigenraven.lwjgl3ify.api.FloatMouseHelper) {
-            me.eigenraven.lwjgl3ify.api.FloatMouseHelper helper =
-                    (me.eigenraven.lwjgl3ify.api.FloatMouseHelper) mc.mouseHelper;
-            helper.lwjgl3ify$setFloatDX(helper.lwjgl3ify$getFloatDX() / zoom);
-            helper.lwjgl3ify$setFloatDY(helper.lwjgl3ify$getFloatDY() / zoom);
-        }
+        blocamlimb.nhx100218.modernui.enhance.vanilla.Lwjgl3ifyMouseCompat.scale(mc.mouseHelper, zoom);
         mc.mouseHelper.deltaX = Math.round(mc.mouseHelper.deltaX / zoom);
         mc.mouseHelper.deltaY = Math.round(mc.mouseHelper.deltaY / zoom);
     }

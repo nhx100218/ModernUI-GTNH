@@ -37,6 +37,7 @@ import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.MountHandle;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.SceneRuntime;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneScrollbar;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.image.SceneImageSource;
+import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneCursor;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneEventType;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.PlatformInputSource;
@@ -1088,7 +1089,10 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     /** Applies the world-aware backdrop: transparent in a save, black at the menus. */
     public void setWorldBackdrop(boolean inWorld) {
         if (root != null) {
-            root.setBackgroundColor(inWorld ? 0x00000000 : ConfigTheme.ROOT_BG);
+            // SDL GPU 下透明背景会让世界画面与全屏 UI 叠加，既卡又容易触发后端问题；
+            // 配置界面固定使用不透明底色。
+            boolean transparent = inWorld && !AngelicaRendererCompat.isSdlGpuActive();
+            root.setBackgroundColor(transparent ? 0x00000000 : ConfigTheme.ROOT_BG);
         }
     }
 

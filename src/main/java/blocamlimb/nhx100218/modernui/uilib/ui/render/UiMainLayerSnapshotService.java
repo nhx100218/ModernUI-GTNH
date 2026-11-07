@@ -40,15 +40,29 @@ public final class UiMainLayerSnapshotService {
     private boolean frameActive;
     private boolean disabledForFrame;
     private boolean filterPassDisabledForFrame;
+    /** 宿主可逐帧关闭快照（SDL GPU 的屏幕入口用它规避设备挂起）。 */
+    private boolean disabled;
     private String lastFailureDetail = "not-run";
     private String lastFilterPassFailureDetail = "";
 
     /**
      * 开始新一帧快照复用窗口。
      */
+    /**
+     * 设置是否禁用快照/滤镜 FBO。
+     *
+     * <p>SDL GPU 后端在屏幕帧上创建/读取全屏快照 FBO 会触发设备挂起；
+     * 屏幕入口可以在该后端关闭快照，让 backdrop-filter 走无快照降级。</p>
+     *
+     * @param disabled true 表示本帧及后续帧禁用快照
+     */
+    public void setDisabled(boolean disabled) {
+        this.disabled = disabled;
+    }
+
     public void beginFrame() {
         frameActive = true;
-        disabledForFrame = false;
+        disabledForFrame = disabled;
         filterPassDisabledForFrame = false;
         lastFailureDetail = "not-run";
         lastFilterPassFailureDetail = "";

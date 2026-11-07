@@ -21,9 +21,6 @@ import codechicken.lib.gui.GuiDraw;
 @Mixin(targets = "com.slprime.chromatictooltipscompat.event.NEIHandler$TooltipComponentCompat")
 public class MixinNeiTooltipComponentCompat {
 
-    /** NEI 行处理器整体横向微调（像素）：负值左移、正值右移。 */
-    private static final int PANEL_X_NUDGE = -2;
-
     @Unique
     private static final java.util.Set<String> modernui$logged =
             java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<String, Boolean>());
@@ -55,12 +52,12 @@ public class MixinNeiTooltipComponentCompat {
         // 因此改用整个 tooltip 宽度来居中。
         int targetWidth = tooltipW > 0 ? tooltipW : width;
         // 略微左移，与左侧文本对齐（观感修正）：改 PANEL_X_NUDGE 即可（负值左移，正值右移）。
-        int offset = (targetWidth - w) / 2 + PANEL_X_NUDGE;
+        int offset = (targetWidth - w) / 2 + TooltipConfig.neiPanelOffsetX;
         if (offset < 0) {
             offset = 0;
         }
         modernui$log(lineHandler.getClass().getName(), w, width, tooltipW, offset);
-        lineHandler.draw(x + offset, y);
+        lineHandler.draw(x + offset, y + TooltipConfig.neiPanelOffsetY);
         ci.cancel();
     }
 

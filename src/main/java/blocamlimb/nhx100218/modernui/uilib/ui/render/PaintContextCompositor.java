@@ -29,6 +29,8 @@ public final class PaintContextCompositor {
     private final List<UiRenderTarget> pendingCloseLayers = new ArrayList<UiRenderTarget>();
     private int borrowedLayerCount;
     private boolean disabledForFrame;
+    /** 宿主可逐帧关闭 FBO 图层（SDL GPU 的屏幕入口用它规避设备丢失）。 */
+    private boolean layersDisabled;
     private Throwable pendingLayerCleanupFailure;
     private final LayerFactory layerFactory;
 
@@ -41,12 +43,26 @@ public final class PaintContextCompositor {
     }
 
     /**
+     * 设置后续帧是否禁用 FBO 图层。
+     *
+     * <p>SDL GPU 后端在屏幕帧上创建/合成 opacity/transform 图层时会触发设备丢失；
+     * 屏幕入口可以在该后端逐帧关闭图层，直接画到当前 framebuffer。</p>
+     *
+     * @param disabled true 表示不创建图层
+     */
+    public void setLayersDisabled(boolean disabled) {
+        this.layersDisabled = disabled;
+    }
+
+    /**
      * 开始新一帧 paint context 回放。
      */
     public void beginFrame() {
         finishFrame();
         borrowedLayerCount = 0;
-        disabledForFrame = false;
+        // 屏幕入口在 SDL GPU 下逐帧关闭 FBO 图层（opacity / transform 合成），
+        // 直接画到当前 framebuffer，规避 Angelica 后端的设备丢失。
+        disabledForFrame = layersDisabled;
         pendingLayerCleanupFailure = retryPendingCloseLayers();
         if (pendingLayerCleanupFailure != null) {
             disabledForFrame = true;

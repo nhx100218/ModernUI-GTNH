@@ -19,6 +19,7 @@ import blocamlimb.nhx100218.modernui.uilib.ui.runtime.UiRuntimeAdapters;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.host.SceneHostAssembly;
 import blocamlimb.nhx100218.modernui.uilib.ui.render.UiMainLayerSnapshotService;
 import blocamlimb.nhx100218.modernui.uilib.ui.render.UiRenderContext;
+import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -115,6 +116,11 @@ public final class UiHudRenderListener {
         if (event == null || event.type != RenderGameOverlayEvent.ElementType.ALL) return;
         Minecraft minecraft = Minecraft.getMinecraft();
         if (minecraft == null) return;
+        // SDL GPU 下 HUD 帧会在 GUI 屏幕之上再走一遍 FBO/快照，配置界面左上角的
+        // 闪烁色块就是这层 HUD 残留。屏幕打开时直接跳过 HUD 帧。
+        if (AngelicaRendererCompat.isSdlGpuActive() && minecraft.currentScreen != null) {
+            return;
+        }
         HudViewportMetrics viewport = viewport();
         int width = viewport.getWidth();
         int height = viewport.getHeight();

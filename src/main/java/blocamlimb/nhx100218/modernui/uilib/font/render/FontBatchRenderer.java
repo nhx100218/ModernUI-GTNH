@@ -469,7 +469,6 @@ public class FontBatchRenderer implements GlyphCollector {
     public int flushWithinActiveState(FontShaderProgram shaderProgram, float[] modelviewOverride,
             float[] projectionOverride) {
         initialize();
-        shaderProgram.initialize();
 
         int flushedQuadCount = collector.getQuadCount();
         if (flushedQuadCount <= 0) {
@@ -484,6 +483,11 @@ public class FontBatchRenderer implements GlyphCollector {
             clearFrame();
             return 0;
         }
+        if (FontConfig.sdlGpuCompatibility) {
+            return flushWithHostImmediateMode(flushedQuadCount, modelviewOverride, projectionOverride);
+        }
+
+        shaderProgram.initialize();
 
         int pageSubmitCount = 0;
         int drawCallCount = 0;
@@ -535,6 +539,171 @@ public class FontBatchRenderer implements GlyphCollector {
         }
         clearFrame();
         return flushedQuadCount;
+    }
+
+    /**
+     * Angelica SDL GPU 兼容路径：用直接 GL 立即模式提交字形，绕开自定义 GLSL 管线。
+     *
+     * <p>SDL GPU 后端对自定义着色器的属性/采样状态转换不完整，真机上表现为大部分字形被
+     * 直接丢弃。这里改用项目约定的直接 GL 立即模式（{@code glBegin/glTexCoord/glColor/glVertex}），
+     * 由 Angelica 的 FFP 兼容层生成宿主着色器；字形仍然来自 ModernUI 自己的字体图集，
+     * 不像回退原版字体那样丢失自定义字体。</p>
+     *
+     * @param flushedQuadCount   已收集的四边形数量
+     * @param modelviewOverride  捕获时刻的模型视图矩阵；null 表示使用当前固定管线矩阵
+     * @param projectionOverride 捕获时刻的投影矩阵；null 表示使用当前固定管线矩阵
+     * @return 提交的四边形数量
+     */
+    private int flushWithHostImmediateMode(int flushedQuadCount, float[] modelviewOverride,
+            float[] projectionOverride) {
+        int pageSubmitCount = 0;
+        int drawCallCount = 0;
+        int textureBindCount = 0;
+        int boundTextureId = NO_TEXTURE;
+
+        FontRenderStateSupport.prepareTextRenderState();
+        // 立即模式必须走固定管线；FontRenderStateGuard 会在 flush 结束后恢复原 program。
+        GL20.glUseProgram(0);
+        GL13.glActiveTexture(GL13.GL_TEXTURE0);
+        // 字形图集是白色 RGB + alpha 覆盖度，必须用 MODULATE 才会乘上文字颜色。
+        GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_MODULATE);
+
+        boolean matricesPushed = false;
+        if (modelviewOverride != null && projectionOverride != null) {
+            pushMatrices();
+            matricesPushed = true;
+            loadMatrix(GL11.GL_PROJECTION, projectionOverride);
+            loadMatrix(GL11.GL_MODELVIEW, modelviewOverride);
+        } else if (assumeInternalUiMatrices) {
+            pushMatrices();
+            matricesPushed = true;
+            loadMatrix(GL11.GL_PROJECTION, internalUiProjectionBuffer);
+            GL11.glMatrixMode(GL11.GL_MODELVIEW);
+            GL11.glLoadIdentity();
+        }
+
+        try {
+            if (!collector.getMarkBackgroundBatch().isEmpty()) {
+                drawBatchImmediate(collector.getMarkBackgroundBatch(), false);
+                drawCallCount++;
+            }
+
+            for (int index = 0; index < collector.getActivePageCount(); index++) {
+                GlyphRenderBatch batch = collector.getActiveBatch(index);
+                if (batch == null || batch.isEmpty() || batch.getTextureId() <= 0) {
+                    continue;
+                }
+                if (batch.getTextureId() != boundTextureId) {
+                    GL11.glBindTexture(GL11.GL_TEXTURE_2D, batch.getTextureId());
+                    boundTextureId = batch.getTextureId();
+                    textureBindCount++;
+                }
+                drawBatchImmediate(batch, true);
+                pageSubmitCount++;
+                drawCallCount++;
+            }
+
+            if (!collector.getDecorationBatch().isEmpty()) {
+                drawBatchImmediate(collector.getDecorationBatch(), false);
+                drawCallCount++;
+            }
+        } finally {
+            if (matricesPushed) {
+                GL11.glMatrixMode(GL11.GL_PROJECTION);
+                GL11.glPopMatrix();
+                GL11.glMatrixMode(GL11.GL_MODELVIEW);
+                GL11.glPopMatrix();
+            }
+            clearFrame();
+        }
+
+        recordLastFlushTailState(boundTextureId);
+        recordLastFlushStats(pageSubmitCount, drawCallCount, textureBindCount);
+        if (FontRuntimeDiagnostics.shouldLogFlushBatchStats()) {
+            MyMod.LOG.debug("SDL GPU 字体兜底提交：pageBatches={} drawCalls={} textureBinds={} quadCount={}",
+                    Integer.valueOf(pageSubmitCount), Integer.valueOf(drawCallCount),
+                    Integer.valueOf(textureBindCount), Integer.valueOf(flushedQuadCount));
+        }
+        return flushedQuadCount;
+    }
+
+    private static void pushMatrices() {
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glPushMatrix();
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glPushMatrix();
+    }
+
+    private static void loadMatrix(int matrixMode, float[] matrix) {
+        GL11.glMatrixMode(matrixMode);
+        FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
+        buffer.put(matrix, 0, 16);
+        buffer.flip();
+        GL11.glLoadMatrix(buffer);
+    }
+
+    private static void loadMatrix(int matrixMode, FloatBuffer matrix) {
+        GL11.glMatrixMode(matrixMode);
+        FloatBuffer buffer = matrix.duplicate();
+        buffer.position(0);
+        buffer.limit(16);
+        GL11.glLoadMatrix(buffer);
+    }
+
+    /**
+     * 以立即模式提交一个批次。顶点布局与自定义着色器完全一致，只是改由宿主 FFP 着色器采样。
+     *
+     * @param batch    字形批次
+     * @param textured true 表示使用字体图集，false 表示纯色装饰矩形
+     */
+    private static void drawBatchImmediate(GlyphRenderBatch batch, boolean textured) {
+        float[] data = batch.vertexDataForHostPipeline();
+        int stride = GlyphRenderBatch.VERTEX_STRIDE_FLOATS;
+        int quadCount = batch.getQuadCount();
+        if (!textured) {
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+        }
+        try {
+            GL11.glBegin(GL11.GL_QUADS);
+            try {
+                for (int quad = 0; quad < quadCount; quad++) {
+                    int base = quad * GlyphRenderBatch.VERTICES_PER_QUAD * stride;
+                    float renderType = data[base + GlyphRenderBatch.GLYPH_FLAGS_OFFSET_FLOATS];
+                    if (textured && renderType > 1.5F) {
+                        continue;
+                    }
+                    boolean coloredGlyph = renderType > 0.5F && renderType < 1.5F;
+                    for (int vertex = 0; vertex < GlyphRenderBatch.VERTICES_PER_QUAD; vertex++) {
+                        int offset = base + vertex * stride;
+                        if (textured) {
+                            GL11.glTexCoord2f(
+                                    data[offset + GlyphRenderBatch.UV_OFFSET_FLOATS],
+                                    data[offset + GlyphRenderBatch.UV_OFFSET_FLOATS + 1]);
+                        }
+                        float red = data[offset + GlyphRenderBatch.COLOR_OFFSET_FLOATS];
+                        float green = data[offset + GlyphRenderBatch.COLOR_OFFSET_FLOATS + 1];
+                        float blue = data[offset + GlyphRenderBatch.COLOR_OFFSET_FLOATS + 2];
+                        float alpha = data[offset + GlyphRenderBatch.COLOR_OFFSET_FLOATS + 3];
+                        if (coloredGlyph) {
+                            red = 1.0F;
+                            green = 1.0F;
+                            blue = 1.0F;
+                        }
+                        GL11.glColor4f(red, green, blue, alpha);
+                        GL11.glVertex3f(
+                                data[offset + GlyphRenderBatch.POSITION_OFFSET_FLOATS],
+                                data[offset + GlyphRenderBatch.POSITION_OFFSET_FLOATS + 1],
+                                data[offset + GlyphRenderBatch.POSITION_OFFSET_FLOATS + 2]);
+                    }
+                }
+            } finally {
+                GL11.glEnd();
+            }
+        } finally {
+            if (!textured) {
+                GL11.glEnable(GL11.GL_TEXTURE_2D);
+            }
+        }
     }
 
     /**

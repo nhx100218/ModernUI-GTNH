@@ -15,6 +15,7 @@ import org.lwjgl.opengl.GL11;
 
 import blocamlimb.nhx100218.modernui.uilib.ui.base.cascade.UiBorderRadiusResolver;
 import blocamlimb.nhx100218.modernui.uilib.ui.base.values.UiSurfaceStyle;
+import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 
 /**
  * UI 渲染裁剪栈。
@@ -170,11 +171,32 @@ final class ClipStack {
         int width = Math.max(0, clipRect[2] - clipRect[0]);
         int height = Math.max(0, clipRect[3] - clipRect[1]);
         ClipGlOps ops = glOps;
+        if (width <= 0 || height <= 0) {
+            // 空裁剪不要提交 0x0/0 高 scissor，也不要清 stencil：
+            // Angelica 的 D3D12 后端在退化 scissor 上清 stencil 会导致设备挂起。
+            // 用 1x1 裁剪 + 关闭颜色/深度写入，后续绘制不会留下可见像素。
+            ops.enable(GL11.GL_SCISSOR_TEST);
+            ops.scissor(0, 0, 1, 1);
+            ops.disable(GL11.GL_STENCIL_TEST);
+            ops.stencilMask(0xFF);
+            ops.colorMask(false, false, false, false);
+            ops.depthMask(false);
+            return;
+        }
         ops.enable(GL11.GL_SCISSOR_TEST);
         ops.scissor(clipRect[0], screenHeight - clipRect[3], width, height);
+        ops.colorMask(true, true, true, true);
+        ops.depthMask(true);
 
         List<RoundedClipRegion> roundedClipRegions = clipSnapshot.getRoundedClipRegions();
         if (roundedClipRegions.isEmpty()) {
+            ops.disable(GL11.GL_STENCIL_TEST);
+            ops.stencilMask(0xFF);
+            return;
+        }
+        // SDL GPU 后端对「清 stencil + 圆角 mask」路径不稳定；配置界面在 Vulkan/D3D12
+        // 下退化为矩形裁剪，保留内容与交互，避免设备挂起。
+        if (AngelicaRendererCompat.isSdlGpuActive()) {
             ops.disable(GL11.GL_STENCIL_TEST);
             ops.stencilMask(0xFF);
             return;

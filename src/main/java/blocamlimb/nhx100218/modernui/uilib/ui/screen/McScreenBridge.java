@@ -25,6 +25,7 @@ import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.ScenePointerAction;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.host.lwjgl.SceneLwjgl3ifyTextBridge;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.host.lwjgl.SceneTextBridgeLifecycle;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.LogicalBox;
+import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 
 /**
  * Minecraft GuiScreen 到平台无关 scene 渲染面的桥接外壳。
@@ -280,7 +281,24 @@ public abstract class McScreenBridge extends GuiScreen implements blocamlimb.nhx
                 // 帧前置语义（正交投影 / viewport / 混合状态）与 headless 宿主共用同一入口，避免两边漂移。
                 try (UiHostRenderSupport.MainFrameScope frame =
                         UiHostRenderSupport.beginMainUiFrame(nativeWidth, nativeHeight)) {
+                    boolean sdlGpu = AngelicaRendererCompat.isSdlGpuActive();
+                    if (sdlGpu) {
+                        // 主菜单全景/上一帧世界残留在 SDL 下可能只覆盖局部，表现为左上角
+                        // 一块持续闪烁的彩色纹理。屏幕入口在 UI 绘制前无条件全屏清一次。
+                        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+                        GL11.glDisable(GL11.GL_STENCIL_TEST);
+                        GL11.glColorMask(true, true, true, true);
+                        GL11.glDepthMask(true);
+                        GL11.glClearColor(0.043F, 0.039F, 0.047F, 1.0F);
+                        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+                    }
+                    // SDL GPU（Vulkan/D3D12）下屏幕帧的 FBO 合成图层会触发设备丢失；
+                    // 屏幕入口关闭图层，直接画到当前 framebuffer。
+                    paintContextCompositor.setLayersDisabled(sdlGpu);
                     paintContextCompositor.beginFrame();
+                    // SDL GPU 下的全屏快照 FBO 同样会挂死设备；屏幕入口关闭快照，
+                    // backdrop-filter 自动走无快照降级。
+                    mainLayerSnapshotService.setDisabled(sdlGpu);
                     mainLayerSnapshotService.beginFrame();
                     try {
                         UiRenderContext context = UiHostRenderSupport.createRenderContext(nativeWidth, nativeHeight,

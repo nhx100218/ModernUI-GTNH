@@ -40,4 +40,3 @@ void main() {
     vec4 borderP = vec4(border.rgb, 1.0) * border.a * ring;
     gl_FragColor = fillP + borderP;
 }
-

@@ -6,6 +6,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
 import blocamlimb.nhx100218.modernui.enhance.gl.ShaderProgramSupport;
+import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 
 /**
  * tooltip 圆角 SDF 着色器程序（GLSL 120）。立即模式配合 {@code gl_Vertex}/{@code gl_MultiTexCoord0}
@@ -99,6 +100,13 @@ public final class TooltipShaderProgram {
 
     private void initialize() {
         initialized = true;
+        // Angelica 2.2.44 的 D3D12/DXBC 后端会拒绝自定义 SDF 管线的 PSO
+        // （着色器本身创建成功，但 E_INVALIDARG），该后端改用 CPU 圆角回退。
+        if (AngelicaRendererCompat.isD3D12Active()) {
+            unavailable = true;
+            LOG.info("D3D12 SDL GPU: custom SDF pipeline is rejected by the backend, using CPU rounded fallback");
+            return;
+        }
         int vs = 0;
         int fs = 0;
         int p = 0;

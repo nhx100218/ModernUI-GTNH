@@ -177,6 +177,15 @@ public final class GlyphRenderBatch {
         return quadCount;
     }
 
+    /**
+     * 直接读取交错的顶点数据，供宿主管线兜底路径逐顶点提交，避免每帧复制数组。
+     *
+     * @return 内部顶点数组，仅读
+     */
+    float[] vertexDataForHostPipeline() {
+        return vertexData;
+    }
+
     public int getIndexCount() {
         return quadCount * INDICES_PER_QUAD;
     }

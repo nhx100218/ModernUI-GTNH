@@ -40,6 +40,15 @@ public class GlAttribDepthTest {
     }
 
     /** 三档都缺失或类为 null：解析返回 null，调用方降级 no-op。 */
+    /** Angelica 2.3+：GLStateManager.ctx() 返回 GLContextState，深度在该对象字段上。 */
+    @Test
+    public void resolvesContextBackedDepth() throws Exception {
+        GlAttribDepth.DepthAccessor accessor = GlAttribDepth.resolveFrom(ContextHost.class);
+
+        Assert.assertNotNull(accessor);
+        Assert.assertEquals(9, accessor.read());
+    }
+
     @Test
     public void returnsNullWhenNothingIsAvailable() {
         Assert.assertNull(GlAttribDepth.resolveFrom(BareHost.class));
@@ -50,6 +59,21 @@ public class GlAttribDepthTest {
     @Test
     public void accessorWinsOverOtherShapes() throws Exception {
         Assert.assertEquals(11, GlAttribDepth.resolveFrom(MixedHost.class).read());
+    }
+
+    /** 模拟 Angelica 2.3+ 的 ctx() + GLContextState.attribDepth。 */
+    public static final class ContextHost {
+
+        private static final ContextState CONTEXT = new ContextState();
+
+        public static ContextState ctx() {
+            return CONTEXT;
+        }
+    }
+
+    public static final class ContextState {
+
+        private int attribDepth = 9;
     }
 
     private static int readTwiceAfterPush(GlAttribDepth.DepthAccessor accessor) throws Exception {

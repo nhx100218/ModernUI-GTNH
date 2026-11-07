@@ -22,6 +22,7 @@ import blocamlimb.nhx100218.modernui.uilib.ui.base.props.UiFontWeight;
 import blocamlimb.nhx100218.modernui.uilib.ui.base.cascade.UiBorderRadiusResolver;
 import blocamlimb.nhx100218.modernui.uilib.ui.text.TextContentMode;
 import blocamlimb.nhx100218.modernui.uilib.ui.text.TextMeasureStyle;
+import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 
 /**
  * UI 渲染上下文。
@@ -950,6 +951,10 @@ public class UiRenderContext implements UiRenderBackend {
             throw new IllegalStateException(
                     "Plain HostImage entered with GL error " + entryGlError);
         }
+        // SDL GPU 下隔离 FBO 图层既会挂死设备，也会在合成时显示错误纹理；
+        // 普通 HostImage 只是一张已缓存纹理的矩形 quad，直接画进当前 framebuffer 即可。
+        // 每帧入口的整屏清屏会覆盖掉这张 quad 之外的任何残留。
+        boolean direct = AngelicaRendererCompat.isSdlGpuActive();
         UiRenderTarget layer = null;
         boolean begun = false;
         boolean projectionPushed = false;
@@ -959,10 +964,14 @@ public class UiRenderContext implements UiRenderBackend {
         Throwable transactionFailure = null;
         Error fatalFailure = null;
         try {
-            layer = paintContextCompositor.borrowIsolatedLayer(screenWidth, screenHeight);
+            if (!direct) {
+                layer = paintContextCompositor.borrowIsolatedLayer(screenWidth, screenHeight);
+            }
             previousMatrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
-            layer.begin();
-            begun = true;
+            if (!direct) {
+                layer.begin();
+                begun = true;
+            }
             try {
                 GL11.glMatrixMode(GL11.GL_PROJECTION);
                 GL11.glPushMatrix();
@@ -1054,8 +1063,10 @@ public class UiRenderContext implements UiRenderBackend {
             }
             if (fatalFailure != null) throw fatalFailure;
             rethrowDelegateFailure(transactionFailure);
-            layer.end();
-            begun = false;
+            if (!direct) {
+                layer.end();
+                begun = false;
+            }
             applyClipSnapshot(clipSnapshot, screenHeight);
             int renderGlError = consumeFirstGlError();
             if (renderGlError != GL11.GL_NO_ERROR) {
@@ -1063,7 +1074,9 @@ public class UiRenderContext implements UiRenderBackend {
                         "Plain HostImage render GL error=" + renderGlError);
             }
             if (delegateFailure == null && transactionFailure == null && fatalFailure == null) {
-                layer.compositeToCurrentFramebuffer(left, top, right, bottom, 1.0F);
+                if (!direct) {
+                    layer.compositeToCurrentFramebuffer(left, top, right, bottom, 1.0F);
+                }
                 notifyMainLayerContentChanged();
             }
         } catch (RuntimeException failure) {

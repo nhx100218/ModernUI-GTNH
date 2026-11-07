@@ -28,16 +28,24 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Read mod version
+        id: version
+        shell: bash
+        run: |
+          version=$(grep -E '^[[:space:]]*modVersion[[:space:]]*=' gradle.properties | head -n1 | cut -d= -f2 | tr -d '[:space:]')
+          if [ -z "$version" ]; then
+            echo "modVersion is missing from gradle.properties"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Build
         run: ./gradlew build --no-daemon --no-configuration-cache
 
       - name: Collect release artifact
         run: |
           mkdir -p release
-          find build/libs -maxdepth 1 -name '*.jar' \
-            ! -name '*-dev.jar' ! -name '*-dev-preshadow.jar' \
-            ! -name '*-sources.jar' ! -name '*-javadoc.jar' ! -name '*-api.jar' \
-            -exec cp {} release/ \;
+          cp "build/libs/modernui-gtnh-${{ steps.version.outputs.version }}.jar" release/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -62,17 +70,6 @@ jobs:
             echo "__EOF__"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Read mod version
-        id: version
-        shell: bash
-        run: |
-          version=$(grep -E '^[[:space:]]*modVersion[[:space:]]*=' gradle.properties | head -n1 | cut -d= -f2 | tr -d '[:space:]')
-          if [ -z "$version" ]; then
-            echo "modVersion is missing from gradle.properties"
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-      
       - name: Publish release
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2

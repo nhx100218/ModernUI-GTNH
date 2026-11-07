@@ -74,6 +74,7 @@ public class ModernConfigBootstrapTest {
     private double saveAaStrength;
     private boolean saveReplaceOrigin;
     private boolean saveCustomInvCountFont;
+    private boolean saveSdlGpuCompatibility;
     private String[] saveFontSort;
     private String[] saveCharacterFontRules;
     private boolean saveFontSortConfigured;
@@ -117,6 +118,7 @@ public class ModernConfigBootstrapTest {
         saveAaStrength = FontConfig.aaStrength;
         saveReplaceOrigin = FontConfig.replaceOrigin;
         saveCustomInvCountFont = FontConfig.customInvCountFont;
+        saveSdlGpuCompatibility = FontConfig.sdlGpuCompatibility;
         saveFontSort = FontConfig.fontSort;
         saveCharacterFontRules = FontConfig.characterFontRules;
         saveFontSortConfigured = FontConfig.fontSortConfigured;
@@ -159,6 +161,7 @@ public class ModernConfigBootstrapTest {
         FontConfig.aaStrength = saveAaStrength;
         FontConfig.replaceOrigin = saveReplaceOrigin;
         FontConfig.customInvCountFont = saveCustomInvCountFont;
+        FontConfig.sdlGpuCompatibility = saveSdlGpuCompatibility;
         FontConfig.fontSort = saveFontSort;
         FontConfig.characterFontRules = saveCharacterFontRules;
         FontConfig.fontSortConfigured = saveFontSortConfigured;

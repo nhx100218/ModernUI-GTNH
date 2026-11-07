@@ -32,6 +32,10 @@ modernui.config.tooltip.modularUiMaxWidth=ModularUI 最大宽度
 modernui.config.tooltip.modularUiMaxWidth.tooltip=ModularUI2 提示框最大折行宽度，0=自动。
 modernui.config.tooltip.modularUiNoWrap=禁用 ModularUI 折行
 modernui.config.tooltip.modularUiNoWrap.tooltip=禁用 ModularUI2 文本自动折行。
+modernui.config.tooltip.neiPanelOffsetX=NEI 面板 X 偏移
+modernui.config.tooltip.neiPanelOffsetX.tooltip=按像素水平移动 NEI 合成面板，负值向左。
+modernui.config.tooltip.neiPanelOffsetY=NEI 面板 Y 偏移
+modernui.config.tooltip.neiPanelOffsetY.tooltip=按像素垂直移动 NEI 合成面板，负值向上。
 modernui.config.tooltip.fillColor=背景颜色
 modernui.config.tooltip.fillColor.tooltip=背景四角颜色(ARGB)，最多 4 个。
 modernui.config.tooltip.strokeColor=边框颜色

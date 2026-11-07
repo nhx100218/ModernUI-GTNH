@@ -33,6 +33,8 @@ public final class Config {
                     .number("cornerRadius").defaultValue(Double.valueOf(TooltipConfig.cornerRadius)).range(0, 16).slider().label(l(tr, "tooltip", "cornerRadius")).helper(h(tr, "tooltip", "cornerRadius")).build()
                     .integer("modularUiMaxWidth").defaultValue(Long.valueOf(TooltipConfig.modularUiMaxWidth)).range(0, 2000).slider().label(l(tr, "tooltip", "modularUiMaxWidth")).helper(h(tr, "tooltip", "modularUiMaxWidth")).build()
                     .bool("modularUiNoWrap").defaultValue(TooltipConfig.modularUiNoWrap).label(l(tr, "tooltip", "modularUiNoWrap")).helper(h(tr, "tooltip", "modularUiNoWrap")).build()
+                    .integer("neiPanelOffsetX").defaultValue(Long.valueOf(TooltipConfig.neiPanelOffsetX)).range(-32, 32).slider().label(l(tr, "tooltip", "neiPanelOffsetX")).helper(h(tr, "tooltip", "neiPanelOffsetX")).build()
+                    .integer("neiPanelOffsetY").defaultValue(Long.valueOf(TooltipConfig.neiPanelOffsetY)).range(-32, 32).slider().label(l(tr, "tooltip", "neiPanelOffsetY")).helper(h(tr, "tooltip", "neiPanelOffsetY")).build()
                     .simpleList("fillColor").defaultValue(hexList(TooltipConfig.fillColor)).label(l(tr, "tooltip", "fillColor")).helper(h(tr, "tooltip", "fillColor")).build()
                     .simpleList("strokeColor").defaultValue(hexList(TooltipConfig.strokeColor)).label(l(tr, "tooltip", "strokeColor")).helper(h(tr, "tooltip", "strokeColor")).build()
                 .endSection()
@@ -140,6 +142,8 @@ public final class Config {
         TooltipConfig.cornerRadius = (float) authority.getNumber("tooltip.cornerRadius");
         TooltipConfig.modularUiMaxWidth = (int) Math.round(authority.getNumber("tooltip.modularUiMaxWidth"));
         TooltipConfig.modularUiNoWrap = authority.getBool("tooltip.modularUiNoWrap");
+        TooltipConfig.neiPanelOffsetX = (int) Math.round(authority.getNumber("tooltip.neiPanelOffsetX"));
+        TooltipConfig.neiPanelOffsetY = (int) Math.round(authority.getNumber("tooltip.neiPanelOffsetY"));
         readColors(authority, "tooltip.fillColor", TooltipConfig.fillColor);
         readColors(authority, "tooltip.strokeColor", TooltipConfig.strokeColor);
 

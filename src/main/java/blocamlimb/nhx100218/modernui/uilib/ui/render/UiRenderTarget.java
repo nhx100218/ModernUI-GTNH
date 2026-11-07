@@ -10,6 +10,7 @@ import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL30;
 
+import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 import blocamlimb.nhx100218.modernui.uilib.util.GlStateDiagnostics;
 import blocamlimb.nhx100218.modernui.uilib.util.UiNumbers;
 
@@ -386,7 +387,10 @@ public class UiRenderTarget {
         int previousDrawFramebufferId = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
         int previousReadFramebufferId = GL11.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING);
         int previousTextureId = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
-        int previousRenderbufferId = GL11.glGetInteger(GL30.GL_RENDERBUFFER_BINDING);
+        // Angelica SDL GPU 不实现 GL_RENDERBUFFER_BINDING 查询（返回 0 并告警），
+        // 保存再恢复会污染宿主状态；该后端下直接归零。
+        int previousRenderbufferId = AngelicaRendererCompat.isSdlGpuActive()
+                ? 0 : GL11.glGetInteger(GL30.GL_RENDERBUFFER_BINDING);
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, framebufferId);
 
         try {

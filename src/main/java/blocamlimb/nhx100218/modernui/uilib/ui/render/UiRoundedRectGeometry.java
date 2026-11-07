@@ -4,6 +4,7 @@ import org.lwjgl.opengl.GL11;
 
 import blocamlimb.nhx100218.modernui.uilib.ui.base.cascade.UiBorderRadiusResolver;
 import blocamlimb.nhx100218.modernui.uilib.ui.base.values.UiSurfaceStyle;
+import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 
 /**
  * 圆角矩形几何工具。
@@ -78,6 +79,18 @@ final class UiRoundedRectGeometry {
      */
     static void drawRoundedRectGeometry(float left, float top, float right, float bottom,
             UiBorderRadiusResolver.ResolvedCornerRadii cornerRadii, boolean filled, int cornerMask) {
+        // SDL GPU 的立即模式对 GL_TRIANGLE_FAN 的转换会从原点拉出错误三角形，
+        // 在配置界面表现为左上角放射状光束并闪烁。该后端上用直角矩形代替圆角填充。
+        if (filled && AngelicaRendererCompat.isSdlGpuActive()) {
+            GL11.glBegin(GL11.GL_QUADS);
+            GL11.glVertex2f(right, bottom);
+            GL11.glVertex2f(right, top);
+            GL11.glVertex2f(left, top);
+            GL11.glVertex2f(left, bottom);
+            GL11.glEnd();
+            return;
+        }
+
         UiBorderRadiusResolver.ResolvedCornerRadii resolvedCornerRadii = resolveCornerRadii(cornerRadii,
                 right - left, bottom - top, cornerMask);
         float tl = resolvedCornerRadii.getTopLeft();

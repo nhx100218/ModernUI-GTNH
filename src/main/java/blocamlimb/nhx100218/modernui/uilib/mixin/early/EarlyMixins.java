@@ -49,11 +49,15 @@ public class EarlyMixins implements IEarlyMixinLoader, IFMLLoadingPlugin {
             if (loadedCoreMods != null && loadedCoreMods.contains(ANGELICA_TWEAKER)) {
                 mixins.add("nametag.MixinAngelicaPlayerNameTagReplay");
                 mixins.add("tesr.MixinAngelicaTesrBatchReplay");
+                mixins.add("debug.MixinAngelicaDebugTextBatched");
+                mixins.add("debug.MixinAngelicaBatchingFontRenderer");
+                mixins.add("debug.MixinAngelicaDebugScreenOverlay");
             }
             // Merged enhancement
             mixins.add("enhance.MixinGuiScreenTooltip");
             mixins.add("enhance.MixinGuiSlotSmoothScroll");
             mixins.add("enhance.MixinEntityRendererScreenTransition");
+            mixins.add("enhance.MixinEntityRendererWorldSkip");
             mixins.add("enhance.MixinEntityRendererZoom");
             mixins.add("enhance.MixinGuiNewChat");
             mixins.add("enhance.MixinMinecraftUnfocused");

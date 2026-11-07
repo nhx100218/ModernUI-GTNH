@@ -40,6 +40,8 @@ public final class TooltipRoundedRect {
                     shader.setCorners(c0, c1, c2, c3);
                     float ex = hw + margin;
                     float ey = hh + margin;
+                    // location 1 (gl_Color) 参与着色器输入，必须显式置白，避免继承上一笔颜色。
+                    GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
                     GL11.glBegin(GL11.GL_QUADS);
                     try {
                         vertex(cx, cy, z, -ex, -ey);
@@ -53,12 +55,17 @@ public final class TooltipRoundedRect {
                     TooltipShaderProgram.useProgram(prevProgram);
                 }
             } else {
-                // CPU 回退：先画边框色圆角，再内缩画填充色圆角。
-                TooltipGradientRenderer.fillRoundedGradient(left, top, right, bottom, radius,
-                        c0, c1, c2, c3, z);
-                double innerRadius = Math.max(0.0, radius - borderWidth);
-                TooltipGradientRenderer.fillRoundedGradient(left + borderWidth, top + borderWidth,
-                        right - borderWidth, bottom - borderWidth, innerRadius, f0, f1, f2, f3, z);
+                // CPU 回退：先切回固定管线，再画边框色/填充色圆角。
+                TooltipShaderProgram.useProgram(0);
+                try {
+                    TooltipGradientRenderer.fillRoundedGradient(left, top, right, bottom, radius,
+                            c0, c1, c2, c3, z);
+                    double innerRadius = Math.max(0.0, radius - borderWidth);
+                    TooltipGradientRenderer.fillRoundedGradient(left + borderWidth, top + borderWidth,
+                            right - borderWidth, bottom - borderWidth, innerRadius, f0, f1, f2, f3, z);
+                } finally {
+                    TooltipShaderProgram.useProgram(prevProgram);
+                }
             }
         } finally {
             TooltipGradientRenderer.end();

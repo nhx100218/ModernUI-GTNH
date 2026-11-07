@@ -11,6 +11,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import blocamlimb.nhx100218.modernui.uilib.MyMod;
 import blocamlimb.nhx100218.modernui.uilib.font.config.FontConfig;
+import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 import blocamlimb.nhx100218.modernui.uilib.font.event.FontReloadRequest;
 import blocamlimb.nhx100218.modernui.uilib.font.glyph.GlyphGenerationDispatcher;
 import blocamlimb.nhx100218.modernui.uilib.font.glyph.GlyphGenerationPriority;
@@ -298,6 +299,9 @@ public class FontService {
      * <p>需要文本测量的调用方走 {@link #ensureLayoutRuntimeReady()}，那条路径与启动侧无关。</p>
      */
     public void initialize() {
+        if (AngelicaRendererCompat.isSdlGpuActive()) {
+            FontConfig.sdlGpuCompatibility = true;
+        }
         if (initialized.get()) {
             return;
         }

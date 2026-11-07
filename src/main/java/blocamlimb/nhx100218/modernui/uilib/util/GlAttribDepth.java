@@ -132,6 +132,20 @@ public final class GlAttribDepth {
         } catch (SecurityException ignored) {
             // 同上：安全策略拒绝探测时退回字段反射。
         }
+        try {
+            // Angelica 2.3+ moved attribDepth into GLContextState and exposes ctx().
+            Method contextMethod = glsm.getMethod("ctx");
+            for (Field field : contextMethod.getReturnType().getDeclaredFields()) {
+                if ("attribDepth".equals(field.getName()) && field.getType() == int.class) {
+                    field.setAccessible(true);
+                    return DepthAccessor.forContext(contextMethod, field);
+                }
+            }
+        } catch (NoSuchMethodException ignored) {
+            // Older Angelica keeps the field on GLStateManager.
+        } catch (SecurityException ignored) {
+            // Fall through to the legacy field probes.
+        }
         for (Field field : glsm.getDeclaredFields()) {
             if ("attribDepth".equals(field.getName()) && field.getType() == int.class) {
                 field.setAccessible(true);
@@ -171,27 +185,36 @@ public final class GlAttribDepth {
     static final class DepthAccessor {
 
         private final Method accessorMethod;
+        private final Method contextMethod;
+        private final Field contextDepthField;
         private final Field depthField;
         private final Field stackField;
         private final Method stackSizeMethod;
 
-        private DepthAccessor(Method accessorMethod, Field depthField, Field stackField, Method stackSizeMethod) {
+        private DepthAccessor(Method accessorMethod, Method contextMethod, Field contextDepthField,
+                              Field depthField, Field stackField, Method stackSizeMethod) {
             this.accessorMethod = accessorMethod;
+            this.contextMethod = contextMethod;
+            this.contextDepthField = contextDepthField;
             this.depthField = depthField;
             this.stackField = stackField;
             this.stackSizeMethod = stackSizeMethod;
         }
 
         static DepthAccessor forMethod(Method accessorMethod) {
-            return new DepthAccessor(accessorMethod, null, null, null);
+            return new DepthAccessor(accessorMethod, null, null, null, null, null);
+        }
+
+        static DepthAccessor forContext(Method contextMethod, Field contextDepthField) {
+            return new DepthAccessor(null, contextMethod, contextDepthField, null, null, null);
         }
 
         static DepthAccessor forIntField(Field depthField) {
-            return new DepthAccessor(null, depthField, null, null);
+            return new DepthAccessor(null, null, null, depthField, null, null);
         }
 
         static DepthAccessor forStackField(Field stackField, Method stackSizeMethod) {
-            return new DepthAccessor(null, null, stackField, stackSizeMethod);
+            return new DepthAccessor(null, null, null, null, stackField, stackSizeMethod);
         }
 
         /**
@@ -204,6 +227,10 @@ public final class GlAttribDepth {
             if (accessorMethod != null) {
                 Object value = accessorMethod.invoke(null);
                 return value instanceof Number ? ((Number) value).intValue() : -1;
+            }
+            if (contextMethod != null) {
+                Object context = contextMethod.invoke(null);
+                return context == null ? -1 : contextDepthField.getInt(context);
             }
             if (depthField != null) {
                 return depthField.getInt(null);

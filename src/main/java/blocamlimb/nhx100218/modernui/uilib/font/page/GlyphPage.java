@@ -6,9 +6,11 @@ import java.nio.ByteBuffer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL13;
 
 import blocamlimb.nhx100218.modernui.uilib.font.FontRuntimeDiagnostics;
+import blocamlimb.nhx100218.modernui.uilib.font.config.FontConfig;
 import blocamlimb.nhx100218.modernui.uilib.font.FontRuntimeSettings;
 import blocamlimb.nhx100218.modernui.uilib.font.glyph.GlyphRequestToken;
 import blocamlimb.nhx100218.modernui.uilib.util.GlStateDiagnostics;
@@ -343,7 +345,7 @@ public class GlyphPage {
             if (textureId != 0) {
                 gl.bindTexture(GL11.GL_TEXTURE_2D, textureId);
                 requireNoGlError("batch_end_bind");
-                if (batchMipmapDirty) {
+                if (batchMipmapDirty && !FontConfig.sdlGpuCompatibility) {
                     gl.generateMipmap(GL11.GL_TEXTURE_2D);
                     requireNoGlError("batch_mipmap");
                 }
@@ -468,8 +470,10 @@ public class GlyphPage {
                     pixels);
             pixelsWritten = true;
             requireNoGlError("upload_pixels");
-            gl.generateMipmap(GL11.GL_TEXTURE_2D);
-            requireNoGlError("upload_mipmap");
+            if (!FontConfig.sdlGpuCompatibility) {
+                gl.generateMipmap(GL11.GL_TEXTURE_2D);
+                requireNoGlError("upload_mipmap");
+            }
             boolean textureValid = gl.isTexture(textureId);
             requireNoGlError("upload_texture_validation");
             if (!textureValid) {
@@ -670,8 +674,11 @@ public class GlyphPage {
             requireNoGlError("texture_allocate");
             gl.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, getLerpMode());
             gl.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-            gl.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL13.GL_CLAMP_TO_BORDER);
-            gl.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL13.GL_CLAMP_TO_BORDER);
+            // SDL GPU 的采样器地址模式没有 CLAMP_TO_BORDER（降级为 REPEAT），
+            // 图集边缘会环绕采样到另一侧，改用 CLAMP_TO_EDGE。
+            int wrapMode = FontConfig.sdlGpuCompatibility ? GL12.GL_CLAMP_TO_EDGE : GL13.GL_CLAMP_TO_BORDER;
+            gl.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, wrapMode);
+            gl.texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, wrapMode);
             requireNoGlError("texture_parameters");
             boolean textureValid = gl.isTexture(candidateTexture);
             requireNoGlError("texture_validation");
@@ -708,6 +715,9 @@ public class GlyphPage {
     }
 
     private int getLerpMode() {
+        if (FontConfig.sdlGpuCompatibility) {
+            return GL11.GL_LINEAR;
+        }
         switch (lerpMode) {
             case 0:
                 return GL11.GL_NEAREST_MIPMAP_NEAREST;
@@ -891,7 +901,41 @@ public class GlyphPage {
         uploadBuffer.clear();
         uploadBuffer.put(source);
         uploadBuffer.flip();
+        if (FontConfig.sdlGpuCompatibility) {
+            applySdlAlphaContrast(uploadBuffer);
+        }
         return uploadBuffer;
+    }
+
+    /**
+     * 在 SDL GPU 兜底路径上预先把字形 alpha 做一次 smoothstep 对比度提升。
+     *
+     * <p>自定义片元着色器原本在采样后执行
+     * {@code smoothstep(smoothRangeMin, smoothRangeMax, tex.a * Color.a)}，
+     * 这会让抗锯齿边缘更实、整体更接近原来的字重。宿主固定管线无法做非线性 alpha
+     * 变换，因此在图集上传时一次性把同样的曲线烘焙进 alpha 通道。</p>
+     *
+     * @param buffer RGBA 像素缓冲（原地修改 alpha 字节）
+     */
+    private static void applySdlAlphaContrast(ByteBuffer buffer) {
+        float min = (float) FontConfig.smoothRangeMin;
+        float max = (float) FontConfig.smoothRangeMax;
+        float range = max - min;
+        if (!(range > 0.0F)) {
+            return;
+        }
+        int limit = buffer.limit();
+        for (int index = 3; index < limit; index += 4) {
+            int alpha = buffer.get(index) & 0xFF;
+            float t = ((alpha / 255.0F) - min) / range;
+            if (t <= 0.0F) {
+                t = 0.0F;
+            } else if (t >= 1.0F) {
+                t = 1.0F;
+            }
+            float smooth = t * t * (3.0F - 2.0F * t);
+            buffer.put(index, (byte) Math.round(smooth * 255.0F));
+        }
     }
 
     private static ByteBuffer obtainRenderThreadEmptyBuffer(int requiredCapacity) {
@@ -1014,8 +1058,10 @@ public class GlyphPage {
         gl.texSubImage2D(GL11.GL_TEXTURE_2D, 0, slot.getX(), slot.getY(), slot.getWidth(), slot.getHeight(),
                 GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, emptySlot);
         requireNoGlError("upload_rollback_pixels");
-        gl.generateMipmap(GL11.GL_TEXTURE_2D);
-        requireNoGlError("upload_rollback_mipmap");
+        if (!FontConfig.sdlGpuCompatibility) {
+            gl.generateMipmap(GL11.GL_TEXTURE_2D);
+            requireNoGlError("upload_rollback_mipmap");
+        }
         gl.bindTexture(GL11.GL_TEXTURE_2D, 0);
         requireNoGlError("upload_rollback_unbind");
     }

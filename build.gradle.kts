@@ -15,6 +15,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.bundling.Jar
+import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 
 plugins {
@@ -23,7 +24,7 @@ plugins {
 }
 
 // Fixed semantic version for CI (git-based versioning is disabled in gradle.properties).
-project.ext.set("modVersion", providers.gradleProperty("modVersion").orElse("1.1.1").get())
+project.ext.set("modVersion", providers.gradleProperty("modVersion").orElse("1.2.0").get())
 
 // 测试堆 1g：headless 软件渲染验收共享一张 GlyphRuntimeTables（约 123MiB direct-index 表），
 // 512m 默认堆下与其他字体测试类同 JVM 跑会互相挤压 OOM。
@@ -31,6 +32,16 @@ tasks.withType<Test>().configureEach {
     maxHeapSize = "1024m"
     // Opt-in snapshot regeneration for local maintenance runs.
     systemProperty("qz.latex.surface.update", System.getProperty("qz.latex.surface.update", "false"))
+}
+
+// Angelica 2.2.44 的新版 F3 类不在当前 dev 依赖（2.2.10）里。相关 mixin 用字符串
+// target 声明并按运行时 Angelica 版本应用，因此关闭编译期 target 校验；运行时缺失的
+// target 仍会被 Mixin 以 require=0 跳过。
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-AdisableTargetValidator=true")
+    // Angelica 2.2.44 才有的类不在 dev 依赖里；软 target 缺失降级为警告，
+    // 运行时仍由 Mixin 按实际加载的 Angelica 版本决定是否应用（require=0）。
+    options.compilerArgs.add("-AMSG_MIXIN_SOFT_TARGET_NOT_FOUND=warning")
 }
 
 // ============================================================================

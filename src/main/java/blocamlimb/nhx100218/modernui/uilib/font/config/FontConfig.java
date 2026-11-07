@@ -78,6 +78,13 @@ public final class FontConfig {
     public static double smoothRangeMax = 0.9D;
     public static double aaStrength = 12.0D;
     public static boolean replaceOrigin = false;
+    /**
+     * Angelica SDL GPU 后端下改用宿主固定管线提交字形。
+     *
+     * <p>SDL GPU 对自定义 GLSL 的转换不完整，开启后仅影响字形提交路径，
+     * 字体图集、字形生成与度量仍全部走 ModernUI 自有实现。</p>
+     */
+    public static boolean sdlGpuCompatibility = false;
     public static boolean customInvCountFont = false;
     public static String[] fontSort = new String[0];
     public static String[] missingFontSort = new String[0];

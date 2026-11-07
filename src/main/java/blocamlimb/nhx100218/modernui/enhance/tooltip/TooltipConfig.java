@@ -31,6 +31,12 @@ public final class TooltipConfig {
     /** 是否禁用 ModularUI2 文本自动折行（影响所有 ModularUI 文本，默认开启以消除意外换行）。 */
     public static volatile boolean modularUiNoWrap = true;
 
+    /** NEI recipe panel horizontal offset in pixels. Negative moves left. */
+    public static volatile int neiPanelOffsetX = -8;
+
+    /** NEI recipe panel vertical offset in pixels. Negative moves up. */
+    public static volatile int neiPanelOffsetY = 0;
+
     /** 是否给 Waila（手持/瞄准方块信息）的 HUD 框加圆角。 */
     public static volatile boolean waila = true;
 

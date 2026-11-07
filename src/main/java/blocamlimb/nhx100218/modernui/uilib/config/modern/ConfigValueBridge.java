@@ -11,6 +11,7 @@ import blocamlimb.nhx100218.modernui.uilib.font.FontRuntimeSettings;
 import blocamlimb.nhx100218.modernui.uilib.font.config.FontConfig;
 import blocamlimb.nhx100218.modernui.uilib.ui.env.ProcessUiEnvironment;
 import blocamlimb.nhx100218.modernui.uilib.ui.render.BackdropQualityService;
+import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 import blocamlimb.nhx100218.modernui.uilib.util.UiNumbers;
 
 /**
@@ -162,6 +163,10 @@ public final class ConfigValueBridge {
                 authority.getNumber("fontSystem.drawStageUploadBatchSize"));
         FontConfig.aaStrength = authority.getNumber("fontSystem.aaStrength");
         FontConfig.replaceOrigin = authority.getBool("fontSystem.replaceOrigin");
+        if (AngelicaRendererCompat.isSdlGpuActive()) {
+            FontConfig.sdlGpuCompatibility = true;
+            MyMod.LOG.warn("Angelica SDL GPU detected; submitting ModernUI glyphs through the host fixed pipeline");
+        }
         FontConfig.customInvCountFont = authority.getBool("fontSystem.customInvCountFont");
 
         // SIMPLE_LIST 字段：Authority 存 ArrayList<String>，转 String[]（null 守卫，回空数组避免下游 NPE）
