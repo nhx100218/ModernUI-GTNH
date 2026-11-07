@@ -126,7 +126,14 @@ public final class LatexSoftwareRenderKit {
             gl = new SoftwareGlApi();
             manager = new GlyphPageManager(gl);
             tables = manager.getRuntimeTables();
-            settings = FontRuntimeSettings.capture();
+            // The headless kit only publishes the logical Dialog font. Keep the face assignment empty so
+            // the renderer always takes the synthetic-italic path; otherwise a globally applied config
+            // (for example the Inter defaults) makes the adapter request FontType.ITALIC, while this kit
+            // only assembles glyphs for the base weight and the italic glyphs are skipped.
+            FontRuntimeSettings captured = FontRuntimeSettings.capture();
+            settings = new FontRuntimeSettings(captured.getLerpMode(), captured.getGlyphGenerationSize(),
+                    captured.getGameCharSize(), captured.getSpaceWidth(), captured.getCharacterSpacing(),
+                    captured.isFontSortConfigured(), captured.getFontSort(), captured.getCharacterRuleSet());
             tables.setFontMetrics(FontRuntimeMetrics.prepare(settings, null));
             FontCatalog catalog = new FontCatalog();
             if (mathFont) {

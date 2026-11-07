@@ -6,6 +6,26 @@
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-11-07
+
+### English
+
+#### Fixed
+
+- The GTNH 2.9.0 font defaults are applied when the configuration loads. The font statics used before config loading stay empty, so font runtime code keeps its previous fallback behavior until a real configuration is present.
+- The headless font test kit now uses an empty face assignment instead of inheriting the process-wide font configuration. A previously loaded config could make the renderer request `ITALIC` glyphs while the kit only assembles the base weight, which dropped host-italic glyphs in the Latex rendering tests. The tests now always take the synthetic-italic path.
+
+Compatibility: 1.2.2 accepts remote versions `[1.2.0,1.3.0)`.
+
+### 中文
+
+#### 修复
+
+- GTNH 2.9.0 的字体默认值改为在配置加载时应用。配置加载前使用的字体静态字段保持为空，让字体运行时在真正加载配置前维持之前的回退行为。
+- 无头字体测试场地不再继承进程级字体配置，而是固定使用空字体指派。此前已加载的配置会让渲染器请求 `ITALIC` 字形，而测试场地只装配基础字重，导致 Latex 渲染测试中的宿主斜体字形被丢弃。现在测试始终走合成斜体路径。
+
+兼容性：1.2.2 接受远端版本 `[1.2.0,1.3.0)`。
+
 ## [1.2.1] - 2026-11-07
 
 ### English
