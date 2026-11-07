@@ -5,6 +5,7 @@ import blocamlimb.nhx100218.modernui.uilib.net.api.NetService;
 import blocamlimb.nhx100218.modernui.uilib.net.transport.ITransport;
 import blocamlimb.nhx100218.modernui.uilib.net.transport.NetTransportFactory;
 import blocamlimb.nhx100218.modernui.uilib.net.transport.forge.ForgeMainThreadDispatcherBridge;
+import blocamlimb.nhx100218.modernui.server.ServerFeatures;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
@@ -38,6 +39,7 @@ public class CommonProxy {
         ITransport transport = NetTransportFactory.create(Config.netTransport);
         NetService.getInstance().bootstrap(transport);
         FMLCommonHandler.instance().bus().register(ForgeMainThreadDispatcherBridge.getInstance());
+        ServerFeatures.initialize();
 
         MyMod.LOG.info("ModernUI {} 初始化完成", Tags.VERSION);
         MyMod.LOG.info("网络传输适配器：{}", transport.getName());
@@ -61,9 +63,11 @@ public class CommonProxy {
     }
 
     /**
-     * 服务端命令注册占位。
+     * 服务端命令注册。
      *
      * @param event 服务端启动事件
      */
-    public void serverStarting(FMLServerStartingEvent event) {}
+    public void serverStarting(FMLServerStartingEvent event) {
+        ServerFeatures.onServerStarting(event);
+    }
 }

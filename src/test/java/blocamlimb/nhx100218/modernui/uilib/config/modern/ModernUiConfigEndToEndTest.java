@@ -305,9 +305,8 @@ public class ModernUiConfigEndToEndTest {
         assertTrue("YAML 应含 general 键: " + text, text.contains("general:"));
         assertTrue("YAML 应含 useDebug 键: " + text, text.contains("useDebug:"));
         assertTrue("YAML 应含 fontSystem 键: " + text, text.contains("fontSystem:"));
-        // 不应是 JSON 大括号格式
-        assertFalse("不应含 JSON 大括号: " + text, text.contains("{"));
-        assertFalse("不应含 JSON 大括号: " + text, text.contains("}"));
+        // 不应是 JSON 大括号格式；模板占位符 {tps} 等允许出现在字符串值里。
+        assertFalse("不应是 JSON 对象: " + text, text.trim().startsWith("{"));
     }
 
     /** Schema 保留各配置分组；配置页主题在旧文件缺键时默认平面。 */
@@ -315,11 +314,12 @@ public class ModernUiConfigEndToEndTest {
     public void schemaKeepsSections() throws Exception {
         ConfigSchema schema = ModernUiConfigSchema.create();
         assertEquals("modernui", schema.modId());
-        assertEquals(13, schema.sections().size());
+        assertEquals(14, schema.sections().size());
         assertEquals("tooltip", schema.sections().get(0).name());
         assertEquals("general", schema.sections().get(10).name());
-        assertEquals("fontSystem", schema.sections().get(11).name());
-        assertEquals("fontSizeSetting", schema.sections().get(12).name());
+        assertEquals("server", schema.sections().get(11).name());
+        assertEquals("fontSystem", schema.sections().get(12).name());
+        assertEquals("fontSizeSetting", schema.sections().get(13).name());
     }
 
     // ===== range 上界边界回归测试 =====

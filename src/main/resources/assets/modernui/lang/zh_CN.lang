@@ -187,6 +187,17 @@ modernui.config.general.pickerDensity=选择器密度
 modernui.config.general.pickerDensity.tooltip=选择器布局密度：自动、紧凑、标准或宽松。
 modernui.config.general.backdropQuality=背景质量
 modernui.config.general.backdropQuality.tooltip=full 高质量、eco 省电、solid 关闭。
+modernui.md.tab.server=服务端
+modernui.config.server.tab.enabled=Tab 显示
+modernui.config.server.tab.enabled.tooltip=在 ServerUtilities 的自定义 tab 末尾追加一行 MSPT/TPS。需要安装 ServerUtilities；其 header 和原有 footer 会保留。
+modernui.config.server.motd.enabled=服务器列表 MOTD
+modernui.config.server.motd.enabled.tooltip=用配置的 MOTD 替换服务器列表描述。存在 config/MiniMOTD/main.conf 时以它为准。
+modernui.config.server.motd.line1=MOTD 第一行
+modernui.config.server.motd.line1.tooltip=仅在缺少 config/MiniMOTD/main.conf 时使用的回退第一行。支持 <gradient:#rrggbb:#rrggbb>、<rainbow>、& 颜色代码和占位符。
+modernui.config.server.motd.line2=MOTD 第二行
+modernui.config.server.motd.line2.tooltip=回退第二行，留空则只显示一行。
+modernui.config.server.motd.icon=MOTD 图标
+modernui.config.server.motd.icon.tooltip=回退图标：config/ 或 config/motd/ 下的 64x64 PNG，或绝对路径。留空保留原版图标。
 
 modernui.config.font.lerpMode=插值模式
 modernui.config.font.lerpMode.tooltip=字体插值模式。

@@ -18,7 +18,7 @@ public class LateMixinsTest {
     public void clientWithAeLoadsMonitorCompatibility() {
         assertEquals(Collections.singletonList("ae2.MixinAbstractPartMonitor"),
                 LateMixins.buildMixinsForSide(Side.CLIENT, Collections.singleton("appliedenergistics2")));
-        assertEquals("mixins.modernuigtnh.late.json", new LateMixins().getMixinConfig());
+        assertEquals("mixins.modernuigtnh.late.json", LateMixins.getMixinConfig());
     }
 
     @Test

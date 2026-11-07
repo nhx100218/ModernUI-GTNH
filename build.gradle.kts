@@ -1,6 +1,9 @@
 
 import java.io.File
+import java.io.IOException
+import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DuplicatesStrategy
@@ -11,6 +14,8 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
@@ -259,4 +264,126 @@ val exportHeadlessClasspath by tasks.registering(ExportHeadlessClasspath::class)
     fullClasspath.from(sourceSets.getByName("mcLauncher").output)
     outputDirectory.set(headlessRuntimeDir)
     javaExecutable.set(File(System.getProperty("java.home"), "bin/java").absolutePath)
+}
+
+// ============================================================================
+// 5) Mixin 运行时自包含：从编译期 UniMixins dev jar 抽取 Mixin + MixinExtras，
+//    以嵌套 jar 形式放进 META-INF/modernui/。运行时由 coremod 静态初始化优先
+//    使用 mods 里已安装的 provider，没有时才解压这里自带的副本——UniMixins
+//    不再是硬依赖。
+// ============================================================================
+abstract class PackageMixinRuntime : DefaultTask() {
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val sourceJars: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @TaskAction
+    fun packageRuntime() {
+        val output = outputDirectory.get().asFile
+        val embeddedDir = File(output, "META-INF/modernui")
+        embeddedDir.mkdirs()
+
+        val source = sourceJars.files.firstOrNull { file -> containsMixinRuntime(file) }
+                ?: throw GradleException(
+                        "PackageMixinRuntime: compileClasspath 中找不到同时包含 Mixin 与 MixinExtras 的 jar" +
+                                "（期望 UniMixins dev jar）")
+
+        ZipFile(source).use { zip ->
+            writeJar(File(embeddedDir, "mixin-runtime.jar"), zip) { name -> isMixinRuntimeEntry(name) }
+            writeJar(File(embeddedDir, "mixin-extras.jar"), zip) { name -> isMixinExtrasEntry(name) }
+        }
+        logger.lifecycle("PackageMixinRuntime: 从 " + source.name + " 生成 Mixin/MixinExtras 嵌套运行时")
+    }
+
+    private fun containsMixinRuntime(file: File): Boolean {
+        if (!file.isFile || !file.name.endsWith(".jar", ignoreCase = true)) {
+            return false
+        }
+        return try {
+            ZipFile(file).use { zip ->
+                zip.getEntry(MIXIN_BOOTSTRAP_ENTRY) != null && zip.getEntry(MIXIN_EXTRAS_ENTRY) != null
+            }
+        } catch (ignored: IOException) {
+            false
+        }
+    }
+
+    private fun writeJar(target: File, source: ZipFile, include: (String) -> Boolean) {
+        ZipOutputStream(target.outputStream().buffered()).use { output ->
+            val entries = source.entries()
+            while (entries.hasMoreElements()) {
+                val entry = entries.nextElement()
+                if (entry.isDirectory || !include(entry.name)) {
+                    continue
+                }
+                val copy = ZipEntry(entry.name)
+                // 固定时间戳，避免同一输入每次生成不同字节。
+                copy.time = 0L
+                output.putNextEntry(copy)
+                source.getInputStream(entry).use { input -> input.copyTo(output) }
+                output.closeEntry()
+            }
+        }
+    }
+
+    companion object {
+        private const val MIXIN_BOOTSTRAP_ENTRY = "org/spongepowered/asm/launch/MixinBootstrap.class"
+        private const val MIXIN_EXTRAS_ENTRY = "com/llamalad7/mixinextras/MixinExtrasBootstrap.class"
+
+        private val RUNTIME_SERVICES = setOf(
+                "META-INF/services/org.spongepowered.asm.service.IGlobalPropertyService",
+                "META-INF/services/org.spongepowered.asm.service.IMixinService",
+                "META-INF/services/org.spongepowered.asm.service.IMixinServiceBootstrap")
+
+        private fun isMixinRuntimeEntry(name: String): Boolean {
+            if (name.startsWith("org/spongepowered/asm/") || name.startsWith("org/spongepowered/include/")) {
+                return true
+            }
+            if (name.startsWith("META-INF/licenses/module-mixin/")) {
+                return true
+            }
+            if (name.startsWith("META-INF/licenses/module-mixinextras/")) {
+                return true
+            }
+            return isMixinExtrasEntry(name) || RUNTIME_SERVICES.contains(name)
+        }
+
+        private fun isMixinExtrasEntry(name: String): Boolean {
+            // ap/ 只服务编译期注解处理，运行期不需要。
+            if (name.startsWith("META-INF/licenses/module-mixinextras/")) {
+                return true
+            }
+            return name.startsWith("com/llamalad7/mixinextras/") &&
+                    !name.startsWith("com/llamalad7/mixinextras/ap/")
+        }
+    }
+}
+
+val mixinRuntimeOutput = layout.buildDirectory.dir("generated/mixinRuntime")
+
+val generateMixinRuntime by tasks.registering(PackageMixinRuntime::class) {
+    group = "build"
+    description = "从 UniMixins dev jar 生成随 mod 打包的 Mixin/MixinExtras 嵌套运行时"
+    sourceJars.from(configurations.named("compileClasspath").map { configuration ->
+        configuration.files.filter { file -> file.isFile && file.name.endsWith(".jar", ignoreCase = true) }
+    })
+    outputDirectory.set(mixinRuntimeOutput)
+}
+
+// 只挂到实际发布链路（jar -> shadowJar -> reobfJar），不污染 sourcesJar。
+listOf("jar", "shadowJar").forEach { archiveTaskName ->
+    tasks.named(archiveTaskName, Jar::class.java) {
+        from(mixinRuntimeOutput)
+        dependsOn(generateMixinRuntime)
+        manifest {
+            // 保持纯 coremod：声明 TweakClass 的 jar 会被 FML 当成 tweaker
+            // 处理，从而跳过 FMLCorePlugin 的实例化。运行时由 EarlyMixins
+            // 在 coremod 发现阶段自行准备。
+            attributes.remove("TweakClass")
+        }
+    }
 }

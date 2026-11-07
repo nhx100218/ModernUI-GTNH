@@ -1,8 +1,12 @@
 {
   "required": false,
-  "minVersion": "0.8.5-GTNH",
+  "minVersion": "0.8",
   "package": "blocamlimb.nhx100218.modernui.uilib.mixin.late",
   "refmap": "mixins.modernuigtnh.refmap.json",
   "target": "@env(DEFAULT)",
-  "compatibilityLevel": "JAVA_8"
+  "compatibilityLevel": "JAVA_8",
+  "plugin": "blocamlimb.nhx100218.modernui.uilib.mixin.ModernUiMixinConfigPlugin",
+  "mixins": [],
+  "client": [],
+  "server": []
 }

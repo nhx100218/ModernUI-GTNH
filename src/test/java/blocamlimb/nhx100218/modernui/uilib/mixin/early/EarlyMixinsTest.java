@@ -1,8 +1,6 @@
 package blocamlimb.nhx100218.modernui.uilib.mixin.early;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -13,8 +11,6 @@ import cpw.mods.fml.relauncher.Side;
  * Contract tests for the merged early mixin registration list.
  */
 public class EarlyMixinsTest {
-
-    private static final String ANGELICA_TWEAKER = "com.gtnewhorizons.angelica.loading.AngelicaTweaker";
 
     @Test
     public void shouldNotReturnClientMixinsOnDedicatedServerSide() {
@@ -48,15 +44,13 @@ public class EarlyMixinsTest {
 
     @Test
     public void shouldAddAngelicaGuardOnlyForClientWithAngelicaTweaker() {
-        Set<String> loadedCoreMods = Collections.singleton(ANGELICA_TWEAKER);
-
-        List<String> clientMixins = EarlyMixins.buildMixinsForSide(Side.CLIENT, loadedCoreMods);
+        List<String> clientMixins = EarlyMixins.buildMixinsForSide(Side.CLIENT, true);
         assertGenericNameTagMixins(clientMixins);
         Assert.assertTrue(clientMixins.contains("nametag.MixinAngelicaPlayerNameTagReplay"));
         Assert.assertTrue("Angelica must install the TESR replay guard",
                 clientMixins.contains("tesr.MixinAngelicaTesrBatchReplay"));
 
-        List<String> serverMixins = EarlyMixins.buildMixinsForSide(Side.SERVER, loadedCoreMods);
+        List<String> serverMixins = EarlyMixins.buildMixinsForSide(Side.SERVER, true);
         assertNoNameTagMixins(serverMixins);
     }
 

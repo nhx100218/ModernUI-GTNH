@@ -187,6 +187,17 @@ modernui.config.general.pickerDensity=Picker Density
 modernui.config.general.pickerDensity.tooltip=Picker layout density: auto, compact, standard or roomy.
 modernui.config.general.backdropQuality=Backdrop Quality
 modernui.config.general.backdropQuality.tooltip=Backdrop quality: full, eco (power saving) or solid (disabled).
+modernui.md.tab.server=Server
+modernui.config.server.tab.enabled=Tab Display
+modernui.config.server.tab.enabled.tooltip=Append one MSPT/TPS line to ServerUtilities' custom tab. Requires ServerUtilities; its header and existing footer are preserved.
+modernui.config.server.motd.enabled=Server List MOTD
+modernui.config.server.motd.enabled.tooltip=Replace the server-list description with the configured MOTD. config/MiniMOTD/main.conf takes precedence when present.
+modernui.config.server.motd.line1=MOTD Line 1
+modernui.config.server.motd.line1.tooltip=Fallback first line used only when config/MiniMOTD/main.conf is absent. Supports <gradient:#rrggbb:#rrggbb>, <rainbow>, & codes and placeholders.
+modernui.config.server.motd.line2=MOTD Line 2
+modernui.config.server.motd.line2.tooltip=Fallback second line. Leave empty to show one line only.
+modernui.config.server.motd.icon=MOTD Icon
+modernui.config.server.motd.icon.tooltip=Fallback 64x64 PNG in config/ or config/motd/, or an absolute path. Empty keeps the vanilla icon.
 
 modernui.config.font.lerpMode=Interpolation Mode
 modernui.config.font.lerpMode.tooltip=Font interpolation mode.

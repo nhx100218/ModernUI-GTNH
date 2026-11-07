@@ -96,10 +96,10 @@ public final class FontConfig {
      * <p>斜体槽被指派时，斜体文本使用该字体族的真实斜体字面，关闭渲染期几何斜切。</p>
      */
     public static String westernNormalFont = "";
-    public static String westernBoldFont = "";
-    public static String westernItalicFont = "";
+    public static String westernBoldFont = "Inter Bold";
+    public static String westernItalicFont = "Inter Frozen Medium Italic";
     public static String cjkNormalFont = "";
-    public static String cjkBoldFont = "";
+    public static String cjkBoldFont = "Source Han Sans SC Bold";
     public static String cjkItalicFont = "";
     private static volatile FontCharacterRuleSet characterRuleSet = FontCharacterRuleSet.empty();
 

@@ -9,6 +9,7 @@ import blocamlimb.nhx100218.modernui.config.ConfigException;
 import blocamlimb.nhx100218.modernui.config.runtime.ConfigManager;
 import blocamlimb.nhx100218.modernui.config.schema.ConfigSchema;
 import blocamlimb.nhx100218.modernui.config.ui.field.PickerDensityPreferenceSource;
+import blocamlimb.nhx100218.modernui.server.ServerFeatureConfig;
 import blocamlimb.nhx100218.modernui.uilib.MyMod;
 import blocamlimb.nhx100218.modernui.uilib.font.FontService;
 import blocamlimb.nhx100218.modernui.uilib.font.config.FontConfig;
@@ -108,7 +109,8 @@ public final class ModernConfigBootstrap {
         if (!needsDefaults) {
             try {
                 String existing = new String(Files.readAllBytes(configFile.toPath()), StandardCharsets.UTF_8);
-                needsDefaults = !existing.contains("smoothscroll:") || !existing.contains("tooltip:");
+                needsDefaults = !existing.contains("smoothscroll:") || !existing.contains("tooltip:")
+                        || !existing.contains("server:");
             } catch (IOException ignored) {
                 needsDefaults = true;
             }
@@ -133,6 +135,8 @@ public final class ModernConfigBootstrap {
         }
         // 1. 全量回灌静态字段（C1 Bridge）
         ConfigValueBridge.applyFromAuthority(manager.authority());
+        ServerFeatureConfig.apply(manager.authority());
+        ServerFeatureConfig.attach(configFile);
         // 合并后的附属增强设置与库设置共用同一 Authority。
         blocamlimb.nhx100218.modernui.enhance.Config.apply(manager.authority());
         MyMod.LOG.debug("Bridge 值回灌完成: fontSort.length={}, fontSortConfigured={}",

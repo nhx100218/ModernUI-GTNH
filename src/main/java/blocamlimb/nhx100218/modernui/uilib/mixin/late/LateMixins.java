@@ -5,29 +5,54 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import com.gtnewhorizon.gtnhmixins.ILateMixinLoader;
-import com.gtnewhorizon.gtnhmixins.LateMixin;
-import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import cpw.mods.fml.relauncher.Side;
 
 /**
  * Late compatibility mixins for optional mods. The library and the merged
- * enhancement mixins share this single loader and a single mixin config.
+ * enhancement mixins share this single config, registered during FML's
+ * CONSTRUCTING state.
  */
-@LateMixin
-public class LateMixins implements ILateMixinLoader {
+public final class LateMixins {
 
-    @Override
-    public String getMixinConfig() {
-        return "mixins.modernuigtnh.late.json";
+    public static final String CONFIG = "mixins.modernuigtnh.late.json";
+
+    private LateMixins() {}
+
+    public static String getMixinConfig() {
+        return CONFIG;
     }
 
-    @Override
-    public List<String> getMixins(Set<String> loadedMods) {
-        return buildMixinsForSide(FMLLaunchHandler.side(), loadedMods);
+    /**
+     * Full client-side late list. The config is registered before FML's mod
+     * list is available, so selection cannot depend on which optional mods are
+     * installed. Mixins whose target class is absent are simply never applied.
+     */
+    public static List<String> allForSide(Side side) {
+        if (side != Side.CLIENT) {
+            return Collections.emptyList();
+        }
+        List<String> mixins = new ArrayList<String>();
+        mixins.add("ae2.MixinAbstractPartMonitor");
+        mixins.add("enhance.waila.MixinWailaOverlayRenderer");
+        mixins.add("enhance.codechicken.MixinGuiDrawTooltip");
+        mixins.add("enhance.modularui.MixinModularUiTooltip");
+        mixins.add("enhance.modularui.MixinModularScreenTransition");
+        mixins.add("enhance.modularui.MixinTextRendererNoWrap");
+        mixins.add("enhance.modularui.MixinRichTextCompilerNoWrap");
+        mixins.add("enhance.ct.MixinCtTooltipDecorator");
+        mixins.add("enhance.ct.MixinCtTextComponent");
+        mixins.add("enhance.ct.MixinNeiTooltipComponentCompat");
+        mixins.add("enhance.bq.MixinBqTooltip");
+        mixins.add("enhance.bq.MixinBqSceneTransition");
+        mixins.add("enhance.bq.MixinBqRenderUtils");
+        mixins.add("enhance.nei.MixinFormattedTextFieldSelection");
+        mixins.add("enhance.nei.MixinRecipeTooltipLineHandler");
+        mixins.add("enhance.tconstruct.MixinSmelteryGui");
+        mixins.add("enhance.bogo.MixinBogoHotbarSwap");
+        return mixins;
     }
 
-    static List<String> buildMixinsForSide(Side side, Set<String> loadedMods) {
+    public static List<String> buildMixinsForSide(Side side, Set<String> loadedMods) {
         if (side != Side.CLIENT || loadedMods == null) {
             return Collections.emptyList();
         }
