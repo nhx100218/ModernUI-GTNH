@@ -39,6 +39,7 @@ import blocamlimb.nhx100218.modernui.uilib.font.page.GlyphRuntimeTables;
 import blocamlimb.nhx100218.modernui.uilib.font.util.CodepointTextCache;
 import blocamlimb.nhx100218.modernui.uilib.font.util.DerivedFontCache;
 import blocamlimb.nhx100218.modernui.uilib.font.util.FontMatcher;
+import blocamlimb.nhx100218.modernui.uilib.font.util.GlyphReplacementCompat;
 import blocamlimb.nhx100218.modernui.uilib.ui.base.props.UiFontStyle;
 import blocamlimb.nhx100218.modernui.uilib.ui.base.props.UiFontWeight;
 import blocamlimb.nhx100218.modernui.uilib.ui.text.TextContentMode;
@@ -405,7 +406,7 @@ public class TextLayoutService {
         }
         // 显示/解析路径统一 NFC 规范化：组合序列（e+U+0301）合并为预组合字符（é），
         // 已规范化文本零分配快路径原样返回。
-        text = normalizeNfc(text);
+        text = normalizeText(text);
 
         TextContentMode resolvedMode = resolveTextContentMode(textContentMode);
         if (resolvedMode == TextContentMode.UILIB_RAW) {
@@ -516,6 +517,8 @@ public class TextLayoutService {
             if (text == null || text.isEmpty()) {
                 return new int[]{0};
             }
+            // Character-for-character replacement keeps the codepoint indices used by caret geometry.
+            text = replaceCustomGlyphs(text);
             int codePointCount = text.codePointCount(0, text.length());
             int[] widths = new int[codePointCount + 1];
             widths[0] = 0;
@@ -575,7 +578,7 @@ public class TextLayoutService {
                     || resolveTextContentMode(resolvedStyle.getTextContentMode()) != TextContentMode.RICH_TAGS) {
                 return java.util.Collections.emptyList();
             }
-            line = normalizeNfc(line);
+            line = normalizeText(line);
             TextStyle baseStyle = createBaseStyle(0xFFFFFFFF, resolvedStyle.getFontWeight(),
                     resolvedStyle.getFontStyle());
             java.util.List<TextLinkRegion> regions = new ArrayList<TextLinkRegion>();
@@ -635,7 +638,7 @@ public class TextLayoutService {
             if (text == null || text.isEmpty() || targetWidth <= 0) {
                 return "";
             }
-            text = normalizeNfc(text);
+            text = normalizeText(text);
 
             return strategyFor(resolveTextContentMode(textContentMode)).trim(text, targetWidth,
                     createBaseStyle(0xFFFFFFFF, fontWeight, fontStyle),
@@ -660,7 +663,7 @@ public class TextLayoutService {
             if (text == null || text.isEmpty() || targetWidth <= 0) {
                 return "";
             }
-            text = normalizeNfc(text);
+            text = normalizeText(text);
 
             return strategyFor(resolvedStyle.getTextContentMode()).trim(text, targetWidth,
                     createBaseStyle(0xFFFFFFFF, resolvedStyle.getFontWeight(), resolvedStyle.getFontStyle()),
@@ -700,7 +703,7 @@ public class TextLayoutService {
             if (text == null || text.isEmpty() || targetWidth <= 0) {
                 return "";
             }
-            text = normalizeNfc(text);
+            text = normalizeText(text);
 
             if (resolveTextContentMode(textContentMode) == TextContentMode.UILIB_RAW) {
                 return trimRawStringToWidthFromTail(text, targetWidth);
@@ -772,7 +775,7 @@ public class TextLayoutService {
             if (text == null || text.isEmpty() || wrapWidth <= 0) {
                 return "";
             }
-            text = normalizeNfc(text);
+            text = normalizeText(text);
 
             return strategyFor(resolveTextContentMode(textContentMode)).wrap(text, wrapWidth,
                     createBaseStyle(0xFFFFFFFF, UiFontWeight.NORMAL, UiFontStyle.NORMAL),
@@ -801,7 +804,7 @@ public class TextLayoutService {
             if (text == null || text.isEmpty() || wrapWidth <= 0) {
                 return "";
             }
-            text = normalizeNfc(text);
+            text = normalizeText(text);
 
             return strategyFor(resolvedStyle.getTextContentMode()).wrap(text, wrapWidth,
                     createBaseStyle(0xFFFFFFFF, resolvedStyle.getFontWeight(), resolvedStyle.getFontStyle()),
@@ -1811,7 +1814,7 @@ public class TextLayoutService {
                     || resolveTextContentMode(resolvedStyle.getTextContentMode()) != TextContentMode.RICH_TAGS) {
                 return getLineHeight(resolvedStyle);
             }
-            text = normalizeNfc(text);
+            text = normalizeText(text);
             TextStyle baseStyle = createBaseStyle(0xFFFFFFFF, resolvedStyle.getFontWeight(),
                     resolvedStyle.getFontStyle());
             int maxFontSizePx = resolvedStyle.getFontSizePx();
@@ -2085,6 +2088,20 @@ public class TextLayoutService {
     }
 
     /**
+     * Applies the text normalizations shared by layout, measurement and drawing.
+     *
+     * <p>NFC keeps combining sequences together; custom glyph expansion turns GTNHLib private-use
+     * characters into the characters they represent. Both steps run before tags are parsed so
+     * every downstream path sees the same text.</p>
+     *
+     * @param text raw text (may be null)
+     * @return normalized text
+     */
+    private String normalizeText(String text) {
+        return replaceCustomGlyphs(normalizeNfc(text));
+    }
+
+    /**
      * NFC 规范化（组合附加符堆叠挡 1）：显示/换行/裁剪/链接路径统一把
      * 「基字 + 组合标记」序列合并为预组合字符（如 {@code e + U+0301 → é}），
      * 使常见重音字符在无 mark 定位渲染的字体链上也能正确显示。
@@ -2103,6 +2120,69 @@ public class TextLayoutService {
             return text;
         }
         return Normalizer.normalize(text, Normalizer.Form.NFC);
+    }
+
+    /**
+     * Replaces GTNHLib private-use custom glyphs with the characters they stand for.
+     *
+     * <p>GregTech renders chemical formulas through {@code GTUtility.toSubscript}, which uses
+     * {@code \uE01A} for a subscript zero because the vanilla renderer cannot address it directly
+     * through the material font. GTNHLib registers that private-use character as a replacement for
+     * {@code \u2080}; Angelica applies the mapping in its renderer. ModernUI replaces the renderer,
+     * so the mapping has to be applied here as well, before both measurement and glyph lookup.</p>
+     *
+     * <p>Only private-use characters are probed, so ordinary text pays one range check per char.
+     * The replacement is kept only when the current catalog can display the original character;
+     * otherwise the private-use character is preserved for resource packs that supply it.</p>
+     *
+     * @param text text to normalize
+     * @return text with registered custom glyphs expanded
+     */
+    private String replaceCustomGlyphs(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        StringBuilder replaced = null;
+        for (int i = 0; i < text.length(); i++) {
+            char current = text.charAt(i);
+            if (current < '\uE000' || current > '\uF8FF') {
+                continue;
+            }
+            char original = GlyphReplacementCompat.replacementFor(current);
+            if (original == 0 || original == current) {
+                continue;
+            }
+            if (!canDisplayCustomGlyph(original)) {
+                continue;
+            }
+            if (replaced == null) {
+                replaced = new StringBuilder(text);
+            }
+            replaced.setCharAt(i, original);
+        }
+        return replaced == null ? text : replaced.toString();
+    }
+
+    /**
+     * Whether any font in the current catalog can display the character.
+     *
+     * <p>Read-only on purpose: this runs while parsing text, which is not always inside the
+     * generation lock. The matcher's cache must not be mutated from here.</p>
+     *
+     * @param codepoint character to test
+     * @return true when the current catalog has a glyph
+     */
+    private boolean canDisplayCustomGlyph(int codepoint) {
+        FontCatalog.Snapshot snapshot = fontMatcher.getCatalogSnapshot(runtimeVersion);
+        if (snapshot == null) {
+            return false;
+        }
+        for (Font font : snapshot.getFonts()) {
+            if (font.canDisplay(codepoint)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private TextStyle createBaseStyle(int baseColor, UiFontWeight fontWeight, UiFontStyle fontStyle) {

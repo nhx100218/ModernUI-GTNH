@@ -6,6 +6,18 @@
 
 ## [Unreleased]
 
+### English
+
+#### Fixed
+
+- GTNHLib custom glyphs registered by GTNH mods are expanded before text layout and measurement. GregTech chemical formulas such as steel now show `Fe₅₀C` instead of a private-use placeholder for the subscript zero.
+
+### 中文
+
+#### 修复
+
+- 在文本布局与测量前展开 GTNH 模组通过 GTNHLib 注册的自定义字形。钢等格雷科技材料的化学式现在显示为 `Fe₅₀C`，不再把下标 0 显示成私有区占位字符。
+
 ## [1.2.2] - 2026-11-07
 
 ### English
