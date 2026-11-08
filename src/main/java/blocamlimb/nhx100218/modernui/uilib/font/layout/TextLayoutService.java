@@ -33,6 +33,7 @@ import blocamlimb.nhx100218.modernui.uilib.font.latex.MathFontStyle;
 import blocamlimb.nhx100218.modernui.uilib.font.FontRuntimeAccess;
 import blocamlimb.nhx100218.modernui.uilib.font.FontRuntimeSettings;
 import blocamlimb.nhx100218.modernui.uilib.font.FontType;
+import blocamlimb.nhx100218.modernui.uilib.font.glyph.VanillaCustomGlyphSemantics;
 import blocamlimb.nhx100218.modernui.uilib.font.glyph.VanillaUnicodeGlyphSource;
 import blocamlimb.nhx100218.modernui.uilib.font.util.UnicodeTextClassifier;
 import blocamlimb.nhx100218.modernui.uilib.font.page.GlyphPageManager;
@@ -413,10 +414,10 @@ public class TextLayoutService {
         if (resolvedMode == TextContentMode.UILIB_RAW) {
             TextStyle style = createBaseStyle(baseColor, baseStyle);
             segments.add(new TextSegment(text, style));
-            return segments;
+            return splitSemanticGlyphs(segments);
         }
         if (resolvedMode == TextContentMode.RICH_TAGS) {
-            return RichTextTagParser.parse(text, createBaseStyle(baseColor, baseStyle));
+            return splitSemanticGlyphs(RichTextTagParser.parse(text, createBaseStyle(baseColor, baseStyle)));
         }
 
         TextStyle currentStyle = createBaseStyle(baseColor, baseStyle);
@@ -444,7 +445,7 @@ public class TextLayoutService {
         if (builder.length() > 0) {
             segments.add(new TextSegment(builder.toString(), currentStyle.copy()));
         }
-        return segments;
+        return splitSemanticGlyphs(segments);
     }
 
     /**
@@ -584,7 +585,7 @@ public class TextLayoutService {
                     resolvedStyle.getFontStyle());
             java.util.List<TextLinkRegion> regions = new ArrayList<TextLinkRegion>();
             double running = 0.0D;
-            for (TextSegment segment : RichTextTagParser.parse(line, baseStyle)) {
+            for (TextSegment segment : splitSemanticGlyphs(RichTextTagParser.parse(line, baseStyle))) {
                 double segmentWidth = getSegmentWidth(segment, resolvedStyle.getFontSizePx());
                 String url = segment.getStyle().getLink();
                 if (url != null && segmentWidth > 0.0D) {
@@ -1823,7 +1824,7 @@ public class TextLayoutService {
                     resolvedStyle.getFontStyle());
             int maxFontSizePx = resolvedStyle.getFontSizePx();
             int maxLineHeightPx = 0;
-            for (TextSegment segment : RichTextTagParser.parse(text, baseStyle)) {
+            for (TextSegment segment : splitSemanticGlyphs(RichTextTagParser.parse(text, baseStyle))) {
                 int fontSizePx = segment.getStyle().resolveEffectiveFontSizePx(resolvedStyle.getFontSizePx());
                 if (fontSizePx > maxFontSizePx) {
                     maxFontSizePx = fontSizePx;
@@ -2061,7 +2062,7 @@ public class TextLayoutService {
      */
     private String trimRichStringToWidthFromTail(String text, int targetWidth, TextStyle baseStyle,
             int baseFontSizePx) {
-        List<TextSegment> segments = RichTextTagParser.parse(text, baseStyle);
+        List<TextSegment> segments = splitSemanticGlyphs(RichTextTagParser.parse(text, baseStyle));
         List<TextSegment> kept = new ArrayList<TextSegment>();
         double width = 0.0D;
         boolean truncated = false;
@@ -2089,6 +2090,85 @@ public class TextLayoutService {
             }
         }
         return RichTextTagParser.serialize(kept, baseStyle);
+    }
+
+    /**
+     * Expands private-use glyphs that have a textual meaning into ordinary text with the existing
+     * superscript/subscript styles. This keeps them in the configured font instead of switching to
+     * the vanilla bitmap page.
+     *
+     * @param segments parsed segments
+     * @return segments with semantic private-use glyphs expanded
+     */
+    private List<TextSegment> splitSemanticGlyphs(List<TextSegment> segments) {
+        boolean hasSemantic = false;
+        for (TextSegment segment : segments) {
+            if (!segment.isLatex() && hasSemanticGlyph(segment.getText())) {
+                hasSemantic = true;
+                break;
+            }
+        }
+        if (!hasSemantic) {
+            return segments;
+        }
+        List<TextSegment> expanded = new ArrayList<TextSegment>();
+        for (TextSegment segment : segments) {
+            if (segment.isLatex()) {
+                expanded.add(segment);
+            } else {
+                splitSemanticSegment(segment, expanded);
+            }
+        }
+        return expanded;
+    }
+
+    private boolean hasSemanticGlyph(String text) {
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+        for (int index = 0; index < text.length(); index++) {
+            if (VanillaCustomGlyphSemantics.textFor(text.charAt(index)) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void splitSemanticSegment(TextSegment segment, List<TextSegment> expanded) {
+        String text = segment.getText();
+        TextStyle style = segment.getStyle();
+        if (text == null || text.isEmpty() || style == null) {
+            expanded.add(segment);
+            return;
+        }
+        int start = 0;
+        for (int index = 0; index < text.length(); ) {
+            char character = text.charAt(index);
+            String replacement = VanillaCustomGlyphSemantics.textFor(character);
+            if (replacement != null && !replacement.isEmpty()
+                    && canDisplayCustomGlyph(replacement.codePointAt(0))) {
+                if (index > start) {
+                    expanded.add(new TextSegment(text.substring(start, index), style.copy()));
+                }
+                TextStyle replacementStyle = style.copy();
+                int styleKind = VanillaCustomGlyphSemantics.styleFor(character);
+                if (styleKind == VanillaCustomGlyphSemantics.STYLE_SUPERSCRIPT) {
+                    replacementStyle.setSuperscript(true);
+                } else if (styleKind == VanillaCustomGlyphSemantics.STYLE_SUBSCRIPT) {
+                    replacementStyle.setSubscript(true);
+                }
+                expanded.add(new TextSegment(replacement, replacementStyle));
+                index += Character.charCount(character);
+                start = index;
+                continue;
+            }
+            index += Character.charCount(character);
+        }
+        if (start == 0) {
+            expanded.add(segment);
+        } else if (start < text.length()) {
+            expanded.add(new TextSegment(text.substring(start), style.copy()));
+        }
     }
 
     /**
