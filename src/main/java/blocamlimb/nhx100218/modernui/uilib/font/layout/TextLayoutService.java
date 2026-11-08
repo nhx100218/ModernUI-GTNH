@@ -33,6 +33,7 @@ import blocamlimb.nhx100218.modernui.uilib.font.latex.MathFontStyle;
 import blocamlimb.nhx100218.modernui.uilib.font.FontRuntimeAccess;
 import blocamlimb.nhx100218.modernui.uilib.font.FontRuntimeSettings;
 import blocamlimb.nhx100218.modernui.uilib.font.FontType;
+import blocamlimb.nhx100218.modernui.uilib.font.glyph.VanillaUnicodeGlyphSource;
 import blocamlimb.nhx100218.modernui.uilib.font.util.UnicodeTextClassifier;
 import blocamlimb.nhx100218.modernui.uilib.font.page.GlyphPageManager;
 import blocamlimb.nhx100218.modernui.uilib.font.page.GlyphRuntimeTables;
@@ -1503,6 +1504,9 @@ public class TextLayoutService {
         }
         if (codepoint == ' ') {
             return currentSettings().getSpaceWidth();
+        }
+        if (VanillaUnicodeGlyphSource.hasGlyph(codepoint)) {
+            return VanillaUnicodeGlyphSource.advance(codepoint, currentSettings().getGameCharSize());
         }
 
         GlyphRuntimeTables tables = currentRuntimeTables();

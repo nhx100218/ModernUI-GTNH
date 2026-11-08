@@ -7,6 +7,7 @@ import blocamlimb.nhx100218.modernui.uilib.font.FontRendererFallbackInvoker.Invo
 import blocamlimb.nhx100218.modernui.uilib.font.FontService;
 import blocamlimb.nhx100218.modernui.uilib.font.config.FontConfig;
 import blocamlimb.nhx100218.modernui.uilib.font.event.FontReloadRequest;
+import blocamlimb.nhx100218.modernui.uilib.font.glyph.VanillaUnicodeGlyphSource;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.resources.IResourceManager;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,6 +27,7 @@ public abstract class MixinFontRenderer {
 
     @Inject(method = "onResourceManagerReload", at = @At("RETURN"))
     public void onResourceManagerReload(IResourceManager resourceManager, CallbackInfo ci) {
+        VanillaUnicodeGlyphSource.clearCache();
         FontService.getInstance().reload(new FontReloadRequest("resource_manager_reload"));
         if (FontConfig.replaceOrigin) {
             modernui$fontInvoker.warmUpAdapterIfNeeded();

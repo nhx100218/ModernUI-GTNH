@@ -54,6 +54,12 @@ public class GlyphGenerator {
         if (token.getKind() == GlyphRequestToken.Kind.MATH_GLYPH) {
             return generateMathGlyph(task);
         }
+        if (VanillaUnicodeGlyphSource.hasGlyph(task.getCodepoint())) {
+            GlyphGenerationResult vanillaGlyph = VanillaUnicodeGlyphSource.generate(task);
+            if (vanillaGlyph != null) {
+                return vanillaGlyph;
+            }
+        }
         int fontIndex = fontMatcher.matchFontIndex(task.getRuntimeVersion(), task.getCodepoint(), task.getFontType());
         if (fontIndex < 0) {
             return null;

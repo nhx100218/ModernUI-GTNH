@@ -6,6 +6,18 @@
 
 ## [Unreleased]
 
+### English
+
+#### Fixed
+
+- Private-use glyphs supplied by resource packs through the vanilla Unicode font pages are now rendered by ModernUI. This covers GT5U custom glyphs that are not registered with GTNHLib, such as the subscript question mark (`\uE020`) used by chemical formulas, which previously fell back to an unrelated placeholder from the AWT font.
+
+### 中文
+
+#### 修复
+
+- ModernUI 现在会渲染资源包通过原版 Unicode 字体页提供的私有区字形。覆盖 GT5U 未注册到 GTNHLib 的自定义字形，例如化学式里的下标问号（`\uE020`）；此前这类字符会回退到 AWT 字体中的无关占位符。
+
 ## [1.2.4] - 2026-11-08
 
 ### English
