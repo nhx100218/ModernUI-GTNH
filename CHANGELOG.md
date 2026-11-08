@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [1.2.4-hotfix1] - 2026-11-08
+
 ### English
 
 #### Fixed
@@ -13,12 +15,16 @@
 - Private-use glyphs with a semantic equivalent are expanded to ordinary text with the existing superscript/subscript styles, so the subscript question mark (`\uE020`) and the superscript digit range render in the configured font (for example Inter Frozen) instead of the vanilla bitmap page.
 - Private-use glyphs without a semantic equivalent are rendered from the vanilla Unicode font pages supplied by resource packs, so custom symbols no longer fall back to an unrelated AWT placeholder.
 
+Compatibility: 1.2.4-hotfix1 accepts remote versions `[1.2.0,1.3.0)`.
+
 ### 中文
 
 #### 修复
 
 - 有语义对应的私有区字形会展开为普通字符并套用现有的上/下标样式，因此下标问号（`\uE020`）和上标数字会使用当前配置字体（例如 Inter Frozen）渲染，而不是回退到原版点阵页。
 - 没有语义对应的私有区字形改由资源包提供的原版 Unicode 字体页渲染，自定义符号不再回退到 AWT 的无关占位符。
+
+兼容性：1.2.4-hotfix1 接受远端版本 `[1.2.0,1.3.0)`。
 
 ## [1.2.4] - 2026-11-08
 
