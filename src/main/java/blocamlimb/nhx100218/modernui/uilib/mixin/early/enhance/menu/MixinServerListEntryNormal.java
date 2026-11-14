@@ -50,7 +50,7 @@ public abstract class MixinServerListEntryNormal {
                 && ModernMenuArrows.overBottomLeftQuarter(mouseX, mouseY, x, y, ICON_SIZE);
         ModernGuiRenderer.beginUi();
         ModernMenuArrows.drawIconShade(x, y, ICON_SIZE);
-        ModernMenuArrows.drawJoin(x, y, ICON_SIZE, overJoin);
+        ModernMenuArrows.drawServerJoin(x, y, ICON_SIZE, overJoin);
         if (slotIndex > 0) {
             ModernMenuArrows.drawMoveUp(x, y, ICON_SIZE, overUp);
         }

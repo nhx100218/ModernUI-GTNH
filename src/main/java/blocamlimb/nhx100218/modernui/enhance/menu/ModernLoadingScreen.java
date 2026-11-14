@@ -35,7 +35,7 @@ public final class ModernLoadingScreen {
      * @return true when this method drew and the host must cancel its own render
      */
     public static boolean render(Minecraft mc, int width, int height, EfrCompat.Snapshot snapshot) {
-        return render(mc, width, height, snapshot, -1.0F);
+        return render(mc, width, height, snapshot, -1.0F, true);
     }
 
     /**
@@ -45,6 +45,18 @@ public final class ModernLoadingScreen {
      */
     public static boolean render(Minecraft mc, int width, int height, EfrCompat.Snapshot snapshot,
             float explicitProgress) {
+        return render(mc, width, height, snapshot, explicitProgress, true);
+    }
+
+    /**
+     * Renders the ModernUI loading screen.
+     *
+     * @param explicitProgress 0..1, or a negative value to read the host state
+     * @param showChunkMap     false while a save is being shut down, so exiting a
+     *                         world does not display a chunk-status grid
+     */
+    public static boolean render(Minecraft mc, int width, int height, EfrCompat.Snapshot snapshot,
+            float explicitProgress, boolean showChunkMap) {
         if (!MenuConfig.modernLoadingScreen || rendering) {
             return false;
         }
@@ -59,7 +71,8 @@ public final class ModernLoadingScreen {
                 float progress = explicitProgress >= 0.0F ? explicitProgress : resolveProgress(mc, snapshot);
                 boolean hasProgress = progress >= 0.0F;
                 drawForeground(mc, width, height, text, hasProgress,
-                        Math.max(0.0F, Math.min(1.0F, progress)), LoadingChunkMap.sample(mc));
+                        Math.max(0.0F, Math.min(1.0F, progress)),
+                        showChunkMap ? LoadingChunkMap.sample(mc) : null);
             } finally {
                 restoreOrtho();
             }

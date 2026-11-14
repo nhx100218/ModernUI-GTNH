@@ -3,6 +3,10 @@ package blocamlimb.nhx100218.modernui.uilib.mixin.early.enhance.menu;
 import net.minecraft.client.LoadingScreenRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiDownloadTerrain;
+import net.minecraft.client.gui.GuiIngameMenu;
+import net.minecraft.client.gui.GuiMultiplayer;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.GuiSelectWorld;
 import net.minecraft.client.gui.ScaledResolution;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,15 +33,28 @@ public abstract class MixinLoadingScreenRenderer {
             return;
         }
         Minecraft minecraft = Minecraft.getMinecraft();
-        if (minecraft == null || !(minecraft.getIntegratedServer() != null
-                || minecraft.currentScreen instanceof GuiDownloadTerrain)) {
+        if (minecraft == null) {
+            return;
+        }
+        GuiScreen screen = minecraft.currentScreen;
+        boolean leavingWorld = screen instanceof GuiIngameMenu;
+        // launchIntegratedServer calls resetProgressAndWorkingMessage while the
+        // current screen is still GuiSelectWorld (the integrated server has not
+        // been assigned yet). Include that window so the first loading frame is
+        // already the panorama instead of a dirt flash.
+        boolean loadingWorld = minecraft.getIntegratedServer() != null
+                || screen instanceof GuiDownloadTerrain
+                || screen instanceof GuiSelectWorld
+                || screen instanceof GuiMultiplayer
+                || leavingWorld;
+        if (!loadingWorld) {
             return;
         }
         ScaledResolution resolution = new ScaledResolution(minecraft, minecraft.displayWidth,
                 minecraft.displayHeight);
         float fraction = progress < 0 ? -1.0F : progress / 100.0F;
         if (ModernLoadingScreen.render(minecraft, resolution.getScaledWidth(), resolution.getScaledHeight(),
-                EfrCompat.snapshot(), fraction)) {
+                EfrCompat.snapshot(), fraction, !leavingWorld)) {
             // Vanilla ends setLoadingProgress with updateDisplay(); the HEAD cancel
             // skips that, which left the previous dirt frame on screen until the
             // next GUI frame. Present the panorama immediately.

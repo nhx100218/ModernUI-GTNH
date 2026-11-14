@@ -1,6 +1,7 @@
 package blocamlimb.nhx100218.modernui.uilib.mixin.early.etfuturum;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiScreen;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,7 +32,9 @@ public abstract class MixinEfrGuiLoadingBridge {
             return;
         }
         GuiScreen screen = (GuiScreen) (Object) this;
-        if (ModernLoadingScreen.render(minecraft, screen.width, screen.height, EfrCompat.snapshot())) {
+        boolean leavingWorld = minecraft.currentScreen instanceof GuiIngameMenu;
+        if (ModernLoadingScreen.render(minecraft, screen.width, screen.height, EfrCompat.snapshot(),
+                -1.0F, !leavingWorld)) {
             callbackInfo.cancel();
         }
     }
