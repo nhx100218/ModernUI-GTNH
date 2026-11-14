@@ -1,6 +1,8 @@
 package blocamlimb.nhx100218.modernui.enhance.menu;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiDownloadTerrain;
+import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.server.integrated.IntegratedServer;
 
@@ -35,6 +37,20 @@ public final class ModernLoadingScreen {
     /** @return true while launchIntegratedServer is still preparing the world */
     public static boolean isWorldLoadRequested() {
         return worldLoadRequested;
+    }
+
+    /**
+     * Preparing resources / saving a world reuse the normal loading screen, but
+     * do not show a chunk grid.
+     *
+     * @param mc client
+     * @return true for the short status-only phases
+     */
+    public static boolean isStatusScreen(Minecraft mc) {
+        if (mc.currentScreen instanceof GuiIngameMenu) {
+            return true;
+        }
+        return worldLoadRequested && !(mc.currentScreen instanceof GuiDownloadTerrain);
     }
 
     /**
@@ -84,7 +100,7 @@ public final class ModernLoadingScreen {
                 boolean hasProgress = progress >= 0.0F;
                 drawForeground(mc, width, height, text, hasProgress,
                         Math.max(0.0F, Math.min(1.0F, progress)),
-                        showChunkMap ? LoadingChunkMap.sample(mc) : null);
+                        showChunkMap && !isStatusScreen(mc) ? LoadingChunkMap.sample(mc) : null);
             } finally {
                 restoreOrtho();
             }
@@ -95,9 +111,12 @@ public final class ModernLoadingScreen {
     }
 
     private static LoadingText resolveText(Minecraft mc, EfrCompat.Snapshot snapshot) {
-        // Keep the vanilla "Loading world" / "Downloading terrain" wording. EFR's
-        // title can be empty during resource preparation, which made the screen
-        // look like only a progress bar and chunk grid.
+        if (mc.currentScreen instanceof GuiIngameMenu) {
+            return new LoadingText(I18n.format("menu.savingLevel"));
+        }
+        if (worldLoadRequested && !(mc.currentScreen instanceof GuiDownloadTerrain)) {
+            return new LoadingText(I18n.format("selectWorld.resource_load"));
+        }
         IntegratedServer server = mc.getIntegratedServer();
         String title = server != null
                 ? I18n.format("menu.loadingLevel")

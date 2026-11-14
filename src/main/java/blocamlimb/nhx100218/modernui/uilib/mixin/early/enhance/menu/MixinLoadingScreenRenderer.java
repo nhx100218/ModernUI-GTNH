@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiSelectWorld;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.resources.I18n;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,7 +15,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import blocamlimb.nhx100218.modernui.enhance.menu.EfrCompat;
-import blocamlimb.nhx100218.modernui.enhance.menu.ModernLoadingBox;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernLoadingScreen;
 
 /**
@@ -45,33 +43,21 @@ public abstract class MixinLoadingScreenRenderer {
         int width = resolution.getScaledWidth();
         int height = resolution.getScaledHeight();
 
-        // 26.3 order: resource preparation box -> Loading world + chunk grid ->
-        // save box -> title screen.
-        if (leavingWorld) {
-            ModernLoadingBox.render(minecraft, width, height, I18n.format("menu.savingLevel"));
-            minecraft.func_147120_f();
-            callbackInfo.cancel();
-            return;
-        }
-        if (ModernLoadingScreen.isWorldLoadRequested() && !(screen instanceof GuiDownloadTerrain)) {
-            ModernLoadingBox.render(minecraft, width, height, I18n.format("selectWorld.resource_load"));
-            minecraft.func_147120_f();
-            callbackInfo.cancel();
-            return;
-        }
-
-        boolean loadingWorld = minecraft.getIntegratedServer() != null
+        boolean loadingWorld = ModernLoadingScreen.isWorldLoadRequested()
+                || minecraft.getIntegratedServer() != null
                 || minecraft.theWorld != null
                 || screen instanceof GuiDownloadTerrain
-                || screen instanceof GuiMultiplayer;
+                || screen instanceof GuiSelectWorld
+                || screen instanceof GuiMultiplayer
+                || leavingWorld;
         if (!loadingWorld) {
             return;
         }
         float fraction = progress < 0 ? -1.0F : progress / 100.0F;
-        // The pre-world "Loading world" stage has progress -1; keep the vanilla
-        // title + bar there and only show the chunk grid once real progress is
-        // available (or when GuiDownloadTerrain renders it).
-        boolean showChunkMap = progress >= 0;
+        // The status titles (resource preparation / saving world) are resolved
+        // inside ModernLoadingScreen so they share the same panorama layout as
+        // "Loading world" + chunk grid.
+        boolean showChunkMap = progress >= 0 && !leavingWorld;
         if (ModernLoadingScreen.render(minecraft, width, height,
                 EfrCompat.snapshot(), fraction, showChunkMap)) {
             callbackInfo.cancel();
