@@ -6,11 +6,14 @@ import net.minecraft.client.gui.GuiLanguage;
 import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.GuiOptions;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.GuiScreenOptionsSounds;
 import net.minecraft.client.gui.GuiScreenResourcePacks;
 import net.minecraft.client.gui.GuiSelectWorld;
 import net.minecraft.client.gui.GuiSnooper;
 import net.minecraft.client.gui.GuiVideoSettings;
+import net.minecraft.client.gui.ScreenChatOptions;
 import net.minecraft.client.gui.achievement.GuiAchievements;
+import net.minecraft.client.gui.stream.GuiStreamOptions;
 
 /**
  * Screens that share ModernUI's panorama instead of drawing the vanilla dirt
@@ -24,6 +27,9 @@ public final class ModernMenuScreens {
     private static final String FORGE_MOD_CONFIG = "net.minecraftforge.client.gui.GuiModConfig";
     /** 1.7.10 Forge is obfuscated into {@code cpw.mods.fml.client}, not net.minecraftforge. */
     private static final String FORGE_MOD_LIST = "cpw.mods.fml.client.GuiModList";
+    /** Angelica replaces the vanilla video settings screen with this one. */
+    private static final String ANGELICA_VIDEO_SCREEN =
+            "me.flashyreese.mods.reeses_sodium_options.client.gui.ReeseSodiumVideoOptionsScreen";
 
     private ModernMenuScreens() {
     }
@@ -46,6 +52,9 @@ public final class ModernMenuScreens {
                 || screen instanceof GuiVideoSettings
                 || screen instanceof GuiControls
                 || screen instanceof GuiLanguage
+                || screen instanceof GuiScreenOptionsSounds
+                || screen instanceof ScreenChatOptions
+                || screen instanceof GuiStreamOptions
                 || screen instanceof GuiSnooper
                 || screen instanceof GuiAchievements) {
             return true;
@@ -53,7 +62,8 @@ public final class ModernMenuScreens {
         String name = screen.getClass().getName();
         return MODERN_CONFIG_SCREEN.equals(name)
                 || FORGE_MOD_CONFIG.equals(name)
-                || FORGE_MOD_LIST.equals(name);
+                || FORGE_MOD_LIST.equals(name)
+                || ANGELICA_VIDEO_SCREEN.equals(name);
     }
 
     /** The whitelist also controls list backgrounds; mod list screens use the same panorama. */

@@ -38,6 +38,10 @@ public abstract class MixinLoadingScreenRenderer {
         float fraction = progress < 0 ? -1.0F : progress / 100.0F;
         if (ModernLoadingScreen.render(minecraft, resolution.getScaledWidth(), resolution.getScaledHeight(),
                 EfrCompat.snapshot(), fraction)) {
+            // Vanilla ends setLoadingProgress with updateDisplay(); the HEAD cancel
+            // skips that, which left the previous dirt frame on screen until the
+            // next GUI frame. Present the panorama immediately.
+            minecraft.func_147120_f();
             callbackInfo.cancel();
         }
     }

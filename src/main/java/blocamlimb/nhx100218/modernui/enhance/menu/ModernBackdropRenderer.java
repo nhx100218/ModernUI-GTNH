@@ -37,11 +37,14 @@ public final class ModernBackdropRenderer {
         setupOrtho(width, height);
         try {
             if (MenuConfig.globalPanorama) {
-                drawPanorama(mc, width, height, 0.92F);
+                drawPanorama(mc, width, height, 1.0F);
             } else {
                 ModernGuiRenderer.fill(0, 0, width, height, 0xFF101014);
             }
-            drawTint(width, height, 0xC0101014);
+            // 26.3 keeps the panorama bright and only lays a light menu texture
+            // over it. The old 0xC0 tint was nearly opaque and made the backdrop
+            // look black.
+            drawTint(width, height, 0x20101014);
             // The host list draws text and icons after this callback. Leave the
             // fixed-pipeline state in the shape vanilla expects.
             ModernGuiRenderer.beginUi();

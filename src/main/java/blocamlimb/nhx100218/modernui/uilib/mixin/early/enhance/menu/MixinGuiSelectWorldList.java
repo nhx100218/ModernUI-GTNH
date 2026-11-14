@@ -41,12 +41,10 @@ public abstract class MixinGuiSelectWorldList {
         }
         boolean hovered = ModernMenuArrows.overIcon(mouseX, mouseY, x, y, ICON_SIZE);
         ModernGuiRenderer.beginUi();
-        if (hovered) {
-            ModernMenuArrows.drawIconShade(x, y, ICON_SIZE);
-            ModernMenuArrows.drawJoin(x, y, ICON_SIZE, true);
-        } else {
-            ModernMenuArrows.drawJoin(x, y, ICON_SIZE, false);
-        }
+        // Keep the join affordance visible even without hover; the vanilla
+        // resource-pack arrow is grey and disappears against bright thumbnails.
+        ModernGuiRenderer.fill(x, y, x + ICON_SIZE, y + ICON_SIZE, hovered ? 0x90101014 : 0x60101014);
+        ModernMenuArrows.drawJoin(x, y, ICON_SIZE, hovered);
     }
 
     @Inject(method = "elementClicked", at = @At("HEAD"), cancellable = true, require = 0)
