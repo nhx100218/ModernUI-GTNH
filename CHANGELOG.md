@@ -6,6 +6,46 @@
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-14
+
+### English
+
+#### Added
+
+- The world loading screen uses the 26.3 layout: a centred mark, title and a thin progress bar. Nether and End loads use the matching portal backdrop; other dimensions use the shared panorama.
+- Menu screens share one translucent panorama instead of each drawing the dirt background.
+- The singleplayer world list shows a join arrow on the world icon. Clicking the icon opens that world.
+- The server list shows a join arrow on the right half of the server icon and move up/down arrows on the left quarters. Reordering writes back to `servers.dat`.
+- Both arrow sets reuse `textures/gui/resource_packs.png`. No new GUI art is shipped.
+- Et Futurum Requiem compatibility is optional. When EFR is installed, ModernUI takes over its loading screen; when EFR is absent, the vanilla loading path is used.
+
+#### Changed
+
+- The remote compatibility range is now `[2.0.0,2.1.0)`.
+
+#### Notes
+
+- The singleplayer and multiplayer screens keep vanilla buttons and row actions. This release adds the shared backdrop and icon actions, not a full screen rewrite.
+
+### 中文
+
+#### 新增
+
+- 加载界面改为 26.3 布局：居中标记、标题和细进度条。进入下界或末地时使用对应传送门背景，其他维度使用共享全景图。
+- 菜单界面共用一张半透明全景图，不再各自绘制泥土背景。
+- 单人世界列表在世界图标上显示进入箭头，点击图标直接进入世界。
+- 服务器列表在服务器图标右半区显示进入箭头，左半区显示上移/下移箭头；排序结果写回 `servers.dat`。
+- 两组箭头都复用 `textures/gui/resource_packs.png`，不新增 GUI 贴图。
+- Et Futurum Requiem 兼容为可选：装 EFR 时 ModernUI 接管其加载界面，没装时走原版加载路径。
+
+#### 变更
+
+- 远端兼容范围改为 `[2.0.0,2.1.0)`。
+
+#### 说明
+
+- 单人/多人界面保留原版按钮和行操作。本次只加共享背景和图标快捷操作，不重写整个界面。
+
 ## [1.2.5] - 2026-11-14
 
 ### English
