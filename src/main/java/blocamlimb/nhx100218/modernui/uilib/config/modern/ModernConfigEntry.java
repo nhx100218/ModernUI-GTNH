@@ -114,6 +114,18 @@ public final class ModernConfigEntry {
                 blocamlimb.nhx100218.modernui.enhance.Config.apply(manager.authority());
             }
         });
+        // 图形 API 只在玩家显式保存时写入 Angelica：RELOAD（含启动后的首次回灌）不写，
+        // 否则 ModernUI 里存下的旧意图会覆盖玩家后来在 Angelica 自带设置页里做的选择。
+        // 必须排在上一个 listener 之后——它负责把 renderer.api 回灌进 RenderApiSettings。
+        manager.eventBus().subscribe(new blocamlimb.nhx100218.modernui.config.ConfigChangeListener() {
+            @Override
+            public void onConfigChanged(blocamlimb.nhx100218.modernui.config.ConfigChangeEvent event) {
+                if (event.getType() == blocamlimb.nhx100218.modernui.config.ConfigChangeEvent.ChangeType.BATCH_SAVE) {
+                    blocamlimb.nhx100218.modernui.uilib.gpu.AngelicaGraphicsApi.apply(
+                            blocamlimb.nhx100218.modernui.uilib.gpu.RenderApiSettings.api);
+                }
+            }
+        });
 
         int guiScale = new ScaledResolution(minecraft, minecraft.displayWidth, minecraft.displayHeight)
                 .getScaleFactor();

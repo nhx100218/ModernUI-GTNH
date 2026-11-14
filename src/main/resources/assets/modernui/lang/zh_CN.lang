@@ -115,6 +115,10 @@ modernui.config.performance.unfocusedVolumeFactor.tooltip=失焦时音量倍率�
 modernui.config.performance.preload=加载时预热
 modernui.config.performance.preload.tooltip=加载后一次性预热字体、着色器与物品图标（加载时会卡一下，之后更流畅）。
 
+modernui.config.cat.renderer=渲染后端
+modernui.config.renderer.api=图形 API
+modernui.config.renderer.api.tooltip=保存时写入 Angelica 的渲染后端，重启游戏后生效。follow 表示不接管（后端由 Angelica 自己的设置页决定）；选了具体后端后每次保存都会把它同步给 Angelica，想交回 Angelica 自管就选 follow。Metal 仅 macOS，Direct3D 12 仅 Windows，macOS 上的 Vulkan 需 MoltenVK；需要 Angelica 2.2.43 及以上与 lwjgl3ify。
+
 modernui.config.cat.ui=界面
 modernui.config.ui.textUndoEnabled=文本撤销/重做
 modernui.config.ui.textUndoEnabled.tooltip=文本框 Ctrl+Z / Ctrl+Y。

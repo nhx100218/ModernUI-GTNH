@@ -77,7 +77,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private static final String[][] GROUP_SECTION_IDS = {
             {"tooltip", "waila", "chat"},
             {"smoothscroll", "screentransition", "zoom", "ui"},
-            {"general", "textselection", "emoji", "performance"}
+            {"general", "textselection", "emoji", "performance", "renderer"}
     };
 
     /** 配置管理器，保存事务入口 */

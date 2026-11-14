@@ -115,6 +115,10 @@ modernui.config.performance.unfocusedVolumeFactor.tooltip=Volume multiplier when
 modernui.config.performance.preload=Warm Up on Load
 modernui.config.performance.preload.tooltip=Warm up fonts, shaders and item icons once after loading (small hitch on load, smoother afterwards).
 
+modernui.config.cat.renderer=Renderer
+modernui.config.renderer.api=Graphics API
+modernui.config.renderer.api.tooltip=Written to Angelica's render backend on save; takes effect after a game restart. follow leaves the backend to Angelica's own settings page; once a concrete backend is picked, every save re-applies it to Angelica (pick follow to hand control back). Metal is macOS-only, Direct3D 12 is Windows-only, Vulkan on macOS needs MoltenVK. Requires Angelica 2.2.43+ and lwjgl3ify.
+
 modernui.config.cat.ui=Interface
 modernui.config.ui.textUndoEnabled=Text Undo/Redo
 modernui.config.ui.textUndoEnabled.tooltip=Ctrl+Z / Ctrl+Y in text fields.

@@ -20,7 +20,7 @@ public final class Config {
 
     /** 把附属增强的设置段追加到外部 schema builder（不新建 title，便于与库配置合并为单一 yaml）。 */
     public static ConfigSchema.Builder appendTo(ConfigSchema.Builder builder, Function<String, String> tr) {
-        return builder
+        final ConfigSchema.Builder chained = builder
                 .section("tooltip")
                     .title(tr.apply("modernui.config.cat.tooltip"))
                     .bool("enabled").defaultValue(TooltipConfig.enabled).label(l(tr, "tooltip", "enabled")).helper(h(tr, "tooltip", "enabled")).build()
@@ -106,6 +106,30 @@ public final class Config {
                     .bool("enabled").defaultValue(blocamlimb.nhx100218.modernui.enhance.vanilla.EmojiConfig.enabled).label(l(tr, "emoji", "enabled")).helper(h(tr, "emoji", "enabled")).build()
                 .endSection()
                 ;
+        return appendRendererSection(chained, tr);
+    }
+
+    /**
+     * 图形 API 选择段。
+     *
+     * <p>只声明「玩家想要哪个后端」；写入 Angelica 发生在保存事务之后
+     * （见 {@code ModernConfigEntry} 的 BATCH_SAVE 监听），启动与加载不写，避免覆盖玩家在
+     * Angelica 自带设置页里做的选择。平台不支持的选项不做裁剪——选项集合要能跨机器迁移解析，
+     * 写入前由 {@link blocamlimb.nhx100218.modernui.uilib.gpu.GraphicsApiSupport} 拒绝。</p>
+     *
+     * <p>帮助文本尾部拼当前实际后端（{@code [metal]} / {@code [opengl]} / {@code [unknown]}）：
+     * 本字段存的是意图，Angelica 里可能已被改成别的值，页面必须让两者同屏可见。schema 每次开屏
+     * 重建，所以这里取的是开屏瞬间的真值，不是陈旧的缓存。</p>
+     */
+    private static ConfigSchema.Builder appendRendererSection(ConfigSchema.Builder builder, Function<String, String> tr) {
+        final String liveBackend = blocamlimb.nhx100218.modernui.uilib.gpu.AngelicaGraphicsApi.describeCurrent();
+        return builder
+                .section("renderer")
+                    .title(tr.apply("modernui.config.cat.renderer"))
+                    .choice("api").options("follow", "opengl", "vulkan", "metal", "d3d12").defaultValue("follow")
+                        .label(l(tr, "renderer", "api"))
+                        .helper(h(tr, "renderer", "api") + " [" + liveBackend + "]").build()
+                .endSection();
     }
 
     private static String l(Function<String, String> tr, String section, String key) {
@@ -195,6 +219,10 @@ public final class Config {
         blocamlimb.nhx100218.modernui.enhance.vanilla.UiConfig.selectionOffsetY = (float) authority.getNumber("textselection.selectionOffsetY");
 
         blocamlimb.nhx100218.modernui.enhance.vanilla.EmojiConfig.enabled = authority.getBool("emoji.enabled");
+
+        // 只回灌意图；写入 Angelica 发生在保存事务之后（BATCH_SAVE 监听），加载与启动不写。
+        blocamlimb.nhx100218.modernui.uilib.gpu.RenderApiSettings.api =
+                blocamlimb.nhx100218.modernui.uilib.gpu.GraphicsApi.fromId(authority.getString("renderer.api"));
     }
 
     private static void readColors(Authority authority, String path, int[] target) {

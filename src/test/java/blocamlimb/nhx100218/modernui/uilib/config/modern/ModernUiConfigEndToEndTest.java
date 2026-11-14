@@ -314,12 +314,13 @@ public class ModernUiConfigEndToEndTest {
     public void schemaKeepsSections() throws Exception {
         ConfigSchema schema = ModernUiConfigSchema.create();
         assertEquals("modernui", schema.modId());
-        assertEquals(14, schema.sections().size());
+        assertEquals(15, schema.sections().size());
         assertEquals("tooltip", schema.sections().get(0).name());
-        assertEquals("general", schema.sections().get(10).name());
-        assertEquals("server", schema.sections().get(11).name());
-        assertEquals("fontSystem", schema.sections().get(12).name());
-        assertEquals("fontSizeSetting", schema.sections().get(13).name());
+        assertEquals("renderer", schema.sections().get(10).name());
+        assertEquals("general", schema.sections().get(11).name());
+        assertEquals("server", schema.sections().get(12).name());
+        assertEquals("fontSystem", schema.sections().get(13).name());
+        assertEquals("fontSizeSetting", schema.sections().get(14).name());
     }
 
     // ===== range 上界边界回归测试 =====

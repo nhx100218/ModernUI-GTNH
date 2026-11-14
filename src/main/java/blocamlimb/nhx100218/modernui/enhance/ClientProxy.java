@@ -25,6 +25,10 @@ public class ClientProxy extends CommonProxy {
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(ticker);
         // 启动预热（字体字形/着色器）：渲染 tick 驱动，加载界面期间即可触发。
         FMLCommonHandler.instance().bus().register(new blocamlimb.nhx100218.modernui.enhance.client.PreloadHandler());
+        // 渲染后端一次性记档：Angelica 的 SDL-GPU（Vulkan/Metal/D3D12）与 OpenGL 走同一套 GLSM 中转，
+        // ModernUI 不按后端改渲染路径，但现场排障需要知道玩家实际跑在哪个后端上。
+        blocamlimb.nhx100218.modernui.uilib.MyMod.LOG.info("图形 API（Angelica 报告）：{}",
+                blocamlimb.nhx100218.modernui.uilib.gpu.AngelicaGraphicsApi.describeCurrent());
     }
 
     @Override
