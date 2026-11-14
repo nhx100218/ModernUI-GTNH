@@ -2,8 +2,6 @@ package blocamlimb.nhx100218.modernui.enhance.menu;
 
 import net.minecraft.util.ResourceLocation;
 
-import org.lwjgl.opengl.GL11;
-
 /**
  * Arrow sprites and hit boxes shared by the world and server lists.
  *
@@ -47,9 +45,9 @@ public final class ModernMenuArrows {
         return overIcon(mouseX, mouseY, x, y, size) && mouseX < x + size / 2.0D && mouseY >= y + size / 2.0D;
     }
 
-    /** Darkens the icon so the white arrows stay readable. */
+    /** Adds the 26.3 grey-white selected/hover emphasis over the icon. */
     public static void drawIconShade(int x, int y, int size) {
-        ModernGuiRenderer.fill(x, y, x + size, y + size, 0xA0101014);
+        ModernGuiRenderer.fill(x, y, x + size, y + size, 0x80D0D0D0);
     }
 
     /** Right arrow, the quick-join affordance used by the world list. */
@@ -68,46 +66,18 @@ public final class ModernMenuArrows {
     }
 
     /**
-     * Up arrow, drawn in the top-left quarter of the server icon.
-     *
-     * <p>26.3 uses dedicated move sprites on the left half; the vanilla 1.7.10
-     * resource-pack sheet has its up/down glyphs on the right half, which made
-     * the old hit box and the visible arrow disagree. Drawing the triangle at
-     * the hit box keeps them aligned.</p>
+     * Up arrow. The vanilla resource-pack sheet has the glyph in the right half
+     * of its 32x32 cell; shifting the whole sprite left puts the original glyph
+     * into the 26.3 top-left hit box without redrawing it.
      */
     public static void drawMoveUp(int x, int y, int size, boolean hovered) {
-        int centerX = x + size / 4;
-        int top = y + 5;
-        drawTriangle(centerX, top, 6, 7, hovered ? 0xFFFFFFFF : 0xFFE8E8E8);
+        ModernGuiRenderer.sprite(SHEET, x - 15, y, size, UP_U, hovered ? HOVER_V : NORMAL_V, SHEET_SIZE,
+                0xFFFFFFFF);
     }
 
-    /** Down arrow, drawn in the bottom-left quarter of the server icon. */
+    /** Down arrow, same original sprite shifted into the bottom-left quarter. */
     public static void drawMoveDown(int x, int y, int size, boolean hovered) {
-        int centerX = x + size / 4;
-        int bottom = y + size - 5;
-        drawTriangle(centerX, bottom, 6, -7, hovered ? 0xFFFFFFFF : 0xFFE8E8E8);
-    }
-
-    private static void drawTriangle(int centerX, int tipY, int halfWidth, int height, int argb) {
-        int baseY = tipY + height;
-        // Dark outline first, then the white face, so the glyph stays readable
-        // over both bright and dark server icons.
-        drawTriangleFace(centerX, tipY + 1, halfWidth + 1, baseY + 1, 0xA0000000);
-        drawTriangleFace(centerX, tipY, halfWidth, baseY, argb);
-    }
-
-    private static void drawTriangleFace(int centerX, int tipY, int halfWidth, int baseY, int argb) {
-        float alpha = (argb >>> 24 & 255) / 255.0F;
-        float red = (argb >> 16 & 255) / 255.0F;
-        float green = (argb >> 8 & 255) / 255.0F;
-        float blue = (argb & 255) / 255.0F;
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glColor4f(red, green, blue, alpha);
-        GL11.glBegin(GL11.GL_TRIANGLES);
-        GL11.glVertex2f(centerX, tipY);
-        GL11.glVertex2f(centerX + halfWidth, baseY);
-        GL11.glVertex2f(centerX - halfWidth, baseY);
-        GL11.glEnd();
-        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+        ModernGuiRenderer.sprite(SHEET, x - 15, y, size, DOWN_U, hovered ? HOVER_V : NORMAL_V, SHEET_SIZE,
+                0xFFFFFFFF);
     }
 }

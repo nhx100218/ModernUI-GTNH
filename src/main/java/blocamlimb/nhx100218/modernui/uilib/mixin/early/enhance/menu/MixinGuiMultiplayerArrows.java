@@ -2,6 +2,7 @@ package blocamlimb.nhx100218.modernui.uilib.mixin.early.enhance.menu;
 
 import net.minecraft.client.gui.GuiListExtended;
 import net.minecraft.client.gui.GuiMultiplayer;
+import net.minecraft.client.gui.ServerListEntryLanScan;
 import net.minecraft.client.gui.ServerListEntryNormal;
 import net.minecraft.client.gui.ServerSelectionList;
 import net.minecraft.client.multiplayer.ServerList;
@@ -44,6 +45,13 @@ public abstract class MixinGuiMultiplayerArrows {
             return;
         }
         GuiListExtended.IGuiListEntry entry = list.getListEntry(slot);
+        if (entry instanceof ServerListEntryLanScan) {
+            // 26.3 lets the LAN-scanning row be selected. Vanilla's entry
+            // returns false from mousePressed, so select it here.
+            self.func_146790_a(slot);
+            callbackInfo.cancel();
+            return;
+        }
         if (!(entry instanceof ServerListEntryNormal)) {
             return;
         }

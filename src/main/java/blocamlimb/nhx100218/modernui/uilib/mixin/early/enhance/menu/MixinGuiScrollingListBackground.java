@@ -44,8 +44,10 @@ public abstract class MixinGuiScrollingListBackground {
             return;
         }
         ModernGuiRenderer.fill(left, top, right, bottom, 0x33000000);
-        ModernGuiRenderer.fill(left, top, right, top + 1, 0x40FFFFFF);
-        ModernGuiRenderer.fill(left, bottom - 1, right, bottom, 0x40FFFFFF);
+        ModernGuiRenderer.fill(left, top, right, top + 1, 0xFF000000);
+        ModernGuiRenderer.fill(left, top + 1, right, top + 2, 0x33FFFFFF);
+        ModernGuiRenderer.fill(left, bottom - 2, right, bottom - 1, 0x33FFFFFF);
+        ModernGuiRenderer.fill(left, bottom - 1, right, bottom, 0xFF000000);
         ModernGuiRenderer.beginUi();
         callbackInfo.cancel();
     }
@@ -83,8 +85,10 @@ public abstract class MixinGuiScrollingListBackground {
             return;
         }
         ModernGuiRenderer.fill(left, top, right, bottom, 0x33000000);
-        ModernGuiRenderer.fill(left, top, right, top + 1, 0x40FFFFFF);
-        ModernGuiRenderer.fill(left, bottom - 1, right, bottom, 0x40FFFFFF);
+        ModernGuiRenderer.fill(left, top, right, top + 1, 0xFF000000);
+        ModernGuiRenderer.fill(left, top + 1, right, top + 2, 0x33FFFFFF);
+        ModernGuiRenderer.fill(left, bottom - 2, right, bottom - 1, 0x33FFFFFF);
+        ModernGuiRenderer.fill(left, bottom - 1, right, bottom, 0xFF000000);
         ModernGuiRenderer.beginUi();
         manager.bindTexture(MODERNUI_TRANSPARENT);
     }

@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.Tessellator;
 
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -26,6 +27,18 @@ import blocamlimb.nhx100218.modernui.enhance.menu.ModernMenuScreens;
  */
 @Mixin(GuiSlot.class)
 public abstract class MixinGuiSlotBackground {
+
+    @Shadow
+    protected boolean field_148163_i;
+
+    @Inject(method = "drawScreen", at = @At("HEAD"), require = 0)
+    private void modernui$topAlignList(int mouseX, int mouseY, float partialTicks, CallbackInfo callbackInfo) {
+        if (usesSharedBackdrop()) {
+            // GuiSlot centres content when it is shorter than the viewport. 26.3
+            // keeps the list anchored to the top.
+            field_148163_i = false;
+        }
+    }
 
     @Inject(method = "drawContainerBackground", at = @At("HEAD"), cancellable = true, remap = false,
             require = 0)
@@ -63,14 +76,18 @@ public abstract class MixinGuiSlotBackground {
         }
         int scale = new ScaledResolution(minecraft, minecraft.displayWidth, minecraft.displayHeight)
                 .getScaleFactor();
+        int listLeft = slot.left;
+        int listRight = slot.left + slot.width;
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(0, minecraft.displayHeight - (slot.top + height) * scale,
+        GL11.glScissor(listLeft * scale, minecraft.displayHeight - (slot.top + height) * scale,
                 slot.width * scale, height * scale);
         // 26.3: fully clear above/below the separators, a light 20% scrim
-        // between them, and a one-pixel separator at each edge.
-        ModernGuiRenderer.fill(0, slot.top, slot.width, slot.bottom, 0x33000000);
-        ModernGuiRenderer.fill(0, slot.top, slot.width, slot.top + 1, 0x40FFFFFF);
-        ModernGuiRenderer.fill(0, slot.bottom - 1, slot.width, slot.bottom, 0x40FFFFFF);
+        // between them, and a two-pixel separator at each edge.
+        ModernGuiRenderer.fill(listLeft, slot.top, listRight, slot.bottom, 0x33000000);
+        ModernGuiRenderer.fill(listLeft, slot.top, listRight, slot.top + 1, 0xFF000000);
+        ModernGuiRenderer.fill(listLeft, slot.top + 1, listRight, slot.top + 2, 0x33FFFFFF);
+        ModernGuiRenderer.fill(listLeft, slot.bottom - 2, listRight, slot.bottom - 1, 0x33FFFFFF);
+        ModernGuiRenderer.fill(listLeft, slot.bottom - 1, listRight, slot.bottom, 0xFF000000);
         ModernGuiRenderer.beginUi();
     }
 
@@ -83,6 +100,16 @@ public abstract class MixinGuiSlotBackground {
         // the cancelled overlayBackground. Keep those quads fully transparent
         // for panorama menus; the explicit one-pixel separators replace them.
         tessellator.setColorRGBA_I(color, usesSharedBackdrop() && color == 0 ? 0 : alpha);
+    }
+
+    @Redirect(method = "drawSelectionBox",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/Tessellator;setColorOpaque_I(I)V"),
+            require = 0)
+    private void modernui$whiteSelectionOutline(Tessellator tessellator, int color) {
+        // 8421504 is the grey outline around the selected world/server. 26.3
+        // uses a pure white outer edge and keeps the inner shadow opaque.
+        tessellator.setColorOpaque_I(usesSharedBackdrop() && color == 8421504 ? 0xFFFFFF : color);
     }
 
     private static void endListClip() {
