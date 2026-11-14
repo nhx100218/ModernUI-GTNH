@@ -83,7 +83,19 @@ public final class ModernMenuScreens {
         }
         return screen instanceof GuiScreenOptionsSounds
                 || screen instanceof ScreenChatOptions
-                || screen instanceof GuiStreamOptions
-                || ANGELICA_VIDEO_SCREEN.equals(screen.getClass().getName());
+                || screen instanceof GuiStreamOptions;
+    }
+
+    /**
+     * Whether list decorations (scrim and separators) should be drawn.
+     * Angelica's video page supplies its own surface, so it keeps the shared
+     * panorama background but gets no extra scrim or lines.
+     *
+     * @param screen current screen
+     * @return true when the list should receive ModernUI decorations
+     */
+    public static boolean usesListScrim(GuiScreen screen) {
+        return usesSharedListBackdrop(screen)
+                && !ANGELICA_VIDEO_SCREEN.equals(screen.getClass().getName());
     }
 }

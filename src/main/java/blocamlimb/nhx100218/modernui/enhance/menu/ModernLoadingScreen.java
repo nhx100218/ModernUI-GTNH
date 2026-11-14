@@ -21,8 +21,20 @@ public final class ModernLoadingScreen {
 
     private static float smoothedProgress;
     private static boolean rendering;
+    /** True from launchIntegratedServer until the world client is installed. */
+    private static volatile boolean worldLoadRequested;
 
     private ModernLoadingScreen() {
+    }
+
+    /** Marks the singleplayer launch window, before the integrated server exists. */
+    public static void setWorldLoadRequested(boolean requested) {
+        worldLoadRequested = requested;
+    }
+
+    /** @return true while launchIntegratedServer is still preparing the world */
+    public static boolean isWorldLoadRequested() {
+        return worldLoadRequested;
     }
 
     /**

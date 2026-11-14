@@ -1,13 +1,16 @@
 package blocamlimb.nhx100218.modernui.uilib.mixin.early.enhance.menu;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.util.ResourceLocation;
 
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -37,6 +40,9 @@ public abstract class MixinGuiScrollingListBackground {
     @Shadow @Final protected int top;
     @Shadow @Final protected int bottom;
     @Shadow @Final private int right;
+
+    @Unique
+    private boolean modernui$clipActive;
 
     @Inject(method = "drawGradientRect", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void modernui$drawListScrim(int left, int top, int right, int bottom, int startColor,
@@ -87,9 +93,41 @@ public abstract class MixinGuiScrollingListBackground {
         manager.bindTexture(MODERNUI_TRANSPARENT);
     }
 
+    @Inject(method = "drawScreen",
+            at = @At(value = "INVOKE",
+                    target = "Lcpw/mods/fml/client/GuiScrollingList;drawBackground()V",
+                    shift = At.Shift.AFTER),
+            remap = false, require = 0)
+    private void modernui$beginListClip(int mouseX, int mouseY, float partialTicks,
+            CallbackInfo callbackInfo) {
+        if (!usesSharedBackdrop()) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft == null) {
+            return;
+        }
+        int clipTop = top + 2;
+        int clipHeight = bottom - top - 4;
+        int clipWidth = right - left;
+        if (clipHeight <= 0 || clipWidth <= 0) {
+            return;
+        }
+        int scale = new ScaledResolution(minecraft, minecraft.displayWidth, minecraft.displayHeight)
+                .getScaleFactor();
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(left * scale, minecraft.displayHeight - (clipTop + clipHeight) * scale,
+                clipWidth * scale, clipHeight * scale);
+        modernui$clipActive = true;
+    }
+
     @Inject(method = "drawScreen", at = @At("RETURN"), remap = false, require = 0)
     private void modernui$drawListSeparators(int mouseX, int mouseY, float partialTicks,
             CallbackInfo callbackInfo) {
+        if (modernui$clipActive) {
+            GL11.glDisable(GL11.GL_SCISSOR_TEST);
+            modernui$clipActive = false;
+        }
         if (!usesSharedBackdrop()) {
             return;
         }

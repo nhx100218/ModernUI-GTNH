@@ -5,8 +5,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import blocamlimb.nhx100218.modernui.enhance.menu.ModernLoadingScreen;
 import blocamlimb.nhx100218.modernui.uilib.font.FontService;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.world.WorldSettings;
 
@@ -22,6 +25,13 @@ import net.minecraft.world.WorldSettings;
 public abstract class MixinMinecraftWorldLoadPump {
 
     @Inject(method = "launchIntegratedServer(Ljava/lang/String;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;)V",
+            at = @At("HEAD"), require = 1)
+    private void modernui$beginWorldLoad(String folderName, String worldName,
+            WorldSettings worldSettings, CallbackInfo ci) {
+        ModernLoadingScreen.setWorldLoadRequested(true);
+    }
+
+    @Inject(method = "launchIntegratedServer(Ljava/lang/String;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;)V",
             at = @At(value = "INVOKE", target = "Ljava/lang/Thread;sleep(J)V"), require = 1)
     private void modernui$pumpUploadsDuringServerStartup(String folderName, String worldName,
             WorldSettings worldSettings, CallbackInfo ci) {
@@ -32,6 +42,17 @@ public abstract class MixinMinecraftWorldLoadPump {
             at = @At("HEAD"), require = 1)
     private void modernui$pumpUploadsBeforeRenderGlobalLoad(WorldClient worldClient, String loadingMessage,
             CallbackInfo ci) {
+        if (worldClient != null) {
+            ModernLoadingScreen.setWorldLoadRequested(false);
+        }
         FontService.getInstance().pumpWorldLoadUploads();
+    }
+
+    @Inject(method = "displayGuiScreen(Lnet/minecraft/client/gui/GuiScreen;)V",
+            at = @At("HEAD"), require = 0)
+    private void modernui$clearCancelledWorldLoad(GuiScreen screen, CallbackInfo ci) {
+        if (screen instanceof GuiMainMenu) {
+            ModernLoadingScreen.setWorldLoadRequested(false);
+        }
     }
 }

@@ -46,7 +46,9 @@ public abstract class MixinGuiSlotBackground {
             require = 0)
     private void modernui$skipOpaqueListBackground(Tessellator tessellator, CallbackInfo callbackInfo) {
         if (usesSharedBackdrop()) {
-            beginListClip();
+            if (usesListScrim()) {
+                beginListClip();
+            }
             callbackInfo.cancel();
         }
     }
@@ -96,7 +98,7 @@ public abstract class MixinGuiSlotBackground {
     @Inject(method = "drawScreen", at = @At("RETURN"), require = 0)
     private void modernui$drawListSeparators(int mouseX, int mouseY, float partialTicks,
             CallbackInfo callbackInfo) {
-        if (!usesSharedBackdrop()) {
+        if (!usesListScrim()) {
             return;
         }
         GuiSlot slot = (GuiSlot) (Object) this;
@@ -127,14 +129,15 @@ public abstract class MixinGuiSlotBackground {
 
     @Redirect(method = "drawSelectionBox",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/GuiSlot;getListWidth()I"),
+                    target = "Lnet/minecraft/client/gui/GuiSlot;getListWidth()I",
+                    ordinal = 1),
             require = 0)
-    private int modernui$widenServerSelection(GuiSlot slot) {
+    private int modernui$widenServerSelectionRight(GuiSlot slot) {
         int width = slot.getListWidth();
         Minecraft minecraft = Minecraft.getMinecraft();
         if (minecraft != null && minecraft.currentScreen instanceof GuiMultiplayer) {
-            // Forge draws its compatibility marker at the far right; widen the
-            // selection symmetrically by 6px per side so it stays centred.
+            // Only the right edge moves: the left edge stays aligned with the
+            // server icon, while Forge's compatibility marker gets 6px of room.
             return width + 12;
         }
         return width;
@@ -147,5 +150,10 @@ public abstract class MixinGuiSlotBackground {
     private static boolean usesSharedBackdrop() {
         Minecraft minecraft = Minecraft.getMinecraft();
         return minecraft != null && ModernMenuScreens.usesSharedListBackdrop(minecraft.currentScreen);
+    }
+
+    private static boolean usesListScrim() {
+        Minecraft minecraft = Minecraft.getMinecraft();
+        return minecraft != null && ModernMenuScreens.usesListScrim(minecraft.currentScreen);
     }
 }
