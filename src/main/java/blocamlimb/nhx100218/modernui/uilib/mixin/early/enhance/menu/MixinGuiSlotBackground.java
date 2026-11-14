@@ -36,11 +36,11 @@ public abstract class MixinGuiSlotBackground {
 
     @Inject(method = "getListWidth", at = @At("HEAD"), cancellable = true, require = 0)
     private void modernui$matchWorldSelectionWidth(CallbackInfoReturnable<Integer> callbackInfo) {
-        // 26.3 keeps both selection screens close in width. The server list is
-        // 305 (+6 right edge); 298 leaves ~6.5px on each side while keeping the
-        // world icon flush with the left edge of its own highlight.
+        // 26.3 keeps both selection screens close in width. The server list's
+        // base width is 305; 291 is 7px shorter on each side and keeps the world
+        // icon flush with the left edge of its own highlight.
         if (getClass().getName().equals("net.minecraft.client.gui.GuiSelectWorld$List")) {
-            callbackInfo.setReturnValue(Integer.valueOf(298));
+            callbackInfo.setReturnValue(Integer.valueOf(291));
         }
     }
 

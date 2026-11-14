@@ -95,11 +95,13 @@ public final class ModernLoadingScreen {
     }
 
     private static LoadingText resolveText(Minecraft mc, EfrCompat.Snapshot snapshot) {
-        String title = snapshot == null ? null : snapshot.title;
-        if (title == null || title.isEmpty()) {
-            IntegratedServer server = mc.getIntegratedServer();
-            title = server != null ? I18n.format("menu.loadingLevel") : I18n.format("multiplayer.downloadingTerrain");
-        }
+        // Keep the vanilla "Loading world" / "Downloading terrain" wording. EFR's
+        // title can be empty during resource preparation, which made the screen
+        // look like only a progress bar and chunk grid.
+        IntegratedServer server = mc.getIntegratedServer();
+        String title = server != null
+                ? I18n.format("menu.loadingLevel")
+                : I18n.format("multiplayer.downloadingTerrain");
         return new LoadingText(title);
     }
 

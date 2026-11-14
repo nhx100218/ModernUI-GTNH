@@ -51,8 +51,12 @@ public abstract class MixinLoadingScreenRenderer {
         ScaledResolution resolution = new ScaledResolution(minecraft, minecraft.displayWidth,
                 minecraft.displayHeight);
         float fraction = progress < 0 ? -1.0F : progress / 100.0F;
+        // The pre-world "Loading world" stage has progress -1; keep the vanilla
+        // title + bar there and only show the chunk grid once real progress is
+        // available (or when GuiDownloadTerrain renders it).
+        boolean showChunkMap = !leavingWorld && progress >= 0;
         if (ModernLoadingScreen.render(minecraft, resolution.getScaledWidth(), resolution.getScaledHeight(),
-                EfrCompat.snapshot(), fraction, !leavingWorld)) {
+                EfrCompat.snapshot(), fraction, showChunkMap)) {
             // Do not swap buffers from inside setLoadingProgress: the launch loop
             // calls this repeatedly and Display.update() there caused flicker.
             callbackInfo.cancel();
