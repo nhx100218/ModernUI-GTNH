@@ -39,10 +39,14 @@ public class EarlyMixins implements IFMLLoadingPlugin {
     }
 
     static List<String> buildMixinsForSide(Side side) {
-        return buildMixinsForSide(side, false);
+        return buildMixinsForSide(side, false, false);
     }
 
     public static List<String> buildMixinsForSide(Side side, boolean angelicaPresent) {
+        return buildMixinsForSide(side, angelicaPresent, false);
+    }
+
+    public static List<String> buildMixinsForSide(Side side, boolean angelicaPresent, boolean etfuturumPresent) {
         List<String> mixins = new ArrayList<String>();
         if (side == Side.CLIENT) {
             // Library
@@ -80,6 +84,18 @@ public class EarlyMixins implements IFMLLoadingPlugin {
             mixins.add("enhance.MixinInventoryPlayerHotbar");
             mixins.add("enhance.MixinGuiNewChatScroll");
             mixins.add("motd.client.MixinServerListEntryNormal");
+            // Menu and loading-screen takeover.
+            mixins.add("enhance.menu.MixinLoadingScreenRenderer");
+            mixins.add("enhance.menu.MixinGuiDownloadTerrain");
+            mixins.add("enhance.menu.MixinGuiScreenBackground");
+            mixins.add("enhance.menu.MixinGuiSelectWorldAccessor");
+            mixins.add("enhance.menu.MixinGuiSelectWorldList");
+            mixins.add("enhance.menu.MixinGuiMultiplayerAccessor");
+            mixins.add("enhance.menu.MixinServerListEntryNormal");
+            if (etfuturumPresent) {
+                mixins.add("etfuturum.MixinEfrLoadingScreenRenderer");
+                mixins.add("etfuturum.MixinEfrGuiLoadingBridge");
+            }
         }
         mixins.add("network.MixinNetHandlerPlayServer");
         mixins.add("motd.MixinNetHandlerStatusServer");
@@ -88,8 +104,17 @@ public class EarlyMixins implements IFMLLoadingPlugin {
 
     /** Whether the early list contains the Angelica-only compatibility mixins. */
     public static boolean isAngelicaPresent(ClassLoader classLoader) {
+        return isClassPresent(classLoader, ANGELICA_TWEAKER);
+    }
+
+    /** Whether EFR's loading classes are present, so the optional mixins can be registered. */
+    public static boolean isEtFuturumPresent(ClassLoader classLoader) {
+        return isClassPresent(classLoader, "ganymedes01.etfuturum.client.loading.LoadingScreenStateTracker");
+    }
+
+    private static boolean isClassPresent(ClassLoader classLoader, String className) {
         try {
-            return classLoader.getResource(ANGELICA_TWEAKER.replace('.', '/') + ".class") != null;
+            return classLoader.getResource(className.replace('.', '/') + ".class") != null;
         } catch (Throwable ignored) {
             return false;
         }

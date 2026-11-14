@@ -37,7 +37,8 @@ public final class ModernUiMixinConfigPlugin implements IMixinConfigPlugin {
             mixins = LateMixins.allForSide(side);
         } else {
             ClassLoader loader = ModernUiMixinConfigPlugin.class.getClassLoader();
-            mixins = EarlyMixins.buildMixinsForSide(side, EarlyMixins.isAngelicaPresent(loader));
+            mixins = EarlyMixins.buildMixinsForSide(side, EarlyMixins.isAngelicaPresent(loader),
+                    EarlyMixins.isEtFuturumPresent(loader));
         }
         LOG.info("Loaded Mixin config {} with {} mixin(s)", mixinPackage, mixins.size());
     }

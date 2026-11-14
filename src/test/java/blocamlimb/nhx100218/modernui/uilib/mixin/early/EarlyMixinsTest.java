@@ -43,6 +43,17 @@ public class EarlyMixinsTest {
     }
 
     @Test
+    public void shouldAddEfrLoadingMixinsOnlyWhenEfrIsPresent() {
+        List<String> withEfr = EarlyMixins.buildMixinsForSide(Side.CLIENT, false, true);
+        Assert.assertTrue(withEfr.contains("etfuturum.MixinEfrLoadingScreenRenderer"));
+        Assert.assertTrue(withEfr.contains("etfuturum.MixinEfrGuiLoadingBridge"));
+
+        List<String> withoutEfr = EarlyMixins.buildMixinsForSide(Side.CLIENT, false, false);
+        Assert.assertFalse(withoutEfr.contains("etfuturum.MixinEfrLoadingScreenRenderer"));
+        Assert.assertFalse(withoutEfr.contains("etfuturum.MixinEfrGuiLoadingBridge"));
+    }
+
+    @Test
     public void shouldAddAngelicaGuardOnlyForClientWithAngelicaTweaker() {
         List<String> clientMixins = EarlyMixins.buildMixinsForSide(Side.CLIENT, true);
         assertGenericNameTagMixins(clientMixins);
