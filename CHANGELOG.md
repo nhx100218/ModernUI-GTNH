@@ -6,6 +6,40 @@
 
 ## [Unreleased]
 
+## [1.2.5] - 2026-11-14
+
+### English
+
+#### Added
+
+- The config screen has a Renderer section. On save, ModernUI writes `renderBackend` and `sdlGpuDriver` to Angelica. The choices are `follow`, OpenGL, Vulkan, Metal and Direct3D 12. A new backend takes effect after a restart, and ModernUI does not write a backend the current OS cannot run.
+- When the screen opens, the Renderer row shows Angelica's current backend next to the saved choice.
+- `renderer.api` is stored in `modernui.yaml`. `follow` leaves Angelica's settings alone; any other choice re-applies that backend on every explicit save.
+
+#### Changed
+
+- Metal keeps real rounded fills and rounded clipping. The rectangle fallback for SDL GPU is removed.
+
+1.2.5 is based on 1.2.4-hotfix1 and keeps its SDL GPU font, layer, HostImage and HUD paths.
+
+Compatibility: 1.2.5 accepts remote versions `[1.2.0,1.3.0)`.
+
+### 中文
+
+#### 新增
+
+- 配置页新增「渲染后端」段。保存时 ModernUI 把 `renderBackend` 和 `sdlGpuDriver` 写入 Angelica。可选值为 `follow`、OpenGL、Vulkan、Metal 和 Direct3D 12。新后端在重启后生效，当前系统不支持的后端不会写入。
+- 「渲染后端」一行会显示打开配置页时 Angelica 报告的当前后端，与保存的选择并排显示。
+- `renderer.api` 写入 `modernui.yaml`。`follow` 不改 Angelica 的设置；选择其他值时，每次显式保存都会重新应用该后端。
+
+#### 变更
+
+- Metal 下保留真实的圆角填充和圆角裁剪，删除 SDL GPU 的直角矩形回退。
+
+1.2.5 基于 1.2.4-hotfix1，保留其 SDL GPU 字体、图层、HostImage 与 HUD 路径。
+
+兼容性：1.2.5 接受远端版本 `[1.2.0,1.3.0)`。
+
 ## [1.2.4-hotfix1] - 2026-11-08
 
 ### English
