@@ -15,7 +15,6 @@ import org.lwjgl.opengl.GL11;
 
 import blocamlimb.nhx100218.modernui.uilib.ui.base.cascade.UiBorderRadiusResolver;
 import blocamlimb.nhx100218.modernui.uilib.ui.base.values.UiSurfaceStyle;
-import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 
 /**
  * UI 渲染裁剪栈。
@@ -190,13 +189,6 @@ final class ClipStack {
 
         List<RoundedClipRegion> roundedClipRegions = clipSnapshot.getRoundedClipRegions();
         if (roundedClipRegions.isEmpty()) {
-            ops.disable(GL11.GL_STENCIL_TEST);
-            ops.stencilMask(0xFF);
-            return;
-        }
-        // SDL GPU 后端对「清 stencil + 圆角 mask」路径不稳定；配置界面在 Vulkan/D3D12
-        // 下退化为矩形裁剪，保留内容与交互，避免设备挂起。
-        if (AngelicaRendererCompat.isSdlGpuActive()) {
             ops.disable(GL11.GL_STENCIL_TEST);
             ops.stencilMask(0xFF);
             return;
