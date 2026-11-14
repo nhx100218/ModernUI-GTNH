@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
+import blocamlimb.nhx100218.modernui.enhance.menu.ModernMenuFrame;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernMenuScreens;
 
 /**
@@ -78,17 +79,23 @@ public abstract class MixinGuiSlotBackground {
                 .getScaleFactor();
         int listLeft = slot.left;
         int listRight = slot.left + slot.width;
+        ModernGuiRenderer.beginUi();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(listLeft * scale, minecraft.displayHeight - (slot.top + height) * scale,
                 slot.width * scale, height * scale);
-        // 26.3: fully clear above/below the separators, a light 20% scrim
-        // between them, and a two-pixel separator at each edge.
-        ModernGuiRenderer.fill(listLeft, slot.top, listRight, slot.bottom, 0x33000000);
-        ModernGuiRenderer.fill(listLeft, slot.top, listRight, slot.top + 1, 0xFF000000);
-        ModernGuiRenderer.fill(listLeft, slot.top + 1, listRight, slot.top + 2, 0x33FFFFFF);
-        ModernGuiRenderer.fill(listLeft, slot.bottom - 2, listRight, slot.bottom - 1, 0x33FFFFFF);
-        ModernGuiRenderer.fill(listLeft, slot.bottom - 1, listRight, slot.bottom, 0xFF000000);
+        ModernMenuFrame.drawScrim(listLeft, slot.top, listRight, slot.bottom);
         ModernGuiRenderer.beginUi();
+    }
+
+    @Inject(method = "drawScreen", at = @At("RETURN"), require = 0)
+    private void modernui$drawListSeparators(int mouseX, int mouseY, float partialTicks,
+            CallbackInfo callbackInfo) {
+        if (!usesSharedBackdrop()) {
+            return;
+        }
+        GuiSlot slot = (GuiSlot) (Object) this;
+        ModernGuiRenderer.beginUi();
+        ModernMenuFrame.drawSeparators(slot.left, slot.top, slot.left + slot.width, slot.bottom);
     }
 
     @Redirect(method = "drawScreen",

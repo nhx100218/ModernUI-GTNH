@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
+import blocamlimb.nhx100218.modernui.enhance.menu.ModernMenuFrame;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernMenuScreens;
 
 /**
@@ -43,11 +44,8 @@ public abstract class MixinGuiScrollingListBackground {
         if (!usesSharedBackdrop()) {
             return;
         }
-        ModernGuiRenderer.fill(left, top, right, bottom, 0x33000000);
-        ModernGuiRenderer.fill(left, top, right, top + 1, 0xFF000000);
-        ModernGuiRenderer.fill(left, top + 1, right, top + 2, 0x33FFFFFF);
-        ModernGuiRenderer.fill(left, bottom - 2, right, bottom - 1, 0x33FFFFFF);
-        ModernGuiRenderer.fill(left, bottom - 1, right, bottom, 0xFF000000);
+        ModernGuiRenderer.beginUi();
+        ModernMenuFrame.drawScrim(left, top, right, bottom);
         ModernGuiRenderer.beginUi();
         callbackInfo.cancel();
     }
@@ -84,13 +82,20 @@ public abstract class MixinGuiScrollingListBackground {
             manager.bindTexture(location);
             return;
         }
-        ModernGuiRenderer.fill(left, top, right, bottom, 0x33000000);
-        ModernGuiRenderer.fill(left, top, right, top + 1, 0xFF000000);
-        ModernGuiRenderer.fill(left, top + 1, right, top + 2, 0x33FFFFFF);
-        ModernGuiRenderer.fill(left, bottom - 2, right, bottom - 1, 0x33FFFFFF);
-        ModernGuiRenderer.fill(left, bottom - 1, right, bottom, 0xFF000000);
+        ModernGuiRenderer.beginUi();
+        ModernMenuFrame.drawScrim(left, top, right, bottom);
         ModernGuiRenderer.beginUi();
         manager.bindTexture(MODERNUI_TRANSPARENT);
+    }
+
+    @Inject(method = "drawScreen", at = @At("RETURN"), remap = false, require = 0)
+    private void modernui$drawListSeparators(int mouseX, int mouseY, float partialTicks,
+            CallbackInfo callbackInfo) {
+        if (!usesSharedBackdrop()) {
+            return;
+        }
+        ModernGuiRenderer.beginUi();
+        ModernMenuFrame.drawSeparators(left, top, right, bottom);
     }
 
     private static boolean usesSharedBackdrop() {

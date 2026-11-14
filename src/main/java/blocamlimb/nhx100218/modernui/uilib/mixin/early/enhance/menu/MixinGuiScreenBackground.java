@@ -10,6 +10,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import blocamlimb.nhx100218.modernui.enhance.menu.MenuConfig;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernBackdropRenderer;
+import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
+import blocamlimb.nhx100218.modernui.enhance.menu.ModernMenuFrame;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernMenuScreens;
 
 /**
@@ -38,5 +40,16 @@ public abstract class MixinGuiScreenBackground {
         }
         ModernBackdropRenderer.renderMenuBackground(minecraft, screen.width, screen.height);
         callbackInfo.cancel();
+    }
+
+    @Inject(method = "drawScreen", at = @At("RETURN"), require = 0)
+    private void modernui$drawSubScreenFrame(int mouseX, int mouseY, float partialTicks,
+            CallbackInfo callbackInfo) {
+        GuiScreen screen = (GuiScreen) (Object) this;
+        if (!MenuConfig.globalPanorama || !ModernMenuScreens.usesMenuFrame(screen)) {
+            return;
+        }
+        ModernGuiRenderer.beginUi();
+        ModernMenuFrame.drawFrame(screen.width, screen.height);
     }
 }

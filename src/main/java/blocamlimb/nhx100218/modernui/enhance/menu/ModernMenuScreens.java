@@ -70,4 +70,20 @@ public final class ModernMenuScreens {
     public static boolean usesSharedListBackdrop(GuiScreen screen) {
         return usesSharedBackdrop(screen);
     }
+
+    /**
+     * Sub-screens without a {@code GuiSlot} use the shared header/footer frame.
+     *
+     * @param screen current screen
+     * @return true when the screen should receive the generic 26.3 frame
+     */
+    public static boolean usesMenuFrame(GuiScreen screen) {
+        if (screen == null) {
+            return false;
+        }
+        return screen instanceof GuiScreenOptionsSounds
+                || screen instanceof ScreenChatOptions
+                || screen instanceof GuiStreamOptions
+                || ANGELICA_VIDEO_SCREEN.equals(screen.getClass().getName());
+    }
 }
