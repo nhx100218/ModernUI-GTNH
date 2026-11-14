@@ -66,7 +66,9 @@ public final class ModernBackdropRenderer {
             } else {
                 ModernGuiRenderer.fill(0, 0, width, height, 0xFF101014);
             }
-            drawTint(width, height, 0xB8101014);
+            // World-loading overlay: 90% opaque, as requested for the
+            // singleplayer/multiplayer loading animation.
+            ModernGuiRenderer.fill(0, 0, width, height, 0xE6101014);
             ModernGuiRenderer.beginUi();
         } finally {
             restoreOrtho();

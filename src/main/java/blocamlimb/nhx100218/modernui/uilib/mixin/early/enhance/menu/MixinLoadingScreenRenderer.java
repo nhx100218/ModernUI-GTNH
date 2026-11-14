@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiSelectWorld;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.resources.I18n;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -15,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import blocamlimb.nhx100218.modernui.enhance.menu.EfrCompat;
+import blocamlimb.nhx100218.modernui.enhance.menu.ModernLoadingBox;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernLoadingScreen;
 
 /**
@@ -38,15 +40,20 @@ public abstract class MixinLoadingScreenRenderer {
         }
         GuiScreen screen = minecraft.currentScreen;
         boolean leavingWorld = screen instanceof GuiIngameMenu;
+        boolean preparingResources = screen instanceof GuiSelectWorld;
         // launchIntegratedServer calls resetProgressAndWorkingMessage while the
-        // current screen is still GuiSelectWorld (the integrated server has not
-        // been assigned yet). Include that window so the first loading frame is
-        // already the panorama instead of a dirt flash.
+        // current screen is still GuiSelectWorld. Draw only the status box there
+        // so the select-world frame can never leak a dirt loading screen.
+        if (leavingWorld || preparingResources) {
+            String text = I18n.format(leavingWorld ? "modernui.loading.saving" : "modernui.loading.preparing");
+            ModernLoadingBox.render(minecraft, screen.width, screen.height, text);
+            minecraft.func_147120_f();
+            callbackInfo.cancel();
+            return;
+        }
         boolean loadingWorld = minecraft.getIntegratedServer() != null
                 || screen instanceof GuiDownloadTerrain
-                || screen instanceof GuiSelectWorld
-                || screen instanceof GuiMultiplayer
-                || leavingWorld;
+                || screen instanceof GuiMultiplayer;
         if (!loadingWorld) {
             return;
         }
@@ -54,7 +61,7 @@ public abstract class MixinLoadingScreenRenderer {
                 minecraft.displayHeight);
         float fraction = progress < 0 ? -1.0F : progress / 100.0F;
         if (ModernLoadingScreen.render(minecraft, resolution.getScaledWidth(), resolution.getScaledHeight(),
-                EfrCompat.snapshot(), fraction, !leavingWorld)) {
+                EfrCompat.snapshot(), fraction, true)) {
             // Vanilla ends setLoadingProgress with updateDisplay(); the HEAD cancel
             // skips that, which left the previous dirt frame on screen until the
             // next GUI frame. Present the panorama immediately.

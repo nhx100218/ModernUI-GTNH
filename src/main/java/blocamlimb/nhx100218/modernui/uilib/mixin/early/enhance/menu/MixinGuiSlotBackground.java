@@ -1,6 +1,7 @@
 package blocamlimb.nhx100218.modernui.uilib.mixin.early.enhance.menu;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.GuiSlot;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
@@ -79,12 +80,17 @@ public abstract class MixinGuiSlotBackground {
                 .getScaleFactor();
         int listLeft = slot.left;
         int listRight = slot.left + slot.width;
+        int clipTop = slot.top + 2;
+        int clipBottom = slot.bottom - 2;
+        int clipHeight = clipBottom - clipTop;
+        if (clipHeight <= 0) {
+            return;
+        }
         ModernGuiRenderer.beginUi();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(listLeft * scale, minecraft.displayHeight - (slot.top + height) * scale,
-                slot.width * scale, height * scale);
-        ModernMenuFrame.drawScrim(listLeft, slot.top, listRight, slot.bottom);
-        ModernGuiRenderer.beginUi();
+        GL11.glScissor(listLeft * scale, minecraft.displayHeight - (clipTop + clipHeight) * scale,
+                slot.width * scale, clipHeight * scale);
+        ModernMenuFrame.drawScrim(listLeft, clipTop, listRight, clipBottom);
     }
 
     @Inject(method = "drawScreen", at = @At("RETURN"), require = 0)
@@ -117,6 +123,21 @@ public abstract class MixinGuiSlotBackground {
         // 8421504 is the grey outline around the selected world/server. 26.3
         // uses a pure white outer edge and keeps the inner shadow opaque.
         tessellator.setColorOpaque_I(usesSharedBackdrop() && color == 8421504 ? 0xFFFFFF : color);
+    }
+
+    @Redirect(method = "drawSelectionBox",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/GuiSlot;getListWidth()I"),
+            require = 0)
+    private int modernui$widenServerSelection(GuiSlot slot) {
+        int width = slot.getListWidth();
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft != null && minecraft.currentScreen instanceof GuiMultiplayer) {
+            // Forge draws its compatibility marker at the far right; widen the
+            // selection symmetrically by 6px per side so it stays centred.
+            return width + 12;
+        }
+        return width;
     }
 
     private static void endListClip() {

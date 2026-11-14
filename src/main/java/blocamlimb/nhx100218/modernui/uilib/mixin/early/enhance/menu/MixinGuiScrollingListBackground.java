@@ -45,8 +45,7 @@ public abstract class MixinGuiScrollingListBackground {
             return;
         }
         ModernGuiRenderer.beginUi();
-        ModernMenuFrame.drawScrim(left, top, right, bottom);
-        ModernGuiRenderer.beginUi();
+        ModernMenuFrame.drawScrim(left, top + 2, right, bottom - 2);
         callbackInfo.cancel();
     }
 
@@ -83,7 +82,7 @@ public abstract class MixinGuiScrollingListBackground {
             return;
         }
         ModernGuiRenderer.beginUi();
-        ModernMenuFrame.drawScrim(left, top, right, bottom);
+        ModernMenuFrame.drawScrim(left, top + 2, right, bottom - 2);
         ModernGuiRenderer.beginUi();
         manager.bindTexture(MODERNUI_TRANSPARENT);
     }

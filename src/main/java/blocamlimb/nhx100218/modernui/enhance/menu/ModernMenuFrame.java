@@ -24,6 +24,9 @@ public final class ModernMenuFrame {
     /** Draws only the inner list tint, before rows. */
     public static void drawScrim(int left, int top, int right, int bottom) {
         ModernGuiRenderer.fill(left, top, right, bottom, SCRIM);
+        // fill() leaves texture disabled and the fill colour set. Restore the
+        // state buttons and text expect before the host continues drawing.
+        ModernGuiRenderer.beginUi();
     }
 
     /** Draws the header and footer separators, after rows. */
@@ -37,6 +40,7 @@ public final class ModernMenuFrame {
         // Footer: black over grey.
         ModernGuiRenderer.fill(left, bottom - 2, right, bottom - 1, SEPARATOR_BLACK);
         ModernGuiRenderer.fill(left, bottom - 1, right, bottom, SEPARATOR_GREY);
+        ModernGuiRenderer.beginUi();
     }
 
     /** Draws a full-width frame for sub-screens that have no selection list. */

@@ -39,6 +39,9 @@ public abstract class MixinGuiScreenBackground {
             return;
         }
         ModernBackdropRenderer.renderMenuBackground(minecraft, screen.width, screen.height);
+        if (ModernMenuScreens.usesMenuFrame(screen)) {
+            ModernMenuFrame.drawScrim(0, 35, screen.width, screen.height - 35);
+        }
         callbackInfo.cancel();
     }
 
