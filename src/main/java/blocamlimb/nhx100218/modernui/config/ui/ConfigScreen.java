@@ -318,11 +318,13 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             FormPageShell.Parts parts = FormPageShell.build(runtime,
                     schema.title(), null,
                     ConfigTheme.TITLE_BAR_HEIGHT, ConfigTheme.ROOT_PADDING, ConfigTheme.ROOT_GAP,
-                    14, 14, ConfigTheme.dp(16),
-                    false, false, ConfigTheme.transparentPageTheme());
+                    14, 14,
+                    false, false);
             this.pageRoot = parts.root();
             this.viewport = parts.viewport();
             this.scrollContainer = parts.scrollContainer();
+            pageRoot.setSurfaceTransparent(true);
+            viewport.setSurfaceTransparent(true);
             this.root = SceneNode.column();
             root.setBackgroundColor(ConfigTheme.ROOT_BG);
             root.setFillParentWidth(true);

@@ -20,6 +20,12 @@ final class ScenePaintProps {
      */
     boolean surfaceOwned;
 
+    /**
+     * Forces the surface background/backdrop/border to stay clear even when a
+     * {@code SceneSurfaceBinder} keeps writing the themed recipe.
+     */
+    boolean surfaceTransparent;
+
     /** 背景颜色（ARGB），默认 0（透明） */
     int backgroundColor;
 

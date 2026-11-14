@@ -1253,6 +1253,9 @@ public class SceneNode {
     }
 
     private SceneNode applyBackgroundColor(int backgroundColor) {
+        if (paintProps.surfaceTransparent) {
+            backgroundColor = 0;
+        }
         if (paintProps.backgroundColor == backgroundColor) return this;
         paintProps.backgroundColor = backgroundColor;
         markSelfPaint();
@@ -1263,11 +1266,41 @@ public class SceneNode {
     public int getBackgroundColor() { return paintProps.backgroundColor; }
 
     /**
+     * Clears this node's surface paint and keeps it clear even when a
+     * {@code SceneSurfaceBinder} continues to write the themed recipe.
+     *
+     * <p>Used by the configuration page when it sits on the menu panorama: the
+     * page shell is still laid out normally, but its full-page background,
+     * border, glass backdrop and elevation must not cover the panorama.</p>
+     *
+     * @param transparent true to force a clear surface
+     * @return this (chainable)
+     */
+    public SceneNode setSurfaceTransparent(boolean transparent) {
+        if (paintProps.surfaceTransparent == transparent) {
+            return this;
+        }
+        paintProps.surfaceTransparent = transparent;
+        if (transparent) {
+            paintProps.backgroundColor = 0;
+            paintProps.backdrop = null;
+            paintProps.borderColor = 0;
+            paintProps.borderWidth = 0;
+            paintProps.surfaceElevation = -1.0f;
+        }
+        markSelfPaint();
+        return this;
+    }
+
+    /** @return true while the surface is forced clear by {@link #setSurfaceTransparent(boolean)}. */
+    public boolean isSurfaceTransparent() { return paintProps.surfaceTransparent; }
+
+    /**
      * 内部表面浮雕属性；负数或 NaN 关闭，非负值限制到 0..1。
      * 归一化后去重，仅失效 PAINT，不改布局、transform 或命中盒。
      */
     public SceneNode __setSurfaceElevation(float elevation) {
-        float normalized = Float.isNaN(elevation) || elevation < 0.0f
+        float normalized = paintProps.surfaceTransparent || Float.isNaN(elevation) || elevation < 0.0f
                 ? -1.0f : Math.max(0.0f, Math.min(1.0f, elevation));
         if (Float.compare(paintProps.surfaceElevation, normalized) == 0) return this;
         paintProps.surfaceElevation = normalized;
@@ -1305,6 +1338,9 @@ public class SceneNode {
     }
 
     private SceneNode applyBackdrop(UiBackdrop backdrop) {
+        if (paintProps.surfaceTransparent) {
+            backdrop = null;
+        }
         if (paintProps.backdrop == backdrop
                 || (paintProps.backdrop != null && paintProps.backdrop.equals(backdrop))) {
             return this;
@@ -1734,6 +1770,9 @@ public class SceneNode {
     }
 
     private SceneNode applyBorderColor(int borderColor) {
+        if (paintProps.surfaceTransparent) {
+            borderColor = 0;
+        }
         if (paintProps.borderColor == borderColor) return this;
         paintProps.borderColor = borderColor;
         markSelfPaint();
@@ -1756,6 +1795,9 @@ public class SceneNode {
     }
 
     private SceneNode applyBorderWidth(int borderWidth) {
+        if (paintProps.surfaceTransparent) {
+            borderWidth = 0;
+        }
         if (paintProps.borderWidth == borderWidth) return this;
         paintProps.borderWidth = borderWidth;
         markSelfPaint();

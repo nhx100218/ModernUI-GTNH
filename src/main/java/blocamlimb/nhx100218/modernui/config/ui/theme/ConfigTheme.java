@@ -135,39 +135,6 @@ public final class ConfigTheme {
     }
 
     /**
-     * Same tokens as {@link #asFormTheme()}, but with a transparent page root and
-     * viewport so a menu panorama can show through the gaps between cards.
-     *
-     * <p>The in-game world backdrop still uses an opaque {@code root} when SDL
-     * GPU is active; this only removes the full-page panel paint.</p>
-     *
-     * @return form theme with transparent root/viewport backgrounds
-     */
-    public static FormTheme transparentPageTheme() {
-        FormTheme base = asFormTheme();
-        return new FormTheme(
-                base.cardBg(),
-                base.cardBorder(),
-                base.cardBorderDirty(),
-                base.cardBorderError(),
-                base.cardRadius(),
-                base.cardPad(),
-                base.fieldGap(),
-                base.textColor(),
-                base.mutedColor(),
-                base.errorColor(),
-                base.dirtyColor(),
-                base.fontLabel(),
-                base.fontHelper(),
-                base.fontError(),
-                base.inputHeight(),
-                base.listHeight(),
-                0x00000000,
-                0x00000000,
-                base.titleColor());
-    }
-
-    /**
      * 默认路径：把当前来源 {@code SceneTheme} 经 {@link FormThemes} 既有桥派生为
      * 配置页消费的 {@link FormTheme} 信号（G15/Theme 新增，全库默认液态玻璃外观）。
      *
