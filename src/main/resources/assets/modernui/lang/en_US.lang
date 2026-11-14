@@ -256,3 +256,6 @@ modernui.config.font.glyphGenerationSize.tooltip=Atlas generation resolution for
 modernui.config.font.gameCharSize=Game Font Size
 modernui.config.font.gameCharSize.tooltip=Base on-screen font size.
 
+
+selectWorld.resource_load=Preparing Resources...
+menu.savingLevel=Saving world

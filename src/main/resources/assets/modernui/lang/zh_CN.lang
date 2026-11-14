@@ -256,3 +256,6 @@ modernui.config.font.glyphGenerationSize.tooltip=字形图集的生成分辨率�
 modernui.config.font.gameCharSize=游戏字号
 modernui.config.font.gameCharSize.tooltip=屏幕基础字号。
 
+
+selectWorld.resource_load=准备资源中...
+menu.savingLevel=保存世界中
