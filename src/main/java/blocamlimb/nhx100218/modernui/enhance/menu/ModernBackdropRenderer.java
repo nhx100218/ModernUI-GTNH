@@ -118,7 +118,7 @@ public final class ModernBackdropRenderer {
             GL11.glMatrixMode(GL11.GL_PROJECTION);
             GL11.glPushMatrix();
             GL11.glLoadIdentity();
-            Project.gluPerspective(120.0F, 1.0F, 0.05F, 10.0F);
+            Project.gluPerspective(120.0F, (float) width / Math.max(1, height), 0.05F, 10.0F);
             GL11.glMatrixMode(GL11.GL_MODELVIEW);
             GL11.glPushMatrix();
             GL11.glLoadIdentity();
@@ -132,8 +132,12 @@ public final class ModernBackdropRenderer {
             GL11.glDepthMask(false);
 
             float seconds = (Minecraft.getSystemTime() % 1_000_000L) / 1000.0F;
-            GL11.glRotatef((float) Math.sin(seconds / 8.0F) * 4.0F + 8.0F, 1.0F, 0.0F, 0.0F);
-            GL11.glRotatef(-seconds * 0.9F, 0.0F, 1.0F, 0.0F);
+            // Match the vanilla panorama camera (20 ticks/s) and its final 90-degree
+            // screen-space roll. Vanilla renders into a 256x256 target and rotates the
+            // blit; this renderer draws directly, so the roll has to be applied here.
+            GL11.glRotatef((float) Math.sin(seconds / 20.0F) * 25.0F + 20.0F, 1.0F, 0.0F, 0.0F);
+            GL11.glRotatef(-seconds * 2.0F, 0.0F, 1.0F, 0.0F);
+            GL11.glRotatef(90.0F, 0.0F, 0.0F, 1.0F);
             GL11.glColor4f(1.0F, 1.0F, 1.0F, alpha);
             for (int face = 0; face < 6; face++) {
                 GL11.glPushMatrix();

@@ -28,6 +28,11 @@ public final class EfrCompat {
     private static volatile Method getProgress;
     private static volatile Method spawnProgress;
     private static volatile Method chunkProgress;
+    private static volatile Method hasChunkSnapshot;
+    private static volatile Method getChunkSnapshot;
+    private static volatile Method getChunkRadius;
+    private static volatile Method getChunkDiameter;
+    private static volatile Method getChunkColor;
 
     private EfrCompat() {
     }
@@ -67,7 +72,7 @@ public final class EfrCompat {
             String title = stringOf(getTitle, value);
             String subtitle = stringOf(getSubtitle, value);
             float progress = floatOf(getProgress, value, 0.0F);
-            return new Snapshot(title, subtitle, progress);
+            return new Snapshot(title, subtitle, progress, readChunkSnapshot(value));
         } catch (Throwable failure) {
             LOG.debug("读取 EFR loading snapshot 失败", failure);
             return null;
@@ -99,6 +104,61 @@ public final class EfrCompat {
             return value instanceof Number ? ((Number) value).floatValue() : -1.0F;
         } catch (Throwable failure) {
             return -1.0F;
+        }
+    }
+
+    private static ChunkSnapshot readChunkSnapshot(Object snapshot) {
+        if (hasChunkSnapshot == null || getChunkSnapshot == null) {
+            return null;
+        }
+        try {
+            Object has = hasChunkSnapshot.invoke(snapshot);
+            if (!(has instanceof Boolean) || !((Boolean) has).booleanValue()) {
+                return null;
+            }
+            Object chunk = getChunkSnapshot.invoke(snapshot);
+            if (chunk == null || getChunkRadius == null || getChunkDiameter == null || getChunkColor == null) {
+                return null;
+            }
+            int radius = intOf(getChunkRadius, chunk, 0);
+            int diameter = intOf(getChunkDiameter, chunk, radius * 2 + 1);
+            if (diameter <= 0 || diameter > 128) {
+                return null;
+            }
+            int[] colors = new int[diameter * diameter];
+            for (int z = 0; z < diameter; z++) {
+                for (int x = 0; x < diameter; x++) {
+                    colors[x + z * diameter] = intOf(getChunkColor, chunk, x, z);
+                }
+            }
+            return new ChunkSnapshot(radius, diameter, colors);
+        } catch (Throwable failure) {
+            LOG.debug("读取 EFR chunk snapshot 失败", failure);
+            return null;
+        }
+    }
+
+    private static int intOf(Method method, Object target, int x, int z) {
+        if (method == null) {
+            return 0;
+        }
+        try {
+            Object value = method.invoke(target, Integer.valueOf(x), Integer.valueOf(z));
+            return value instanceof Number ? ((Number) value).intValue() : 0;
+        } catch (Throwable ignored) {
+            return 0;
+        }
+    }
+
+    private static int intOf(Method method, Object target, int fallback) {
+        if (method == null) {
+            return fallback;
+        }
+        try {
+            Object value = method.invoke(target);
+            return value instanceof Number ? ((Number) value).intValue() : fallback;
+        } catch (Throwable ignored) {
+            return fallback;
         }
     }
 
@@ -146,6 +206,15 @@ public final class EfrCompat {
                         getTitle = methodOrNull(snapshotType, "getTitle");
                         getSubtitle = methodOrNull(snapshotType, "getSubtitle");
                         getProgress = methodOrNull(snapshotType, "getProgress");
+                        hasChunkSnapshot = methodOrNull(snapshotType, "hasChunkSnapshot");
+                        getChunkSnapshot = methodOrNull(snapshotType, "getChunkSnapshot");
+                        Class<?> chunkType = getChunkSnapshot == null ? null
+                                : getChunkSnapshot.getReturnType();
+                        if (chunkType != null) {
+                            getChunkRadius = methodOrNull(chunkType, "getRadius");
+                            getChunkDiameter = methodOrNull(chunkType, "getDiameter");
+                            getChunkColor = methodOrNull(chunkType, "getColor", int.class, int.class);
+                        }
                     }
                 }
                 Class<?> spawn = classOrNull(SPAWN_PROGRESS, loader);
@@ -172,13 +241,39 @@ public final class EfrCompat {
         }
     }
 
-    private static Method methodOrNull(Class<?> owner, String name) {
+    private static Method methodOrNull(Class<?> owner, String name, Class<?>... parameterTypes) {
         try {
-            Method method = owner.getMethod(name);
+            Method method = owner.getMethod(name, parameterTypes);
             method.setAccessible(true);
             return method;
         } catch (Throwable ignored) {
             return null;
+        }
+    }
+
+    /** Immutable chunk-map snapshot mirrored from EFR. */
+    public static final class ChunkSnapshot {
+
+        public final int radius;
+        public final int diameter;
+        private final int[] colors;
+
+        ChunkSnapshot(int radius, int diameter, int[] colors) {
+            this.radius = Math.max(0, radius);
+            this.diameter = Math.max(0, diameter);
+            this.colors = colors == null ? new int[0] : colors.clone();
+        }
+
+        /**
+         * Returns the map colour at a cell, or {@code 0} when out of range.
+         *
+         * @param x column
+         * @param z row
+         * @return ARGB colour
+         */
+        public int color(int x, int z) {
+            int index = x + z * diameter;
+            return index >= 0 && index < colors.length ? colors[index] : 0;
         }
     }
 
@@ -188,11 +283,17 @@ public final class EfrCompat {
         public final String title;
         public final String subtitle;
         public final float progress;
+        public final ChunkSnapshot chunk;
 
         Snapshot(String title, String subtitle, float progress) {
+            this(title, subtitle, progress, null);
+        }
+
+        Snapshot(String title, String subtitle, float progress, ChunkSnapshot chunk) {
             this.title = title;
             this.subtitle = subtitle;
             this.progress = progress;
+            this.chunk = chunk;
         }
     }
 }

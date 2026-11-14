@@ -8,17 +8,23 @@ import net.minecraft.server.integrated.IntegratedServer;
 import org.lwjgl.opengl.GL11;
 
 /**
- * Modern loading screen: dimension backdrop, centred mark, title and progress bar.
+ * Modern loading screen: dimension backdrop, EFR chunk map or centred mark,
+ * title and progress bar.
  *
- * <p>The layout follows the 26.3 loading overlay: one large centred mark, a thin
- * progress bar, and a quiet title underneath. EFR's chunk grid and mixed state are
- * intentionally not reproduced. EFR progress and text are read through
- * {@link EfrCompat} when present.</p>
+ * <p>The layout follows the 26.3 loading overlay. When EFR is installed its
+ * per-chunk colour snapshot is reused; otherwise the ModernUI wordmark is drawn.
+ * EFR progress and text are read through {@link EfrCompat}.</p>
  */
 public final class ModernLoadingScreen {
 
     private static final ResourceLocation ICON =
             new ResourceLocation("modernui", "textures/gui/new_icon_white.png");
+    /** The wordmark only occupies the top-left part of the 512x512 canvas. */
+    private static final float ICON_U0 = 6.0F / 512.0F;
+    private static final float ICON_V0 = 5.0F / 512.0F;
+    private static final float ICON_U1 = 496.0F / 512.0F;
+    private static final float ICON_V1 = 204.0F / 512.0F;
+    private static final float ICON_ASPECT = 490.0F / 199.0F;
 
     private static float smoothedProgress;
     private static boolean rendering;
@@ -59,7 +65,8 @@ public final class ModernLoadingScreen {
                 LoadingText text = resolveText(mc, snapshot);
                 float progress = explicitProgress >= 0.0F ? explicitProgress : resolveProgress(mc, snapshot);
                 boolean hasProgress = progress >= 0.0F;
-                drawForeground(mc, width, height, text, hasProgress, Math.max(0.0F, Math.min(1.0F, progress)));
+                drawForeground(mc, width, height, text, hasProgress,
+                        Math.max(0.0F, Math.min(1.0F, progress)), snapshot == null ? null : snapshot.chunk);
             } finally {
                 restoreOrtho();
             }
@@ -102,30 +109,37 @@ public final class ModernLoadingScreen {
     }
 
     private static void drawForeground(Minecraft mc, int width, int height, LoadingText text,
-            boolean hasProgress, float targetProgress) {
+            boolean hasProgress, float targetProgress, EfrCompat.ChunkSnapshot chunk) {
         int centerX = width / 2;
-        int logoSize = (int) Math.max(64.0F, Math.min(176.0F, Math.min(width * 0.72F, height) * 0.24F));
-        int logoX = centerX - logoSize / 2;
-        int logoY = height / 2 - logoSize - 18;
-        float pulse = 0.985F + 0.015F * (float) Math.sin(Minecraft.getSystemTime() / 650.0D);
+        int centerY = height / 2;
+        int titleY;
+        int barTop;
+        int subtitleY;
 
-        GL11.glPushMatrix();
-        GL11.glTranslatef(logoX + logoSize / 2.0F, logoY + logoSize / 2.0F, 0.0F);
-        GL11.glScalef(pulse, pulse, 1.0F);
-        ModernGuiRenderer.textureRect(ICON, -logoSize / 2.0F, -logoSize / 2.0F, logoSize / 2.0F,
-                logoSize / 2.0F, 0.0F, 0.0F, 1.0F, 1.0F, 0xF2FFFFFF);
-        GL11.glPopMatrix();
-
-        int titleY = height / 2 + 4;
-        ModernGuiRenderer.centeredString(mc.fontRenderer, text.title, centerX, titleY, 0xFFFFFFFF);
-        if (text.subtitle != null && !text.subtitle.isEmpty()) {
-            ModernGuiRenderer.centeredString(mc.fontRenderer, text.subtitle, centerX, titleY + 18, 0xFFB7B7C4);
+        if (chunk != null && chunk.diameter > 0) {
+            int cell = Math.max(2, Math.min(6, Math.min(width, height) / 160));
+            int mapSize = chunk.diameter * cell;
+            int left = centerX - mapSize / 2;
+            int top = centerY - mapSize / 2;
+            drawChunkMap(chunk, left, top, cell, mapSize);
+            titleY = centerY - chunk.radius * cell - 27;
+            barTop = titleY + 12;
+            subtitleY = top + mapSize + 12;
+        } else {
+            drawWordmark(centerX, centerY, width, height);
+            titleY = centerY + 4;
+            barTop = titleY + 42;
+            subtitleY = titleY + 18;
         }
 
-        int barWidth = (int) Math.max(200.0F, Math.min(width * 0.46F, logoSize * 2.4F));
+        ModernGuiRenderer.centeredString(mc.fontRenderer, text.title, centerX, titleY, 0xFFFFFFFF);
+        if (text.subtitle != null && !text.subtitle.isEmpty()) {
+            ModernGuiRenderer.centeredString(mc.fontRenderer, text.subtitle, centerX, subtitleY, 0xFFB7B7C4);
+        }
+
+        int barWidth = (int) Math.max(200.0F, Math.min(width * 0.46F, 420.0F));
         int barHeight = 4;
         int barLeft = centerX - barWidth / 2;
-        int barTop = titleY + 42;
         ModernGuiRenderer.fill(barLeft - 1, barTop - 1, barLeft + barWidth + 1, barTop + barHeight + 1,
                 0x50000000);
         ModernGuiRenderer.fill(barLeft, barTop, barLeft + barWidth, barTop + barHeight, 0x30FFFFFF);
@@ -147,6 +161,31 @@ public final class ModernLoadingScreen {
                 ModernGuiRenderer.fill(from, barTop, to, barTop + barHeight, 0xCCFFFFFF);
             }
         }
+    }
+
+    private static void drawChunkMap(EfrCompat.ChunkSnapshot chunk, int left, int top, int cell, int mapSize) {
+        ModernGuiRenderer.fill(left - 2, top - 2, left + mapSize + 2, top + mapSize + 2, 0x50000000);
+        for (int z = 0; z < chunk.diameter; z++) {
+            for (int x = 0; x < chunk.diameter; x++) {
+                int color = chunk.color(x, z);
+                if ((color >>> 24) == 0) {
+                    continue;
+                }
+                int cellLeft = left + x * cell;
+                int cellTop = top + z * cell;
+                ModernGuiRenderer.fill(cellLeft, cellTop, cellLeft + cell, cellTop + cell, color);
+            }
+        }
+    }
+
+    private static void drawWordmark(int centerX, int centerY, int width, int height) {
+        int logoWidth = (int) Math.max(64.0F, Math.min(176.0F,
+                Math.min(width * 0.72F, height) * 0.5F));
+        int logoHeight = Math.max(1, Math.round(logoWidth / ICON_ASPECT));
+        int left = centerX - logoWidth / 2;
+        int top = centerY - logoHeight - 18;
+        ModernGuiRenderer.textureRect(ICON, left, top, left + logoWidth, top + logoHeight,
+                ICON_U0, ICON_V0, ICON_U1, ICON_V1, 0xF2FFFFFF);
     }
 
     private static void setupOrtho(int width, int height) {

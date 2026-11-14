@@ -5,6 +5,8 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 
 import blocamlimb.nhx100218.modernui.config.ui.ConfigScreen;
+import blocamlimb.nhx100218.modernui.enhance.menu.MenuConfig;
+import blocamlimb.nhx100218.modernui.enhance.menu.ModernBackdropRenderer;
 
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.UiSurface;
 import blocamlimb.nhx100218.modernui.uilib.ui.screen.McScreenBridge;
@@ -33,14 +35,19 @@ public class ModernConfigScreen extends McScreenBridge {
     public ModernConfigScreen(GuiScreen parentScreen, UiSurface surface) {
         super(parentScreen, surface);
         if (surface instanceof ConfigScreen) {
-            ((ConfigScreen) surface).setWorldBackdrop(hasWorldContext());
+            ((ConfigScreen) surface).setWorldBackdrop(hasWorldContext() || MenuConfig.globalPanorama);
         }
     }
 
     @Override
     public void drawDefaultBackground() {
         if (!hasWorldContext()) {
-            Gui.drawRect(0, 0, width, height, 0xFF000000);
+            Minecraft minecraft = Minecraft.getMinecraft();
+            if (MenuConfig.globalPanorama && minecraft != null) {
+                ModernBackdropRenderer.renderMenuBackground(minecraft, width, height);
+            } else {
+                Gui.drawRect(0, 0, width, height, 0xFF000000);
+            }
         }
     }
 

@@ -1,17 +1,7 @@
 package blocamlimb.nhx100218.modernui.uilib.mixin.early.enhance.menu;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiControls;
-import net.minecraft.client.gui.GuiCreateWorld;
-import net.minecraft.client.gui.GuiLanguage;
-import net.minecraft.client.gui.GuiMultiplayer;
-import net.minecraft.client.gui.GuiOptions;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.GuiScreenResourcePacks;
-import net.minecraft.client.gui.GuiSelectWorld;
-import net.minecraft.client.gui.GuiSnooper;
-import net.minecraft.client.gui.GuiVideoSettings;
-import net.minecraft.client.gui.achievement.GuiAchievements;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import blocamlimb.nhx100218.modernui.enhance.menu.MenuConfig;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernBackdropRenderer;
+import blocamlimb.nhx100218.modernui.enhance.menu.ModernMenuScreens;
 
 /**
  * Gives the menu screens one shared translucent panorama instead of the dirt
@@ -38,7 +29,7 @@ public abstract class MixinGuiScreenBackground {
             return;
         }
         GuiScreen screen = (GuiScreen) (Object) this;
-        if (!usesSharedBackdrop(screen)) {
+        if (!ModernMenuScreens.usesSharedBackdrop(screen)) {
             return;
         }
         Minecraft minecraft = Minecraft.getMinecraft();
@@ -47,18 +38,5 @@ public abstract class MixinGuiScreenBackground {
         }
         ModernBackdropRenderer.renderMenuBackground(minecraft, screen.width, screen.height);
         callbackInfo.cancel();
-    }
-
-    private static boolean usesSharedBackdrop(GuiScreen screen) {
-        return screen instanceof GuiSelectWorld
-                || screen instanceof GuiMultiplayer
-                || screen instanceof GuiCreateWorld
-                || screen instanceof GuiScreenResourcePacks
-                || screen instanceof GuiOptions
-                || screen instanceof GuiVideoSettings
-                || screen instanceof GuiControls
-                || screen instanceof GuiLanguage
-                || screen instanceof GuiSnooper
-                || screen instanceof GuiAchievements;
     }
 }
