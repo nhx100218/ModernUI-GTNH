@@ -27,6 +27,8 @@ public final class ModernLoadingScreen {
     private static volatile boolean worldLoadRequested;
     /** True from loadWorld(null) while the integrated server is shutting down. */
     private static volatile boolean savingWorld;
+    /** Present the static status frame only once per phase to avoid flicker. */
+    private static boolean statusFramePresented;
 
     private ModernLoadingScreen() {
     }
@@ -47,6 +49,19 @@ public final class ModernLoadingScreen {
 
     public static boolean isSavingWorld() {
         return savingWorld;
+    }
+
+    /** @return true exactly once for the current status phase */
+    public static boolean claimStatusFramePresentation() {
+        if (statusFramePresented) {
+            return false;
+        }
+        statusFramePresented = true;
+        return true;
+    }
+
+    public static void resetStatusFramePresentation() {
+        statusFramePresented = false;
     }
 
     /**
@@ -222,18 +237,19 @@ public final class ModernLoadingScreen {
     }
 
     private static void drawStatusBox(Minecraft mc, int width, int height, String text) {
-        int boxWidth = Math.max(240, Math.min(380, width / 3));
-        int boxHeight = Math.max(60, mc.fontRenderer.FONT_HEIGHT + 34);
+        int boxWidth = Math.max(170, Math.min(230, width / 4));
+        int boxHeight = Math.max(38, mc.fontRenderer.FONT_HEIGHT + 20);
         int left = width / 2 - boxWidth / 2;
         int top = height / 2 - boxHeight / 2;
         int right = left + boxWidth;
         int bottom = top + boxHeight;
 
         ModernGuiRenderer.fill(left, top, right, bottom, 0xFF080808);
-        ModernGuiRenderer.fill(left, top, right, top + 2, 0xFFFFFFFF);
-        ModernGuiRenderer.fill(left, bottom - 2, right, bottom, 0xFFFFFFFF);
-        ModernGuiRenderer.fill(left, top, left + 2, bottom, 0xFFFFFFFF);
-        ModernGuiRenderer.fill(right - 2, top, right, bottom, 0xFFFFFFFF);
+        // 26.3 uses a thin grey 1px frame, not a large white border.
+        ModernGuiRenderer.fill(left, top, right, top + 1, 0xFFA0A0A0);
+        ModernGuiRenderer.fill(left, bottom - 1, right, bottom, 0xFFA0A0A0);
+        ModernGuiRenderer.fill(left, top, left + 1, bottom, 0xFFA0A0A0);
+        ModernGuiRenderer.fill(right - 1, top, right, bottom, 0xFFA0A0A0);
 
         int textY = top + boxHeight / 2 - mc.fontRenderer.FONT_HEIGHT / 2;
         ModernGuiRenderer.centeredString(mc.fontRenderer, text, width / 2, textY, 0xFFFFFFFF);

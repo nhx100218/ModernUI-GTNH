@@ -35,6 +35,9 @@ public abstract class MixinLoadingScreenRenderer {
         }
         GuiScreen screen = minecraft.currentScreen;
         boolean leavingWorld = screen instanceof GuiIngameMenu || ModernLoadingScreen.isSavingWorld();
+        if (!ModernLoadingScreen.isStatusScreen(minecraft)) {
+            ModernLoadingScreen.resetStatusFramePresentation();
+        }
         if (EfrCompat.isActive() && !leavingWorld) {
             return;
         }
@@ -62,8 +65,13 @@ public abstract class MixinLoadingScreenRenderer {
                 EfrCompat.snapshot(), fraction, showChunkMap)) {
             if (ModernLoadingScreen.isStatusScreen(minecraft)) {
                 // The launch/shutdown loops do not run the normal render loop.
-                // Present the static status box once per progress callback.
-                minecraft.func_147120_f();
+                // Present the static status box only once per phase; repeated
+                // Display.update() calls fight the game loop and flicker.
+                if (ModernLoadingScreen.claimStatusFramePresentation()) {
+                    minecraft.func_147120_f();
+                }
+            } else {
+                ModernLoadingScreen.resetStatusFramePresentation();
             }
             callbackInfo.cancel();
         }
