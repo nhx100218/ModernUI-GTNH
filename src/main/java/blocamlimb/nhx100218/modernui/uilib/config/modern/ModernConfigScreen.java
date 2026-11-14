@@ -35,7 +35,9 @@ public class ModernConfigScreen extends McScreenBridge {
     public ModernConfigScreen(GuiScreen parentScreen, UiSurface surface) {
         super(parentScreen, surface);
         if (surface instanceof ConfigScreen) {
-            ((ConfigScreen) surface).setWorldBackdrop(hasWorldContext() || MenuConfig.globalPanorama);
+            ConfigScreen configScreen = (ConfigScreen) surface;
+            configScreen.setWorldBackdrop(hasWorldContext());
+            configScreen.setMenuBackdrop(!hasWorldContext() && MenuConfig.globalPanorama);
         }
     }
 

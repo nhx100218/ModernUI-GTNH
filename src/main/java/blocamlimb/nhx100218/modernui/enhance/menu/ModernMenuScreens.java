@@ -22,7 +22,8 @@ public final class ModernMenuScreens {
     private static final String MODERN_CONFIG_SCREEN =
             "blocamlimb.nhx100218.modernui.uilib.config.modern.ModernConfigScreen";
     private static final String FORGE_MOD_CONFIG = "net.minecraftforge.client.gui.GuiModConfig";
-    private static final String FORGE_MOD_LIST = "net.minecraftforge.client.gui.GuiModList";
+    /** 1.7.10 Forge is obfuscated into {@code cpw.mods.fml.client}, not net.minecraftforge. */
+    private static final String FORGE_MOD_LIST = "cpw.mods.fml.client.GuiModList";
 
     private ModernMenuScreens() {
     }

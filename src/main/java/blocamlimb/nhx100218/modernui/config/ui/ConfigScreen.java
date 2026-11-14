@@ -318,8 +318,8 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             FormPageShell.Parts parts = FormPageShell.build(runtime,
                     schema.title(), null,
                     ConfigTheme.TITLE_BAR_HEIGHT, ConfigTheme.ROOT_PADDING, ConfigTheme.ROOT_GAP,
-                    14, 14,
-                    false, false);
+                    14, 14, ConfigTheme.dp(16),
+                    false, false, ConfigTheme.transparentPageTheme());
             this.pageRoot = parts.root();
             this.viewport = parts.viewport();
             this.scrollContainer = parts.scrollContainer();
@@ -1093,6 +1093,22 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             // 配置界面固定使用不透明底色。
             boolean transparent = inWorld && !AngelicaRendererCompat.isSdlGpuActive();
             root.setBackgroundColor(transparent ? 0x00000000 : ConfigTheme.ROOT_BG);
+        }
+    }
+
+    /**
+     * Clears the page background when the configuration screen is opened from a
+     * menu, so the shared panorama remains visible behind the panel.
+     *
+     * <p>This deliberately bypasses the SDL-GPU guard in
+     * {@link #setWorldBackdrop(boolean)}: that guard protects the in-game
+     * world view, while a menu has no world to composite over.</p>
+     *
+     * @param panoramaBackdrop whether the menu panorama is active
+     */
+    public void setMenuBackdrop(boolean panoramaBackdrop) {
+        if (root != null && panoramaBackdrop) {
+            root.setBackgroundColor(0x00000000);
         }
     }
 
