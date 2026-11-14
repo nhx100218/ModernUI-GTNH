@@ -29,15 +29,15 @@ public abstract class MixinLoadingScreenRenderer {
 
     @Inject(method = "setLoadingProgress", at = @At("HEAD"), cancellable = true, require = 0)
     private void modernui$drawLoadingScreen(int progress, CallbackInfo callbackInfo) {
-        if (EfrCompat.isActive()) {
-            return;
-        }
         Minecraft minecraft = Minecraft.getMinecraft();
         if (minecraft == null) {
             return;
         }
         GuiScreen screen = minecraft.currentScreen;
-        boolean leavingWorld = screen instanceof GuiIngameMenu;
+        boolean leavingWorld = screen instanceof GuiIngameMenu || ModernLoadingScreen.isSavingWorld();
+        if (EfrCompat.isActive() && !leavingWorld) {
+            return;
+        }
         ScaledResolution resolution = new ScaledResolution(minecraft, minecraft.displayWidth,
                 minecraft.displayHeight);
         int width = resolution.getScaledWidth();
@@ -60,6 +60,11 @@ public abstract class MixinLoadingScreenRenderer {
         boolean showChunkMap = progress >= 0 && !leavingWorld;
         if (ModernLoadingScreen.render(minecraft, width, height,
                 EfrCompat.snapshot(), fraction, showChunkMap)) {
+            if (ModernLoadingScreen.isStatusScreen(minecraft)) {
+                // The launch/shutdown loops do not run the normal render loop.
+                // Present the static status box once per progress callback.
+                minecraft.func_147120_f();
+            }
             callbackInfo.cancel();
         }
     }

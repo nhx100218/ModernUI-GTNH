@@ -44,6 +44,11 @@ public abstract class MixinMinecraftWorldLoadPump {
             CallbackInfo ci) {
         if (worldClient != null) {
             ModernLoadingScreen.setWorldLoadRequested(false);
+            ModernLoadingScreen.setSavingWorld(false);
+        } else if (((Minecraft) (Object) this).theWorld != null) {
+            // loadWorld(null) is the save-and-quit path. Keep this true until
+            // the title screen is installed so the saving status is visible.
+            ModernLoadingScreen.setSavingWorld(true);
         }
         FontService.getInstance().pumpWorldLoadUploads();
     }
@@ -53,6 +58,7 @@ public abstract class MixinMinecraftWorldLoadPump {
     private void modernui$clearCancelledWorldLoad(GuiScreen screen, CallbackInfo ci) {
         if (screen instanceof GuiMainMenu) {
             ModernLoadingScreen.setWorldLoadRequested(false);
+            ModernLoadingScreen.setSavingWorld(false);
         }
     }
 }

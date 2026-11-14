@@ -25,6 +25,8 @@ public final class ModernLoadingScreen {
     private static boolean rendering;
     /** True from launchIntegratedServer until the world client is installed. */
     private static volatile boolean worldLoadRequested;
+    /** True from loadWorld(null) while the integrated server is shutting down. */
+    private static volatile boolean savingWorld;
 
     private ModernLoadingScreen() {
     }
@@ -39,6 +41,14 @@ public final class ModernLoadingScreen {
         return worldLoadRequested;
     }
 
+    public static void setSavingWorld(boolean saving) {
+        savingWorld = saving;
+    }
+
+    public static boolean isSavingWorld() {
+        return savingWorld;
+    }
+
     /**
      * Preparing resources / saving a world reuse the normal loading screen, but
      * do not show a chunk grid.
@@ -47,7 +57,7 @@ public final class ModernLoadingScreen {
      * @return true for the short status-only phases
      */
     public static boolean isStatusScreen(Minecraft mc) {
-        if (mc.currentScreen instanceof GuiIngameMenu) {
+        if (savingWorld || mc.currentScreen instanceof GuiIngameMenu) {
             return true;
         }
         return worldLoadRequested && !(mc.currentScreen instanceof GuiDownloadTerrain);
@@ -111,7 +121,7 @@ public final class ModernLoadingScreen {
     }
 
     private static LoadingText resolveText(Minecraft mc, EfrCompat.Snapshot snapshot) {
-        if (mc.currentScreen instanceof GuiIngameMenu) {
+        if (savingWorld || mc.currentScreen instanceof GuiIngameMenu) {
             return new LoadingText(I18n.format("menu.savingLevel"));
         }
         if (worldLoadRequested && !(mc.currentScreen instanceof GuiDownloadTerrain)) {
@@ -145,6 +155,10 @@ public final class ModernLoadingScreen {
 
     private static void drawForeground(Minecraft mc, int width, int height, LoadingText text,
             boolean hasProgress, float targetProgress, LoadingChunkMap.Snapshot chunkMap) {
+        if (isStatusScreen(mc)) {
+            drawStatusBox(mc, width, height, text.title);
+            return;
+        }
         int centerX = width / 2;
         int centerY = height / 2;
         int titleY;
@@ -205,6 +219,24 @@ public final class ModernLoadingScreen {
         }
         GL11.glEnd();
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+    }
+
+    private static void drawStatusBox(Minecraft mc, int width, int height, String text) {
+        int boxWidth = Math.max(240, Math.min(380, width / 3));
+        int boxHeight = Math.max(60, mc.fontRenderer.FONT_HEIGHT + 34);
+        int left = width / 2 - boxWidth / 2;
+        int top = height / 2 - boxHeight / 2;
+        int right = left + boxWidth;
+        int bottom = top + boxHeight;
+
+        ModernGuiRenderer.fill(left, top, right, bottom, 0xFF080808);
+        ModernGuiRenderer.fill(left, top, right, top + 2, 0xFFFFFFFF);
+        ModernGuiRenderer.fill(left, bottom - 2, right, bottom, 0xFFFFFFFF);
+        ModernGuiRenderer.fill(left, top, left + 2, bottom, 0xFFFFFFFF);
+        ModernGuiRenderer.fill(right - 2, top, right, bottom, 0xFFFFFFFF);
+
+        int textY = top + boxHeight / 2 - mc.fontRenderer.FONT_HEIGHT / 2;
+        ModernGuiRenderer.centeredString(mc.fontRenderer, text, width / 2, textY, 0xFFFFFFFF);
     }
 
     private static void setupOrtho(int width, int height) {
