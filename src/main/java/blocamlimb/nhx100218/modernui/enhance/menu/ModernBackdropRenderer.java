@@ -62,13 +62,13 @@ public final class ModernBackdropRenderer {
             } else if (MenuConfig.dimensionPortalBackground && dimension == 1) {
                 drawEndPortal(mc, width, height);
             } else if (MenuConfig.globalPanorama) {
-                drawPanorama(mc, width, height, 0.88F);
+                drawPanorama(mc, width, height, 1.0F);
             } else {
                 ModernGuiRenderer.fill(0, 0, width, height, 0xFF101014);
             }
-            // World-loading overlay: 90% opaque, as requested for the
-            // singleplayer/multiplayer loading animation.
-            ModernGuiRenderer.fill(0, 0, width, height, 0xE6101014);
+            // World-loading overlay: 90% transparent (10% opaque), so the
+            // panorama stays visible behind the status text and chunk grid.
+            ModernGuiRenderer.fill(0, 0, width, height, 0x1A101014);
             ModernGuiRenderer.beginUi();
         } finally {
             restoreOrtho();

@@ -39,7 +39,9 @@ public abstract class MixinGuiSelectWorldList {
         if (!MenuConfig.worldQuickJoin || saves == null || slotIndex < 0 || slotIndex >= saves.size()) {
             return;
         }
-        boolean hovered = ModernMenuArrows.overIcon(mouseX, mouseY, x, y, ICON_SIZE);
+        GuiSlot slot = (GuiSlot) (Object) this;
+        boolean hovered = mouseX >= x && mouseX < x + slot.getListWidth()
+                && mouseY >= y && mouseY < y + slotHeight;
         if (!hovered) {
             return;
         }

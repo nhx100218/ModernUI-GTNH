@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernMenuFrame;
@@ -32,6 +33,16 @@ public abstract class MixinGuiSlotBackground {
 
     @Shadow
     protected boolean field_148163_i;
+
+    @Inject(method = "getListWidth", at = @At("HEAD"), cancellable = true, require = 0)
+    private void modernui$matchWorldSelectionWidth(CallbackInfoReturnable<Integer> callbackInfo) {
+        // 26.3 keeps both selection screens close in width. The server list is
+        // 305 (+6 right edge); 298 leaves ~6.5px on each side while keeping the
+        // world icon flush with the left edge of its own highlight.
+        if (getClass().getName().equals("net.minecraft.client.gui.GuiSelectWorld$List")) {
+            callbackInfo.setReturnValue(Integer.valueOf(298));
+        }
+    }
 
     @Inject(method = "drawScreen", at = @At("HEAD"), require = 0)
     private void modernui$topAlignList(int mouseX, int mouseY, float partialTicks, CallbackInfo callbackInfo) {
