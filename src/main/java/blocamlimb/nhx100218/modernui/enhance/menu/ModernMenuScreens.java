@@ -31,6 +31,15 @@ public final class ModernMenuScreens {
     /** Angelica replaces the vanilla video settings screen with this one. */
     private static final String ANGELICA_VIDEO_SCREEN =
             "me.flashyreese.mods.reeses_sodium_options.client.gui.ReeseSodiumVideoOptionsScreen";
+    /** Angelica's font picker and its pack/entity sub-pages. */
+    private static final String ANGELICA_FONT_SCREEN =
+            "com.gtnewhorizons.angelica.client.gui.FontConfigScreen";
+    private static final String ANGELICA_ATLAS_PACK_SCREEN =
+            "com.gtnewhorizons.angelica.client.gui.AtlasPackScreen";
+    private static final String ANGELICA_DYNAMIC_LIGHTS_SCREEN =
+            "com.gtnewhorizons.angelica.client.gui.DynamicLightsEntityScreen";
+    /** Iris shader pack screen (shipped inside Angelica). */
+    private static final String IRIS_SHADER_PACK_SCREEN = "net.coderbot.iris.gui.screen.ShaderPackScreen";
     /** Hodgepodge's enhanced sound options page. */
     private static final String HODGEPODGE_SOUND_SCREEN =
             "com.mitchej123.hodgepodge.client.gui.HodgepodgeSoundOptionsGui";
@@ -71,6 +80,10 @@ public final class ModernMenuScreens {
                 || FORGE_MOD_CONFIG.equals(name)
                 || FORGE_MOD_LIST.equals(name)
                 || ANGELICA_VIDEO_SCREEN.equals(name)
+                || ANGELICA_FONT_SCREEN.equals(name)
+                || ANGELICA_ATLAS_PACK_SCREEN.equals(name)
+                || ANGELICA_DYNAMIC_LIGHTS_SCREEN.equals(name)
+                || IRIS_SHADER_PACK_SCREEN.equals(name)
                 || HODGEPODGE_SOUND_SCREEN.equals(name)
                 || STREAM_UNAVAILABLE_SCREEN.equals(name);
     }

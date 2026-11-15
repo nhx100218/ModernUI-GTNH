@@ -60,8 +60,6 @@ public final class MenuCursor {
     private static final Map<Class<?>, Method> CONTAINS_CURSOR_CACHE = new ConcurrentHashMap<Class<?>, Method>();
 
     private static final Field BUTTON_LIST_FIELD = findButtonListField();
-    private static final Method GUI_SLOT_INDEX = findIntMethod(GuiSlot.class, "func_148124_c");
-    private static final Method SCROLLING_LIST_INDEX = findIntMethod(GuiScrollingList.class, "func_27256_c");
 
     private static final Class<?> ANGELICA_FRAME_CLASS = optionalClass(ANGELICA_FRAME);
     private static final Class<?> ANGELICA_TAB_FRAME_CLASS = optionalClass(ANGELICA_TAB_FRAME);
@@ -169,7 +167,12 @@ public final class MenuCursor {
                 || screen instanceof GuiControls
                 || screen instanceof GuiLanguage
                 || screen instanceof GuiScreenResourcePacks
-                || "cpw.mods.fml.client.GuiModList".equals(screen.getClass().getName());
+                || "cpw.mods.fml.client.GuiModList".equals(screen.getClass().getName())
+                || "com.gtnewhorizons.angelica.client.gui.FontConfigScreen".equals(screen.getClass().getName())
+                || "com.gtnewhorizons.angelica.client.gui.AtlasPackScreen".equals(screen.getClass().getName())
+                || "com.gtnewhorizons.angelica.client.gui.DynamicLightsEntityScreen"
+                        .equals(screen.getClass().getName())
+                || "net.coderbot.iris.gui.screen.ShaderPackScreen".equals(screen.getClass().getName());
         if (!clickable) {
             return false;
         }
@@ -177,11 +180,15 @@ public final class MenuCursor {
             try {
                 Object value = field.get(screen);
                 if (value instanceof GuiSlot) {
-                    if (slotIndex(GUI_SLOT_INDEX, value, mouseX, mouseY) >= 0) {
+                    GuiSlot slot = (GuiSlot) value;
+                    // IrisGuiSlot overrides func_148124_c with its own insets.
+                    if (slot.func_148124_c(mouseX, mouseY) >= 0 || overSlotGeometry(slot, mouseX, mouseY)) {
                         return true;
                     }
                 } else if (value instanceof GuiScrollingList) {
-                    if (slotIndex(SCROLLING_LIST_INDEX, value, mouseX, mouseY) >= 0) {
+                    GuiScrollingList list = (GuiScrollingList) value;
+                    if (list.func_27256_c(mouseX, mouseY) >= 0
+                            || overScrollingListGeometry(list, mouseX, mouseY)) {
                         return true;
                     }
                 }
@@ -192,16 +199,70 @@ public final class MenuCursor {
         return false;
     }
 
-    private static int slotIndex(Method method, Object list, int mouseX, int mouseY) {
-        if (method == null) {
-            return -1;
+    /**
+     * Geometry fallback that does not depend on {@code func_148124_c}. It uses
+     * the same row origin as {@code GuiSlot} and accepts the full drawn row
+     * (including the selection outline), so hovering the text also shows the
+     * hand, not just the world/server icon.
+     */
+    private static boolean overSlotGeometry(GuiSlot slot, int mouseX, int mouseY) {
+        if (slot.slotHeight <= 0 || mouseY < slot.top || mouseY >= slot.bottom) {
+            return false;
         }
-        try {
-            Object result = method.invoke(list, Integer.valueOf(mouseX), Integer.valueOf(mouseY));
-            return result instanceof Integer ? ((Integer) result).intValue() : -1;
-        } catch (Throwable ignored) {
-            return -1;
+        int contentHeight = slot.func_148135_f() + (slot.bottom - slot.top - 4);
+        if (contentHeight <= 0) {
+            return false;
         }
+        int rows = contentHeight / slot.slotHeight;
+        int y = mouseY - slot.top - slot.headerPadding + slot.getAmountScrolled() - 4;
+        int row = y / slot.slotHeight;
+        if (y < 0 || row < 0 || row >= rows) {
+            return false;
+        }
+        int rowLeft = slot.left + slot.width / 2 - slot.getListWidth() / 2;
+        int rowRight = slot.left + slot.width / 2 + slot.getListWidth() / 2;
+        return mouseX >= rowLeft - 2 && mouseX <= rowRight + 2;
+    }
+
+    /** Same row geometry for Forge's {@link GuiScrollingList} (mod list). */
+    private static boolean overScrollingListGeometry(GuiScrollingList list, int mouseX, int mouseY) {
+        int left = intField(list, "left", -1);
+        int top = intField(list, "top", -1);
+        int bottom = intField(list, "bottom", -1);
+        int width = intField(list, "listWidth", -1);
+        int slotHeight = intField(list, "slotHeight", 0);
+        if (left < 0 || top < 0 || bottom < 0 || width <= 0 || slotHeight <= 0) {
+            return false;
+        }
+        if (mouseY < top || mouseY >= bottom) {
+            return false;
+        }
+        if (mouseX < left - 2 || mouseX > left + width + 2) {
+            return false;
+        }
+        float scroll = floatField(list, "scrollDistance", 0.0F);
+        int header = intField(list, "field_27261_r", 0);
+        int y = mouseY - top - header + (int) scroll - 4;
+        if (y < 0) {
+            return false;
+        }
+        Integer size = intMethodValue(list, "getSize");
+        return size == null || y / slotHeight < size.intValue();
+    }
+
+    private static int intField(Object owner, String name, int fallback) {
+        Object value = namedFieldValue(owner, name);
+        return value instanceof Integer ? ((Integer) value).intValue() : fallback;
+    }
+
+    private static float floatField(Object owner, String name, float fallback) {
+        Object value = namedFieldValue(owner, name);
+        return value instanceof Float ? ((Float) value).floatValue() : fallback;
+    }
+
+    private static Integer intMethodValue(Object owner, String name) {
+        Object value = namedMethodValue(owner, name);
+        return value instanceof Integer ? (Integer) value : null;
     }
 
     // ------------------------------------------------------------------
@@ -411,25 +472,8 @@ public final class MenuCursor {
     }
 
     private static Field findButtonListField() {
-        return findField(GuiScreen.class, "buttonList") != null
-                ? findField(GuiScreen.class, "buttonList")
-                : findField(GuiScreen.class, "field_146292_n");
-    }
-
-    private static Method findIntMethod(Class<?> owner, String name) {
-        try {
-            return owner.getDeclaredMethod(name, Integer.TYPE, Integer.TYPE);
-        } catch (Throwable ignored) {
-            // Fall back to a signature scan (obfuscated/SRG name drift).
-        }
-        for (Method method : owner.getDeclaredMethods()) {
-            Class<?>[] parameters = method.getParameterTypes();
-            if (method.getReturnType() == Integer.TYPE && parameters.length == 2
-                    && parameters[0] == Integer.TYPE && parameters[1] == Integer.TYPE) {
-                return method;
-            }
-        }
-        return null;
+        Field field = findField(GuiScreen.class, "buttonList");
+        return field != null ? field : findField(GuiScreen.class, "field_146292_n");
     }
 
     private static Class<?> optionalClass(String name) {

@@ -15,8 +15,8 @@ public final class SmoothScrollConfig {
 
     /** 原版可滚动列表（{@code GuiSlot}）：缓动强度 0..100。 */
     public static volatile int listSmoothness = 50;
-    /** 原版可滚动列表每次滚轮像素量，0=自动（与原版 Smooth Scrolling 的 30px 默认一致）。 */
-    public static volatile int listAmount = 30;
+    /** 原版可滚动列表每次滚轮像素量，0=自动（默认 50px，可在配置页微调）。 */
+    public static volatile int listAmount = 50;
 
     /** 聊天栏：缓动强度 0..100。 */
     public static volatile int chatSmoothness = 50;

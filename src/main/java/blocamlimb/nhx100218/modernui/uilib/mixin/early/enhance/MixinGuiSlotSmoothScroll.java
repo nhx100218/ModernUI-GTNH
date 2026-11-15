@@ -65,7 +65,7 @@ public abstract class MixinGuiSlotSmoothScroll {
             return delta;
         }
         int step = delta > 0 ? -1 : 1;
-        int amount = SmoothScrollConfig.listAmount > 0 ? SmoothScrollConfig.listAmount : 30;
+        int amount = SmoothScrollConfig.listAmount > 0 ? SmoothScrollConfig.listAmount : 50;
         modernui$addTarget(step * amount);
         return 0;
     }

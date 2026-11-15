@@ -78,6 +78,8 @@ public final class DebugKeyHandler {
     };
 
     private final boolean[] wasDown = new boolean[ACTIONS.length];
+    private boolean modifierWasDown;
+    private boolean actionFiredWithModifier;
 
     /** Set after this handler toggles the debug screen itself (remapped key). */
     private static volatile boolean suppressEfrF3Release;
@@ -129,6 +131,15 @@ public final class DebugKeyHandler {
         return false;
     }
 
+    /**
+     * Key that cycles gamemodes inside EFR's switcher. Falls back to F4 when the
+     * action is unbound.
+     */
+    public static int getGamemodeKeyCode(int fallback) {
+        int keyCode = GAMEMODE_SWITCHER.getKeyCode();
+        return keyCode == Keyboard.KEY_NONE ? fallback : keyCode;
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
@@ -140,16 +151,45 @@ public final class DebugKeyHandler {
         }
         boolean active = mc.thePlayer != null && mc.currentScreen == null;
         boolean modifier = isDebugModifierDown();
+        boolean modifierPressed = modifier && !modifierWasDown;
+        boolean modifierReleased = !modifier && modifierWasDown;
+        modifierWasDown = modifier;
+        if (modifierPressed) {
+            actionFiredWithModifier = false;
+        }
+
         for (int i = 0; i < ACTIONS.length; i++) {
             KeyBinding binding = ACTIONS[i];
             int keyCode = binding.getKeyCode();
             boolean down = active && keyCode != Keyboard.KEY_NONE && Keyboard.isKeyDown(keyCode);
             boolean pressed = down && !wasDown[i];
             wasDown[i] = down;
-            if (!pressed || !modifier || vanillaHandles(keyCode)) {
+            if (!pressed) {
+                continue;
+            }
+            // The debug screen is a standalone remap (26.3 lets it live on any
+            // key); every other action stays behind the debug modifier.
+            boolean needsModifier = i != 0;
+            if (needsModifier && !modifier) {
+                continue;
+            }
+            if (vanillaHandles(keyCode)) {
+                if (needsModifier) {
+                    actionFiredWithModifier = true;
+                }
                 continue;
             }
             perform(i, mc);
+            if (needsModifier) {
+                actionFiredWithModifier = true;
+            }
+        }
+
+        // A remapped debug modifier pressed on its own opens the debug screen,
+        // just like F3 does in vanilla 1.7.10.
+        if (active && modifierReleased && MODIFIER.getKeyCode() != Keyboard.KEY_F3
+                && !actionFiredWithModifier) {
+            toggleDebugScreen(mc);
         }
     }
 
@@ -169,9 +209,7 @@ public final class DebugKeyHandler {
     private void perform(int action, Minecraft mc) {
         switch (action) {
             case 0:
-                mc.gameSettings.showDebugInfo = !mc.gameSettings.showDebugInfo;
-                mc.gameSettings.showDebugProfilerChart = GuiScreen.isShiftKeyDown();
-                markDebugScreenRemapped();
+                toggleDebugScreen(mc);
                 break;
             case 1:
                 RenderManager.debugBoundingBox = !RenderManager.debugBoundingBox;
@@ -212,8 +250,7 @@ public final class DebugKeyHandler {
                 mc.gameSettings.showDebugInfo = true;
                 mc.gameSettings.showDebugProfilerChart = !mc.gameSettings.showDebugProfilerChart;
                 markDebugScreenRemapped();
-                break;
-            case 9:
+                break;            case 9:
                 openEfrGamemodeSwitcher(mc);
                 break;
             default:
@@ -221,9 +258,19 @@ public final class DebugKeyHandler {
         }
     }
 
+    private static void toggleDebugScreen(Minecraft mc) {
+        mc.gameSettings.showDebugInfo = !mc.gameSettings.showDebugInfo;
+        mc.gameSettings.showDebugProfilerChart = GuiScreen.isShiftKeyDown();
+        markDebugScreenRemapped();
+    }
+
     private static void markDebugScreenRemapped() {
-        suppressEfrF3Release = true;
-        debugScreenGraceTicks = 1;
+        // EFR only rewrites the debug screen while the physical F3 key is held,
+        // so only that case needs the grace window and the release suppression.
+        if (Keyboard.isKeyDown(Keyboard.KEY_F3)) {
+            suppressEfrF3Release = true;
+            debugScreenGraceTicks = 1;
+        }
     }
 
     private static void openEfrGamemodeSwitcher(Minecraft mc) {
