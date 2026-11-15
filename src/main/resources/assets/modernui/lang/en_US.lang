@@ -272,3 +272,6 @@ key.modernui.debug.copyLocation=Copy Location
 key.modernui.debug.pauseFocus=Toggle Pause on Lost Focus
 key.modernui.debug.profiler=Toggle Profiler
 key.modernui.debug.gamemode=Gamemode Switcher
+
+key.modernui.debug.angelicaOptions=Angelica Debug Options
+key.modernui.debug.fpsGraph=Toggle FPS Graph

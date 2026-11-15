@@ -9,12 +9,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import cpw.mods.fml.client.GuiScrollingList;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiControls;
-import net.minecraft.client.gui.GuiLanguage;
 import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.GuiOptionSlider;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.GuiScreenResourcePacks;
 import net.minecraft.client.gui.GuiSelectWorld;
 import net.minecraft.client.gui.GuiSlot;
 import net.minecraft.client.gui.GuiTextField;
@@ -157,55 +154,47 @@ public final class MenuCursor {
     }
 
     /**
-     * World/server/controls/language/resource-pack rows are clickable; the icon
-     * is part of the row, so the hand cursor must cover it as well. Only an
-     * actual row counts, never the empty space below the last row.
+     * 26.3 shows the hand only over the world/server icon (the quick-join
+     * affordance); the text and the selection outline stay on the arrow cursor.
+     * The mod list has no per-row icon, so its clickable rows use the hand.
      */
     private static boolean overClickableListRow(GuiScreen screen, int mouseX, int mouseY) {
-        boolean clickable = screen instanceof GuiSelectWorld
-                || screen instanceof GuiMultiplayer
-                || screen instanceof GuiControls
-                || screen instanceof GuiLanguage
-                || screen instanceof GuiScreenResourcePacks
-                || "cpw.mods.fml.client.GuiModList".equals(screen.getClass().getName())
-                || "com.gtnewhorizons.angelica.client.gui.FontConfigScreen".equals(screen.getClass().getName())
-                || "com.gtnewhorizons.angelica.client.gui.AtlasPackScreen".equals(screen.getClass().getName())
-                || "com.gtnewhorizons.angelica.client.gui.DynamicLightsEntityScreen"
-                        .equals(screen.getClass().getName())
-                || "net.coderbot.iris.gui.screen.ShaderPackScreen".equals(screen.getClass().getName());
-        if (!clickable) {
+        if (screen instanceof GuiSelectWorld || screen instanceof GuiMultiplayer) {
+            for (Field field : listFields(screen.getClass())) {
+                try {
+                    Object value = field.get(screen);
+                    if (value instanceof GuiSlot && overListIcon((GuiSlot) value, mouseX, mouseY)) {
+                        return true;
+                    }
+                } catch (Throwable ignored) {
+                    // Ignore a list that is being rebuilt.
+                }
+            }
             return false;
         }
-        for (Field field : listFields(screen.getClass())) {
-            try {
-                Object value = field.get(screen);
-                if (value instanceof GuiSlot) {
-                    GuiSlot slot = (GuiSlot) value;
-                    // IrisGuiSlot overrides func_148124_c with its own insets.
-                    if (slot.func_148124_c(mouseX, mouseY) >= 0 || overSlotGeometry(slot, mouseX, mouseY)) {
-                        return true;
+        if ("cpw.mods.fml.client.GuiModList".equals(screen.getClass().getName())) {
+            for (Field field : listFields(screen.getClass())) {
+                try {
+                    Object value = field.get(screen);
+                    if (value instanceof GuiScrollingList) {
+                        GuiScrollingList list = (GuiScrollingList) value;
+                        if (list.func_27256_c(mouseX, mouseY) >= 0
+                                || overScrollingListGeometry(list, mouseX, mouseY)) {
+                            return true;
+                        }
                     }
-                } else if (value instanceof GuiScrollingList) {
-                    GuiScrollingList list = (GuiScrollingList) value;
-                    if (list.func_27256_c(mouseX, mouseY) >= 0
-                            || overScrollingListGeometry(list, mouseX, mouseY)) {
-                        return true;
-                    }
+                } catch (Throwable ignored) {
+                    // Ignore a list that is being rebuilt.
                 }
-            } catch (Throwable ignored) {
-                // Ignore a list that is being rebuilt.
             }
         }
         return false;
     }
 
-    /**
-     * Geometry fallback that does not depend on {@code func_148124_c}. It uses
-     * the same row origin as {@code GuiSlot} and accepts the full drawn row
-     * (including the selection outline), so hovering the text also shows the
-     * hand, not just the world/server icon.
-     */
-    private static boolean overSlotGeometry(GuiSlot slot, int mouseX, int mouseY) {
+    private static final int LIST_ICON_SIZE = 32;
+
+    /** Hand only over the 32x32 world/server icon of the row below the mouse. */
+    private static boolean overListIcon(GuiSlot slot, int mouseX, int mouseY) {
         if (slot.slotHeight <= 0 || mouseY < slot.top || mouseY >= slot.bottom) {
             return false;
         }
@@ -214,14 +203,15 @@ public final class MenuCursor {
             return false;
         }
         int rows = contentHeight / slot.slotHeight;
-        int y = mouseY - slot.top - slot.headerPadding + slot.getAmountScrolled() - 4;
-        int row = y / slot.slotHeight;
-        if (y < 0 || row < 0 || row >= rows) {
+        int y = slot.top + 4 - slot.getAmountScrolled() + slot.headerPadding;
+        int row = (mouseY - y) / slot.slotHeight;
+        if (row < 0 || row >= rows || mouseY < y + row * slot.slotHeight) {
             return false;
         }
-        int rowLeft = slot.left + slot.width / 2 - slot.getListWidth() / 2;
-        int rowRight = slot.left + slot.width / 2 + slot.getListWidth() / 2;
-        return mouseX >= rowLeft - 2 && mouseX <= rowRight + 2;
+        int iconX = slot.left + slot.width / 2 - slot.getListWidth() / 2 + 2;
+        int iconY = y + row * slot.slotHeight;
+        return mouseX >= iconX && mouseX < iconX + LIST_ICON_SIZE
+                && mouseY >= iconY && mouseY < iconY + LIST_ICON_SIZE;
     }
 
     /** Same row geometry for Forge's {@link GuiScrollingList} (mod list). */

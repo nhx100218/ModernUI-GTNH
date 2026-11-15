@@ -53,6 +53,10 @@ public final class DebugKeyHandler {
             "key.modernui.debug.profiler", Keyboard.KEY_L, CATEGORY);
     private static final KeyBinding GAMEMODE_SWITCHER = new KeyBinding(
             "key.modernui.debug.gamemode", Keyboard.KEY_F4, CATEGORY);
+    private static final KeyBinding ANGELICA_DEBUG_OPTIONS = new KeyBinding(
+            "key.modernui.debug.angelicaOptions", Keyboard.KEY_F6, CATEGORY);
+    private static final KeyBinding FPS_GRAPH = new KeyBinding(
+            "key.modernui.debug.fpsGraph", Keyboard.KEY_LMENU, CATEGORY);
 
     private static final KeyBinding[] ACTIONS = new KeyBinding[] {
             DEBUG_SCREEN,
@@ -64,7 +68,9 @@ public final class DebugKeyHandler {
             COPY_LOCATION,
             PAUSE_FOCUS,
             PROFILER,
-            GAMEMODE_SWITCHER
+            GAMEMODE_SWITCHER,
+            ANGELICA_DEBUG_OPTIONS,
+            FPS_GRAPH
     };
 
     /** Vanilla 1.7.10 handles these keys itself while physical F3 is held. */
@@ -85,6 +91,8 @@ public final class DebugKeyHandler {
     private static volatile boolean suppressEfrF3Release;
     /** Number of EFR ticks that must not revert our debug-screen toggle. */
     private static volatile int debugScreenGraceTicks;
+    /** Set after this handler toggled Angelica's FPS graph. */
+    private static volatile boolean suppressAngelicaFpsGraph;
 
     public DebugKeyHandler() {
     }
@@ -93,7 +101,7 @@ public final class DebugKeyHandler {
         for (KeyBinding binding : new KeyBinding[] {
                 MODIFIER, DEBUG_SCREEN, HITBOXES, ADVANCED_TOOLTIPS, RELOAD_CHUNKS,
                 RENDER_DISTANCE, CLEAR_CHAT, COPY_LOCATION, PAUSE_FOCUS, PROFILER,
-                GAMEMODE_SWITCHER }) {
+                GAMEMODE_SWITCHER, ANGELICA_DEBUG_OPTIONS, FPS_GRAPH }) {
             ClientRegistry.registerKeyBinding(binding);
         }
     }
@@ -138,6 +146,18 @@ public final class DebugKeyHandler {
     public static int getGamemodeKeyCode(int fallback) {
         int keyCode = GAMEMODE_SWITCHER.getKeyCode();
         return keyCode == Keyboard.KEY_NONE ? fallback : keyCode;
+    }
+
+    /**
+     * Consumed by Angelica's F3 release handler: do not overwrite the FPS graph
+     * state that this mod just toggled through a remapped key.
+     */
+    public static boolean consumeAngelicaFpsGraphOverride() {
+        if (!suppressAngelicaFpsGraph) {
+            return false;
+        }
+        suppressAngelicaFpsGraph = false;
+        return true;
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -253,6 +273,12 @@ public final class DebugKeyHandler {
                 break;            case 9:
                 openEfrGamemodeSwitcher(mc);
                 break;
+            case 10:
+                openAngelicaDebugOptions(mc);
+                break;
+            case 11:
+                toggleAngelicaFpsGraph(mc);
+                break;
             default:
                 break;
         }
@@ -282,6 +308,33 @@ public final class DebugKeyHandler {
             mc.displayGuiScreen((GuiScreen) type.newInstance());
         } catch (Throwable ignored) {
             // EFR not installed or its debug switcher is disabled.
+        }
+    }
+
+    private static void openAngelicaDebugOptions(Minecraft mc) {
+        try {
+            Class<?> type = Class.forName("com.gtnewhorizons.angelica.debug.screen.DebugOptionsScreen");
+            type.getMethod("open", Minecraft.class).invoke(null, mc);
+        } catch (Throwable ignored) {
+            // Angelica not installed or its debug screen is disabled.
+        }
+    }
+
+    private static void toggleAngelicaFpsGraph(Minecraft mc) {
+        try {
+            Class<?> ext = Class.forName("com.gtnewhorizons.angelica.mixins.interfaces.IGameSettingsExt");
+            if (!ext.isInstance(mc.gameSettings)) {
+                return;
+            }
+            boolean current = ((Boolean) ext.getMethod("angelica$showFpsGraph").invoke(mc.gameSettings))
+                    .booleanValue();
+            ext.getMethod("angelica$setShowFpsGraph", Boolean.TYPE)
+                    .invoke(mc.gameSettings, Boolean.valueOf(!current));
+            if (Keyboard.isKeyDown(Keyboard.KEY_F3)) {
+                suppressAngelicaFpsGraph = true;
+            }
+        } catch (Throwable ignored) {
+            // Angelica not installed or the FPS graph is unavailable.
         }
     }
 }
