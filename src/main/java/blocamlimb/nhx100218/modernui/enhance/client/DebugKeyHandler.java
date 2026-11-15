@@ -1,6 +1,9 @@
 package blocamlimb.nhx100218.modernui.enhance.client;
 
+import org.lwjgl.input.Keyboard;
+
 import cpw.mods.fml.client.registry.ClientRegistry;
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import net.minecraft.client.Minecraft;
@@ -8,62 +11,125 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
-import org.lwjgl.input.Keyboard;
 
 /**
- * Remappable debug actions for the 1.7.10 client.
+ * Remappable 26.3-style debug actions for the 1.7.10 client.
  *
- * <p>Action bindings intentionally default to {@code KEY_NONE}; vanilla 1.7.10
- * already owns the hardcoded F3 combinations. Assigning a key here gives the
- * action a second, remappable trigger without toggling twice on the defaults.
- * The debug modifier itself defaults to F3.</p>
+ * <p>Every action is an ordinary key binding in the "ModernUI Debug" category.
+ * The debug modifier defaults to F3 and an action fires when the modifier and
+ * the bound key are held together, mirroring modern Minecraft.</p>
+ *
+ * <p>The action keys default to the letters vanilla 1.7.10 already uses
+ * (B/H/A/F/P) and F3 for the debug screen. Those combinations are detected as
+ * "already handled by vanilla", so pressing them does not toggle twice: vanilla
+ * performs the action once. Rebinding an action to any other key makes this
+ * handler perform it instead.</p>
  */
 public final class DebugKeyHandler {
 
     private static final String CATEGORY = "key.categories.modernui.debug";
-    private static final int UNBOUND = Keyboard.KEY_NONE;
 
     private static final KeyBinding MODIFIER = new KeyBinding(
             "key.modernui.debug.modifier", Keyboard.KEY_F3, CATEGORY);
+    /** Vanilla F3 owns the debug screen until this binding is assigned a key. */
     private static final KeyBinding DEBUG_SCREEN = new KeyBinding(
-            "key.modernui.debug.screen", UNBOUND, CATEGORY);
+            "key.modernui.debug.screen", Keyboard.KEY_NONE, CATEGORY);
     private static final KeyBinding HITBOXES = new KeyBinding(
-            "key.modernui.debug.hitboxes", UNBOUND, CATEGORY);
+            "key.modernui.debug.hitboxes", Keyboard.KEY_B, CATEGORY);
     private static final KeyBinding ADVANCED_TOOLTIPS = new KeyBinding(
-            "key.modernui.debug.advancedTooltips", UNBOUND, CATEGORY);
+            "key.modernui.debug.advancedTooltips", Keyboard.KEY_H, CATEGORY);
     private static final KeyBinding RELOAD_CHUNKS = new KeyBinding(
-            "key.modernui.debug.reloadChunks", UNBOUND, CATEGORY);
+            "key.modernui.debug.reloadChunks", Keyboard.KEY_A, CATEGORY);
     private static final KeyBinding RENDER_DISTANCE = new KeyBinding(
-            "key.modernui.debug.renderDistance", UNBOUND, CATEGORY);
+            "key.modernui.debug.renderDistance", Keyboard.KEY_F, CATEGORY);
     private static final KeyBinding CLEAR_CHAT = new KeyBinding(
-            "key.modernui.debug.clearChat", UNBOUND, CATEGORY);
+            "key.modernui.debug.clearChat", Keyboard.KEY_D, CATEGORY);
+    /** F3+C is the vanilla "crash the game" combo in 1.7.10, so it starts unbound. */
     private static final KeyBinding COPY_LOCATION = new KeyBinding(
-            "key.modernui.debug.copyLocation", UNBOUND, CATEGORY);
+            "key.modernui.debug.copyLocation", Keyboard.KEY_NONE, CATEGORY);
     private static final KeyBinding PAUSE_FOCUS = new KeyBinding(
-            "key.modernui.debug.pauseFocus", UNBOUND, CATEGORY);
+            "key.modernui.debug.pauseFocus", Keyboard.KEY_P, CATEGORY);
     private static final KeyBinding PROFILER = new KeyBinding(
-            "key.modernui.debug.profiler", UNBOUND, CATEGORY);
+            "key.modernui.debug.profiler", Keyboard.KEY_L, CATEGORY);
     private static final KeyBinding GAMEMODE_SWITCHER = new KeyBinding(
-            "key.modernui.debug.gamemode", UNBOUND, CATEGORY);
+            "key.modernui.debug.gamemode", Keyboard.KEY_F4, CATEGORY);
+
+    private static final KeyBinding[] ACTIONS = new KeyBinding[] {
+            DEBUG_SCREEN,
+            HITBOXES,
+            ADVANCED_TOOLTIPS,
+            RELOAD_CHUNKS,
+            RENDER_DISTANCE,
+            CLEAR_CHAT,
+            COPY_LOCATION,
+            PAUSE_FOCUS,
+            PROFILER,
+            GAMEMODE_SWITCHER
+    };
+
+    /** Vanilla 1.7.10 handles these keys itself while physical F3 is held. */
+    private static final int[] VANILLA_F3_KEYS = new int[] {
+            Keyboard.KEY_A,
+            Keyboard.KEY_B,
+            Keyboard.KEY_H,
+            Keyboard.KEY_F,
+            Keyboard.KEY_P,
+            Keyboard.KEY_F3
+    };
+
+    private final boolean[] wasDown = new boolean[ACTIONS.length];
+
+    /** Set after this handler toggles the debug screen itself (remapped key). */
+    private static volatile boolean suppressEfrF3Release;
+    /** Number of EFR ticks that must not revert our debug-screen toggle. */
+    private static volatile int debugScreenGraceTicks;
 
     public DebugKeyHandler() {
     }
 
     public static void install() {
-        ClientRegistry.registerKeyBinding(MODIFIER);
-        ClientRegistry.registerKeyBinding(DEBUG_SCREEN);
-        ClientRegistry.registerKeyBinding(HITBOXES);
-        ClientRegistry.registerKeyBinding(ADVANCED_TOOLTIPS);
-        ClientRegistry.registerKeyBinding(RELOAD_CHUNKS);
-        ClientRegistry.registerKeyBinding(RENDER_DISTANCE);
-        ClientRegistry.registerKeyBinding(CLEAR_CHAT);
-        ClientRegistry.registerKeyBinding(COPY_LOCATION);
-        ClientRegistry.registerKeyBinding(PAUSE_FOCUS);
-        ClientRegistry.registerKeyBinding(PROFILER);
-        ClientRegistry.registerKeyBinding(GAMEMODE_SWITCHER);
+        for (KeyBinding binding : new KeyBinding[] {
+                MODIFIER, DEBUG_SCREEN, HITBOXES, ADVANCED_TOOLTIPS, RELOAD_CHUNKS,
+                RENDER_DISTANCE, CLEAR_CHAT, COPY_LOCATION, PAUSE_FOCUS, PROFILER,
+                GAMEMODE_SWITCHER }) {
+            ClientRegistry.registerKeyBinding(binding);
+        }
     }
 
-    @SubscribeEvent
+    /** Whether the configured debug modifier is currently held (F3 when unbound). */
+    public static boolean isDebugModifierDown() {
+        int keyCode = MODIFIER.getKeyCode();
+        return Keyboard.isKeyDown(keyCode == Keyboard.KEY_NONE ? Keyboard.KEY_F3 : keyCode);
+    }
+
+    /**
+     * Consumed by EFR's tick handler so its "new F3 behavior" does not revert a
+     * debug-screen toggle performed through a remapped key.
+     */
+    public static boolean consumeDebugScreenGrace() {
+        if (debugScreenGraceTicks <= 0) {
+            return false;
+        }
+        debugScreenGraceTicks = 0;
+        return true;
+    }
+
+    /**
+     * Consumed by EFR's key handler: after we toggled the debug screen with a
+     * remapped key, EFR must not toggle it again when F3 is released.
+     */
+    public static boolean shouldSuppressEfrF3KeyEvent() {
+        if (!suppressEfrF3Release) {
+            return false;
+        }
+        if (Keyboard.getEventKey() == Keyboard.KEY_F3 && !Keyboard.getEventKeyState()) {
+            suppressEfrF3Release = false;
+            return true;
+        }
+        return false;
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
             return;
@@ -72,52 +138,92 @@ public final class DebugKeyHandler {
         if (mc == null) {
             return;
         }
+        boolean active = mc.thePlayer != null && mc.currentScreen == null;
+        boolean modifier = isDebugModifierDown();
+        for (int i = 0; i < ACTIONS.length; i++) {
+            KeyBinding binding = ACTIONS[i];
+            int keyCode = binding.getKeyCode();
+            boolean down = active && keyCode != Keyboard.KEY_NONE && Keyboard.isKeyDown(keyCode);
+            boolean pressed = down && !wasDown[i];
+            wasDown[i] = down;
+            if (!pressed || !modifier || vanillaHandles(keyCode)) {
+                continue;
+            }
+            perform(i, mc);
+        }
+    }
 
-        if (DEBUG_SCREEN.isPressed()) {
-            mc.gameSettings.showDebugInfo = !mc.gameSettings.showDebugInfo;
-            mc.gameSettings.showDebugProfilerChart = GuiScreen.isShiftKeyDown();
+    private static boolean vanillaHandles(int keyCode) {
+        // Vanilla only reacts to the physical F3 key, regardless of our binding.
+        if (MODIFIER.getKeyCode() != Keyboard.KEY_F3 || !Keyboard.isKeyDown(Keyboard.KEY_F3)) {
+            return false;
         }
-
-        if (!Keyboard.isKeyDown(MODIFIER.getKeyCode())) {
-            return;
-        }
-
-        if (HITBOXES.isPressed()) {
-            RenderManager.debugBoundingBox = !RenderManager.debugBoundingBox;
-        }
-        if (ADVANCED_TOOLTIPS.isPressed()) {
-            mc.gameSettings.advancedItemTooltips = !mc.gameSettings.advancedItemTooltips;
-            mc.gameSettings.saveOptions();
-        }
-        if (RELOAD_CHUNKS.isPressed() && mc.renderGlobal != null) {
-            mc.renderGlobal.loadRenderers();
-        }
-        if (RENDER_DISTANCE.isPressed()) {
-            mc.gameSettings.setOptionValue(GameSettings.Options.RENDER_DISTANCE,
-                    GuiScreen.isShiftKeyDown() ? -1 : 1);
-            if (mc.renderGlobal != null) {
-                mc.renderGlobal.loadRenderers();
+        for (int vanillaKey : VANILLA_F3_KEYS) {
+            if (keyCode == vanillaKey) {
+                return true;
             }
         }
-        if (CLEAR_CHAT.isPressed() && mc.ingameGUI != null) {
-            mc.ingameGUI.getChatGUI().clearChatMessages();
+        return false;
+    }
+
+    private void perform(int action, Minecraft mc) {
+        switch (action) {
+            case 0:
+                mc.gameSettings.showDebugInfo = !mc.gameSettings.showDebugInfo;
+                mc.gameSettings.showDebugProfilerChart = GuiScreen.isShiftKeyDown();
+                markDebugScreenRemapped();
+                break;
+            case 1:
+                RenderManager.debugBoundingBox = !RenderManager.debugBoundingBox;
+                break;
+            case 2:
+                mc.gameSettings.advancedItemTooltips = !mc.gameSettings.advancedItemTooltips;
+                mc.gameSettings.saveOptions();
+                break;
+            case 3:
+                if (mc.renderGlobal != null) {
+                    mc.renderGlobal.loadRenderers();
+                }
+                break;
+            case 4:
+                mc.gameSettings.setOptionValue(GameSettings.Options.RENDER_DISTANCE,
+                        GuiScreen.isShiftKeyDown() ? -1 : 1);
+                if (mc.renderGlobal != null) {
+                    mc.renderGlobal.loadRenderers();
+                }
+                break;
+            case 5:
+                if (mc.ingameGUI != null) {
+                    mc.ingameGUI.getChatGUI().clearChatMessages();
+                }
+                break;
+            case 6:
+                if (mc.thePlayer != null) {
+                    GuiScreen.setClipboardString(String.format("%.2f, %.2f, %.2f",
+                            Double.valueOf(mc.thePlayer.posX), Double.valueOf(mc.thePlayer.posY),
+                            Double.valueOf(mc.thePlayer.posZ)));
+                }
+                break;
+            case 7:
+                mc.gameSettings.pauseOnLostFocus = !mc.gameSettings.pauseOnLostFocus;
+                mc.gameSettings.saveOptions();
+                break;
+            case 8:
+                mc.gameSettings.showDebugInfo = true;
+                mc.gameSettings.showDebugProfilerChart = !mc.gameSettings.showDebugProfilerChart;
+                markDebugScreenRemapped();
+                break;
+            case 9:
+                openEfrGamemodeSwitcher(mc);
+                break;
+            default:
+                break;
         }
-        if (COPY_LOCATION.isPressed() && mc.thePlayer != null) {
-            GuiScreen.setClipboardString(String.format("%.2f, %.2f, %.2f",
-                    Double.valueOf(mc.thePlayer.posX), Double.valueOf(mc.thePlayer.posY),
-                    Double.valueOf(mc.thePlayer.posZ)));
-        }
-        if (PAUSE_FOCUS.isPressed()) {
-            mc.gameSettings.pauseOnLostFocus = !mc.gameSettings.pauseOnLostFocus;
-            mc.gameSettings.saveOptions();
-        }
-        if (PROFILER.isPressed()) {
-            mc.gameSettings.showDebugInfo = true;
-            mc.gameSettings.showDebugProfilerChart = !mc.gameSettings.showDebugProfilerChart;
-        }
-        if (GAMEMODE_SWITCHER.isPressed()) {
-            openEfrGamemodeSwitcher(mc);
-        }
+    }
+
+    private static void markDebugScreenRemapped() {
+        suppressEfrF3Release = true;
+        debugScreenGraceTicks = 1;
     }
 
     private static void openEfrGamemodeSwitcher(Minecraft mc) {
