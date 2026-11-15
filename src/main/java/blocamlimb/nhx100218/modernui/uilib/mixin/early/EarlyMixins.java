@@ -96,6 +96,7 @@ public class EarlyMixins implements IFMLLoadingPlugin {
             mixins.add("enhance.menu.MixinGuiMultiplayerAccessor");
             mixins.add("enhance.menu.MixinGuiMultiplayerArrows");
             mixins.add("enhance.menu.MixinGuiSnooperServerStats");
+            mixins.add("enhance.menu.MixinGuiStreamUnavailableLayout");
             mixins.add("enhance.menu.MixinServerListEntryNormal");
             if (etfuturumPresent) {
                 mixins.add("etfuturum.MixinEfrLoadingScreenRenderer");

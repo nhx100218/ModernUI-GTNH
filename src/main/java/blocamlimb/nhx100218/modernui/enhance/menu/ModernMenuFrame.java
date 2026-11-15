@@ -21,6 +21,17 @@ public final class ModernMenuFrame {
     private ModernMenuFrame() {
     }
 
+    /**
+     * Restores the dark world mask used behind in-game option screens. This is
+     * separate from the list scrim: the whole world view must be dimmed even
+     * when the screen has no list.
+     */
+    public static void drawWorldMask(int width, int height) {
+        ModernGuiRenderer.beginUi();
+        ModernGuiRenderer.fillVerticalGradient(0, 0, width, height, 0x8C101014, 0xA0101014);
+        ModernGuiRenderer.beginUi();
+    }
+
     /** Draws only the inner list tint, before rows. */
     public static void drawScrim(int left, int top, int right, int bottom) {
         // fill() relies on blending. In-world screens arrive with blend disabled,

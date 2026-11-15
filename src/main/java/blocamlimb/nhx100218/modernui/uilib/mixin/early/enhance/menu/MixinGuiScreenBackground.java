@@ -40,8 +40,9 @@ public abstract class MixinGuiScreenBackground {
             return;
         }
         if (minecraft.theWorld != null) {
-            // In a save these screens stay transparent over the world; the
-            // scrim/frame are still part of the 26.3 look.
+            // In a save these screens stay transparent over the world, with the
+            // normal dark mask and inner scrim still present.
+            ModernMenuFrame.drawWorldMask(screen.width, screen.height);
             if (ModernMenuScreens.usesMenuFrame(screen)) {
                 ModernMenuFrame.drawScrim(0, 35, screen.width, screen.height - 35);
             }
@@ -66,6 +67,7 @@ public abstract class MixinGuiScreenBackground {
         }
         Minecraft minecraft = Minecraft.getMinecraft();
         if (minecraft != null && minecraft.theWorld != null) {
+            ModernMenuFrame.drawWorldMask(screen.width, screen.height);
             if (ModernMenuScreens.usesMenuFrame(screen)) {
                 ModernMenuFrame.drawScrim(0, 35, screen.width, screen.height - 35);
             }

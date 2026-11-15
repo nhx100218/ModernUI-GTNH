@@ -13,6 +13,7 @@ import net.minecraft.client.gui.GuiSnooper;
 import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraft.client.gui.ScreenChatOptions;
 import net.minecraft.client.gui.achievement.GuiAchievements;
+import net.minecraft.client.gui.achievement.GuiStats;
 import net.minecraft.client.gui.stream.GuiStreamOptions;
 
 /**
@@ -61,6 +62,7 @@ public final class ModernMenuScreens {
                 || screen instanceof ScreenChatOptions
                 || screen instanceof GuiStreamOptions
                 || screen instanceof GuiSnooper
+                || screen instanceof GuiStats
                 || screen instanceof GuiAchievements) {
             return true;
         }
