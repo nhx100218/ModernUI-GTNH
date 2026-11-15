@@ -64,7 +64,6 @@ public class EarlyMixins implements IFMLLoadingPlugin {
                 mixins.add("debug.MixinAngelicaBatchingFontRenderer");
                 mixins.add("debug.MixinAngelicaDebugScreenOverlay");
                 mixins.add("debug.MixinAngelicaDebugKeyHandler");
-                mixins.add("debug.MixinIrisGuiSlotSeparators");
             }
             // Merged enhancement
             mixins.add("enhance.MixinGuiScreenTooltip");
