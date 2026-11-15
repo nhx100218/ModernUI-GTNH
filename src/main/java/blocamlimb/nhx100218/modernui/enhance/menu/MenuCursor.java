@@ -30,6 +30,7 @@ public final class MenuCursor {
     private static final Map<Class<?>, Field[]> TEXT_FIELD_CACHE = new ConcurrentHashMap<Class<?>, Field[]>();
     private static final Map<Class<?>, Field[]> SLOT_CACHE = new ConcurrentHashMap<Class<?>, Field[]>();
     private static final Field BUTTON_LIST_FIELD = findButtonListField();
+    private static UiCursor lastCursor;
 
     private MenuCursor() {
     }
@@ -66,6 +67,10 @@ public final class MenuCursor {
     }
 
     private static void apply(UiCursor cursor) {
+        if (cursor == lastCursor) {
+            return;
+        }
+        lastCursor = cursor;
         SystemUiCursorHost.getInstance().applyCursor(cursor);
     }
 

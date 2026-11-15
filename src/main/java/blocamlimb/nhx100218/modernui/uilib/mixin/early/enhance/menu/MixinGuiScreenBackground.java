@@ -40,8 +40,11 @@ public abstract class MixinGuiScreenBackground {
             return;
         }
         if (minecraft.theWorld != null) {
-            // In a save these screens must stay transparent over the world, not
-            // swap in the title-screen panorama.
+            // In a save these screens stay transparent over the world; the
+            // scrim/frame are still part of the 26.3 look.
+            if (ModernMenuScreens.usesMenuFrame(screen)) {
+                ModernMenuFrame.drawScrim(0, 35, screen.width, screen.height - 35);
+            }
             callbackInfo.cancel();
             return;
         }
@@ -63,6 +66,9 @@ public abstract class MixinGuiScreenBackground {
         }
         Minecraft minecraft = Minecraft.getMinecraft();
         if (minecraft != null && minecraft.theWorld != null) {
+            if (ModernMenuScreens.usesMenuFrame(screen)) {
+                ModernMenuFrame.drawScrim(0, 35, screen.width, screen.height - 35);
+            }
             callbackInfo.cancel();
         }
     }
@@ -73,7 +79,7 @@ public abstract class MixinGuiScreenBackground {
         GuiScreen screen = (GuiScreen) (Object) this;
         MenuCursor.update(screen, mouseX, mouseY);
         Minecraft minecraft = Minecraft.getMinecraft();
-        if (!MenuConfig.globalPanorama || minecraft == null || minecraft.theWorld != null
+        if (!MenuConfig.globalPanorama || minecraft == null
                 || !ModernMenuScreens.usesMenuFrame(screen)) {
             return;
         }
