@@ -19,6 +19,9 @@ public class ClientProxy extends CommonProxy {
         ModularUiTooltipHandler.install();
         // Ctrl+K 打开配置页
         FMLCommonHandler.instance().bus().register(new blocamlimb.nhx100218.modernui.enhance.client.ConfigKeyHandler());
+        // Remappable 26.3-style debug actions.
+        blocamlimb.nhx100218.modernui.enhance.client.DebugKeyHandler.install();
+        FMLCommonHandler.instance().bus().register(new blocamlimb.nhx100218.modernui.enhance.client.DebugKeyHandler());
         // 逐帧驱动 HUD 缓存重建（Angelica HUD 缓存下让聊天/快捷栏缓动可见）
         blocamlimb.nhx100218.modernui.enhance.client.SmoothScrollHudTicker ticker = new blocamlimb.nhx100218.modernui.enhance.client.SmoothScrollHudTicker();
         FMLCommonHandler.instance().bus().register(ticker);

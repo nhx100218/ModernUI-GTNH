@@ -259,3 +259,16 @@ modernui.config.font.gameCharSize.tooltip=屏幕基础字号。
 
 selectWorld.resource_load=准备资源中...
 menu.savingLevel=保存世界中
+
+key.categories.modernui.debug=ModernUI 调试
+key.modernui.debug.modifier=调试组合键
+key.modernui.debug.screen=调试界面
+key.modernui.debug.hitboxes=切换碰撞箱
+key.modernui.debug.advancedTooltips=高级物品信息
+key.modernui.debug.reloadChunks=重载区块
+key.modernui.debug.renderDistance=循环渲染距离
+key.modernui.debug.clearChat=清空聊天
+key.modernui.debug.copyLocation=复制坐标
+key.modernui.debug.pauseFocus=切换失去焦点暂停
+key.modernui.debug.profiler=切换性能分析
+key.modernui.debug.gamemode=切换游戏模式

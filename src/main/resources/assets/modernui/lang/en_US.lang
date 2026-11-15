@@ -259,3 +259,16 @@ modernui.config.font.gameCharSize.tooltip=Base on-screen font size.
 
 selectWorld.resource_load=Preparing Resources...
 menu.savingLevel=Saving world
+
+key.categories.modernui.debug=ModernUI Debug
+key.modernui.debug.modifier=Debug Modifier
+key.modernui.debug.screen=Debug Screen
+key.modernui.debug.hitboxes=Toggle Hitboxes
+key.modernui.debug.advancedTooltips=Advanced Tooltips
+key.modernui.debug.reloadChunks=Reload Chunks
+key.modernui.debug.renderDistance=Cycle Render Distance
+key.modernui.debug.clearChat=Clear Chat
+key.modernui.debug.copyLocation=Copy Location
+key.modernui.debug.pauseFocus=Toggle Pause on Lost Focus
+key.modernui.debug.profiler=Toggle Profiler
+key.modernui.debug.gamemode=Gamemode Switcher

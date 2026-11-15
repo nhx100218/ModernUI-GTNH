@@ -42,7 +42,9 @@ public final class MenuCursor {
             return;
         }
         // The ModernUI config scene owns its cursor through SceneCursor.
-        if (screen instanceof McScreenBridge) {
+        if (screen instanceof McScreenBridge
+                || screen.getClass().getName().equals("lumien.custommainmenu.gui.GuiCustom")) {
+            apply(UiCursor.DEFAULT);
             return;
         }
 
@@ -53,10 +55,6 @@ public final class MenuCursor {
         GuiButton button = buttonAt(screen, mouseX, mouseY);
         if (button != null) {
             apply(button instanceof GuiOptionSlider ? UiCursor.EW_RESIZE : UiCursor.POINTER);
-            return;
-        }
-        if (overSlot(screen, mouseX, mouseY)) {
-            apply(UiCursor.POINTER);
             return;
         }
         apply(UiCursor.DEFAULT);
@@ -108,6 +106,7 @@ public final class MenuCursor {
                 }
                 GuiButton button = (GuiButton) element;
                 if (button.visible && button.enabled
+                        && button.width <= screen.width - 8 && button.height <= 40
                         && mouseX >= button.xPosition && mouseX < button.xPosition + button.width
                         && mouseY >= button.yPosition && mouseY < button.yPosition + button.height) {
                     return button;
