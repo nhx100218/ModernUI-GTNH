@@ -2,9 +2,11 @@ package blocamlimb.nhx100218.modernui.uilib.mixin.early;
 
 import java.util.List;
 
+import blocamlimb.nhx100218.modernui.uilib.font.AngelicaBatchTextQueue;
 import blocamlimb.nhx100218.modernui.uilib.font.FontRendererFallbackInvoker;
 import blocamlimb.nhx100218.modernui.uilib.font.FontRendererFallbackInvoker.InvocationResult;
 import blocamlimb.nhx100218.modernui.uilib.font.FontService;
+import blocamlimb.nhx100218.modernui.uilib.font.api.DefaultFontRendererAdapter;
 import blocamlimb.nhx100218.modernui.uilib.font.config.FontConfig;
 import blocamlimb.nhx100218.modernui.uilib.font.event.FontReloadRequest;
 import blocamlimb.nhx100218.modernui.uilib.font.glyph.VanillaUnicodeGlyphSource;
@@ -114,5 +116,22 @@ public abstract class MixinFontRenderer {
         if (result.isHandled()) {
             cir.setReturnValue(result.getValue());
         }
+    }
+
+    /**
+     * Angelica routes its debug screen / F3 options text through this batched
+     * method instead of drawString. Capture it for ModernUI and replay it after
+     * the host geometry, otherwise the text stays on Angelica's bitmap font.
+     */
+    @Inject(method = "angelica$drawStringBatched(Ljava/lang/String;IIIZ)I",
+            at = @At("HEAD"), cancellable = true, remap = false, require = 0)
+    public void modernui$drawAngelicaBatched(String text, int x, int y, int color, boolean dropShadow,
+            CallbackInfoReturnable<Integer> cir) {
+        if (!FontConfig.replaceOrigin || !AngelicaBatchTextQueue.shouldCapture()) {
+            return;
+        }
+        AngelicaBatchTextQueue.queue(text, x, y, color, dropShadow);
+        cir.setReturnValue(Integer.valueOf(DefaultFontRendererAdapter.getInstance().getStringWidth(text)));
+        cir.cancel();
     }
 }

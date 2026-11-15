@@ -64,6 +64,7 @@ public final class F3FontBridge {
 
     /** 当前正在采集的网格；变化时说明开始了新一轮捕获，需要清掉该网格旧文本。 */
     private static Object lastCapturing;
+    private static volatile boolean drawingFrame;
     private static boolean drawWarned;
     private static boolean measureWarned;
     private static boolean recordedLogged;
@@ -167,6 +168,13 @@ public final class F3FontBridge {
     /** 开始一帧 F3 绘制：下一轮 capture 必须重新清理对应网格。 */
     public static void beginFrame() {
         lastCapturing = null;
+        drawingFrame = true;
+        AngelicaBatchTextQueue.begin();
+    }
+
+    /** 是否处于 F3 覆盖层的绘制过程中（供批量文本队列判断接管范围）。 */
+    public static boolean isDrawingFrame() {
+        return drawingFrame;
     }
 
     /**
@@ -202,6 +210,11 @@ public final class F3FontBridge {
             }
         } finally {
             lastCapturing = null;
+            try {
+                AngelicaBatchTextQueue.flush();
+            } finally {
+                drawingFrame = false;
+            }
         }
     }
 
@@ -329,6 +342,14 @@ public final class F3FontBridge {
         int argb = color;
         if ((argb & 0xFF000000) == 0 && argb != 0) {
             argb |= 0xFF000000;
+        }
+        // Angelica's debug labels are neutral greys; ModernUI reads them as
+        // washed out. Promote neutral text to pure white, keep semantic colours.
+        int red = (argb >> 16) & 0xFF;
+        int green = (argb >> 8) & 0xFF;
+        int blue = argb & 0xFF;
+        if (red >= 0x80 && Math.abs(red - green) <= 12 && Math.abs(green - blue) <= 12) {
+            return 0xFFFFFFFF;
         }
         return argb;
     }
