@@ -23,9 +23,10 @@ public final class ModernMenuFrame {
 
     /** Draws only the inner list tint, before rows. */
     public static void drawScrim(int left, int top, int right, int bottom) {
+        // fill() relies on blending. In-world screens arrive with blend disabled,
+        // which used to turn the 70%-transparent scrim into an opaque black box.
+        ModernGuiRenderer.beginUi();
         ModernGuiRenderer.fill(left, top, right, bottom, SCRIM);
-        // fill() leaves texture disabled and the fill colour set. Restore the
-        // state buttons and text expect before the host continues drawing.
         ModernGuiRenderer.beginUi();
     }
 
@@ -34,6 +35,7 @@ public final class ModernMenuFrame {
         if (right <= left || bottom - top < 4) {
             return;
         }
+        ModernGuiRenderer.beginUi();
         // Header: grey over black.
         ModernGuiRenderer.fill(left, top, right, top + 1, SEPARATOR_GREY);
         ModernGuiRenderer.fill(left, top + 1, right, top + 2, SEPARATOR_BLACK);

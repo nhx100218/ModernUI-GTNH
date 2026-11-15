@@ -30,6 +30,11 @@ public final class ModernMenuScreens {
     /** Angelica replaces the vanilla video settings screen with this one. */
     private static final String ANGELICA_VIDEO_SCREEN =
             "me.flashyreese.mods.reeses_sodium_options.client.gui.ReeseSodiumVideoOptionsScreen";
+    /** Hodgepodge's enhanced sound options page. */
+    private static final String HODGEPODGE_SOUND_SCREEN =
+            "com.mitchej123.hodgepodge.client.gui.HodgepodgeSoundOptionsGui";
+    private static final String STREAM_UNAVAILABLE_SCREEN =
+            "net.minecraft.client.gui.stream.GuiStreamUnavailable";
 
     private ModernMenuScreens() {
     }
@@ -63,7 +68,9 @@ public final class ModernMenuScreens {
         return MODERN_CONFIG_SCREEN.equals(name)
                 || FORGE_MOD_CONFIG.equals(name)
                 || FORGE_MOD_LIST.equals(name)
-                || ANGELICA_VIDEO_SCREEN.equals(name);
+                || ANGELICA_VIDEO_SCREEN.equals(name)
+                || HODGEPODGE_SOUND_SCREEN.equals(name)
+                || STREAM_UNAVAILABLE_SCREEN.equals(name);
     }
 
     /** The whitelist also controls list backgrounds; mod list screens use the same panorama. */
@@ -81,9 +88,14 @@ public final class ModernMenuScreens {
         if (screen == null) {
             return false;
         }
-        return screen instanceof GuiScreenOptionsSounds
+        if (screen instanceof GuiScreenOptionsSounds
                 || screen instanceof ScreenChatOptions
-                || screen instanceof GuiStreamOptions;
+                || screen instanceof GuiStreamOptions) {
+            return true;
+        }
+        String name = screen.getClass().getName();
+        return HODGEPODGE_SOUND_SCREEN.equals(name)
+                || STREAM_UNAVAILABLE_SCREEN.equals(name);
     }
 
     /**
