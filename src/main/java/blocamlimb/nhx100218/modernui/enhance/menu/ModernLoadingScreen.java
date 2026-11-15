@@ -237,7 +237,7 @@ public final class ModernLoadingScreen {
     }
 
     private static void drawStatusBox(Minecraft mc, int width, int height, String text) {
-        int boxWidth = Math.max(70, Math.min(80, width / 4));
+        int boxWidth = Math.max(60, Math.min(70, width / 4));
         int boxHeight = Math.max(38, mc.fontRenderer.FONT_HEIGHT + 20);
         int left = width / 2 - boxWidth / 2;
         int top = height / 2 - boxHeight / 2;
