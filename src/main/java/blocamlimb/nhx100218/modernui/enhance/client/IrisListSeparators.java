@@ -46,8 +46,12 @@ public final class IrisListSeparators {
                 Object value = field.get(screen);
                 if (value instanceof GuiSlot) {
                     GuiSlot slot = (GuiSlot) value;
-                    ModernGuiRenderer.beginUi();
-                    ModernMenuFrame.drawSeparators(slot.left, slot.top, slot.left + slot.width, slot.bottom);
+                    try {
+                        ModernGuiRenderer.beginUi();
+                        ModernMenuFrame.drawSeparators(slot.left, slot.top, slot.left + slot.width, slot.bottom);
+                    } catch (Throwable ignored) {
+                        // Never let menu decoration break the screen.
+                    }
                 }
             } catch (Throwable ignored) {
                 // Ignore a list that is being rebuilt.
