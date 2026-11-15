@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import blocamlimb.nhx100218.modernui.enhance.menu.MenuConfig;
+import blocamlimb.nhx100218.modernui.enhance.menu.MenuCursor;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernBackdropRenderer;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernMenuFrame;
@@ -38,6 +39,12 @@ public abstract class MixinGuiScreenBackground {
         if (minecraft == null) {
             return;
         }
+        if (minecraft.theWorld != null) {
+            // In a save these screens must stay transparent over the world, not
+            // swap in the title-screen panorama.
+            callbackInfo.cancel();
+            return;
+        }
         ModernBackdropRenderer.renderMenuBackground(minecraft, screen.width, screen.height);
         if (ModernMenuScreens.usesMenuFrame(screen)) {
             ModernMenuFrame.drawScrim(0, 35, screen.width, screen.height - 35);
@@ -45,11 +52,29 @@ public abstract class MixinGuiScreenBackground {
         callbackInfo.cancel();
     }
 
+    @Inject(method = "drawWorldBackground", at = @At("HEAD"), cancellable = true, require = 0)
+    private void modernui$transparentWorldBackground(int tint, CallbackInfo callbackInfo) {
+        if (!MenuConfig.globalPanorama) {
+            return;
+        }
+        GuiScreen screen = (GuiScreen) (Object) this;
+        if (!ModernMenuScreens.usesSharedBackdrop(screen)) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft != null && minecraft.theWorld != null) {
+            callbackInfo.cancel();
+        }
+    }
+
     @Inject(method = "drawScreen", at = @At("RETURN"), require = 0)
     private void modernui$drawSubScreenFrame(int mouseX, int mouseY, float partialTicks,
             CallbackInfo callbackInfo) {
         GuiScreen screen = (GuiScreen) (Object) this;
-        if (!MenuConfig.globalPanorama || !ModernMenuScreens.usesMenuFrame(screen)) {
+        MenuCursor.update(screen, mouseX, mouseY);
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (!MenuConfig.globalPanorama || minecraft == null || minecraft.theWorld != null
+                || !ModernMenuScreens.usesMenuFrame(screen)) {
             return;
         }
         ModernGuiRenderer.beginUi();

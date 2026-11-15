@@ -165,6 +165,7 @@ public abstract class MixinGuiSlotBackground {
 
     private static boolean usesListScrim() {
         Minecraft minecraft = Minecraft.getMinecraft();
-        return minecraft != null && ModernMenuScreens.usesListScrim(minecraft.currentScreen);
+        return minecraft != null && minecraft.theWorld == null
+                && ModernMenuScreens.usesListScrim(minecraft.currentScreen);
     }
 }
