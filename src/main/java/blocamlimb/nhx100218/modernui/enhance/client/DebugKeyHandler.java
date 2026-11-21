@@ -53,8 +53,6 @@ public final class DebugKeyHandler {
             "key.modernui.debug.profiler", Keyboard.KEY_L, CATEGORY);
     private static final KeyBinding GAMEMODE_SWITCHER = new KeyBinding(
             "key.modernui.debug.gamemode", Keyboard.KEY_F4, CATEGORY);
-    private static final KeyBinding ANGELICA_DEBUG_OPTIONS = new KeyBinding(
-            "key.modernui.debug.angelicaOptions", Keyboard.KEY_F6, CATEGORY);
     private static final KeyBinding FPS_GRAPH = new KeyBinding(
             "key.modernui.debug.fpsGraph", Keyboard.KEY_LMENU, CATEGORY);
 
@@ -69,7 +67,6 @@ public final class DebugKeyHandler {
             PAUSE_FOCUS,
             PROFILER,
             GAMEMODE_SWITCHER,
-            ANGELICA_DEBUG_OPTIONS,
             FPS_GRAPH
     };
 
@@ -101,7 +98,7 @@ public final class DebugKeyHandler {
         for (KeyBinding binding : new KeyBinding[] {
                 MODIFIER, DEBUG_SCREEN, HITBOXES, ADVANCED_TOOLTIPS, RELOAD_CHUNKS,
                 RENDER_DISTANCE, CLEAR_CHAT, COPY_LOCATION, PAUSE_FOCUS, PROFILER,
-                GAMEMODE_SWITCHER, ANGELICA_DEBUG_OPTIONS, FPS_GRAPH }) {
+                GAMEMODE_SWITCHER, FPS_GRAPH }) {
             ClientRegistry.registerKeyBinding(binding);
         }
     }
@@ -274,9 +271,6 @@ public final class DebugKeyHandler {
                 openEfrGamemodeSwitcher(mc);
                 break;
             case 10:
-                openAngelicaDebugOptions(mc);
-                break;
-            case 11:
                 toggleAngelicaFpsGraph(mc);
                 break;
             default:
@@ -308,15 +302,6 @@ public final class DebugKeyHandler {
             mc.displayGuiScreen((GuiScreen) type.newInstance());
         } catch (Throwable ignored) {
             // EFR not installed or its debug switcher is disabled.
-        }
-    }
-
-    private static void openAngelicaDebugOptions(Minecraft mc) {
-        try {
-            Class<?> type = Class.forName("com.gtnewhorizons.angelica.debug.screen.DebugOptionsScreen");
-            type.getMethod("open", Minecraft.class).invoke(null, mc);
-        } catch (Throwable ignored) {
-            // Angelica not installed or its debug screen is disabled.
         }
     }
 

@@ -273,5 +273,4 @@ key.modernui.debug.pauseFocus=切换失去焦点暂停
 key.modernui.debug.profiler=切换性能分析
 key.modernui.debug.gamemode=切换游戏模式
 
-key.modernui.debug.angelicaOptions=Angelica 调试选项
 key.modernui.debug.fpsGraph=切换 FPS 图表

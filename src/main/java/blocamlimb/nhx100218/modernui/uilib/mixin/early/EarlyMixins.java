@@ -60,11 +60,8 @@ public class EarlyMixins implements IFMLLoadingPlugin {
             if (angelicaPresent) {
                 mixins.add("nametag.MixinAngelicaPlayerNameTagReplay");
                 mixins.add("tesr.MixinAngelicaTesrBatchReplay");
-                mixins.add("debug.MixinAngelicaDebugTextBatched");
-                mixins.add("debug.MixinAngelicaBatchingFontRenderer");
-                mixins.add("debug.MixinAngelicaDebugScreenOverlay");
+                mixins.add("debug.MixinAngelicaDebugTextColor");
                 mixins.add("debug.MixinAngelicaDebugKeyHandler");
-                mixins.add("debug.MixinAngelicaDebugOptionsText");
                 mixins.add("debug.MixinAngelicaFpsGraphText");
             }
             // Merged enhancement

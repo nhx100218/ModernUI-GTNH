@@ -3,8 +3,6 @@ package blocamlimb.nhx100218.modernui.uilib.font;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.minecraft.client.Minecraft;
-
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
 import blocamlimb.nhx100218.modernui.uilib.font.api.DefaultFontRendererAdapter;
 
@@ -12,15 +10,12 @@ import blocamlimb.nhx100218.modernui.uilib.font.api.DefaultFontRendererAdapter;
  * Collects Angelica's batched debug text and replays it with ModernUI's SDF font
  * after the host finished its geometry.
  *
- * <p>Angelica's F3 options screen and FPS graph draw text through
- * {@code FontRenderer.angelica$drawStringBatched}. Drawing SDF text at that call
- * site would put it below the batch's panels, so the text is queued and flushed
- * at the end of the screen/overlay draw.</p>
+ * <p>Used by the FPS/TPS graph labels. The F3 overlay itself keeps Angelica's
+ * renderer (see {@code MixinAngelicaDebugTextColor}) to avoid cached-mesh
+ * flicker.</p>
  */
 public final class AngelicaBatchTextQueue {
 
-    private static final String DEBUG_OPTIONS_SCREEN =
-            "com.gtnewhorizons.angelica.debug.screen.DebugOptionsScreen";
     private static final List<Entry> ENTRIES = new ArrayList<Entry>();
 
     private AngelicaBatchTextQueue() {
@@ -32,14 +27,9 @@ public final class AngelicaBatchTextQueue {
         }
     }
 
-    /** Whether the current draw is one this queue owns. */
+    /** Whether the current draw is one this queue owns (FPS/TPS graph labels). */
     public static boolean shouldCapture() {
-        if (F3FontBridge.isDrawingFrame()) {
-            return true;
-        }
-        Minecraft minecraft = Minecraft.getMinecraft();
-        return minecraft != null && minecraft.currentScreen != null
-                && DEBUG_OPTIONS_SCREEN.equals(minecraft.currentScreen.getClass().getName());
+        return F3FontBridge.isDrawingFrame();
     }
 
     public static void queue(String text, int x, int y, int color, boolean shadow) {
