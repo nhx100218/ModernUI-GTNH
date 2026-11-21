@@ -13,6 +13,9 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.ScaledResolution;
+
 import blocamlimb.nhx100218.modernui.uilib.font.api.DefaultFontRendererAdapter;
 import blocamlimb.nhx100218.modernui.uilib.font.config.FontConfig;
 
@@ -225,9 +228,44 @@ public final class F3FontBridge {
 
     public static void endGraphFrame() {
         try {
-            AngelicaBatchTextQueue.flush();
+            flushQueueWithGuiProjection(false, 1.0F);
         } finally {
             drawingFrame = false;
+        }
+    }
+
+    /**
+     * Flushes the batch text queue with the vanilla GUI orthographic projection.
+     *
+     * <p>At the F3 overlay's RETURN the GL matrices may still be in world space.
+     * The ModernUI font renderer then classifies the text as world-space, applies
+     * lightmap/lighting and the white glyphs come out dim/grey. Setting the same
+     * ortho projection the GUI uses makes it render as normal white UI text.</p>
+     */
+    private static void flushQueueWithGuiProjection(boolean scaled, float factor) {
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft == null) {
+            return;
+        }
+        ScaledResolution resolution = new ScaledResolution(minecraft, minecraft.displayWidth,
+                minecraft.displayHeight);
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glPushMatrix();
+        GL11.glLoadIdentity();
+        GL11.glOrtho(0.0D, resolution.getScaledWidth(), resolution.getScaledHeight(), 0.0D, 1000.0D, 3000.0D);
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glPushMatrix();
+        GL11.glLoadIdentity();
+        if (scaled) {
+            GL11.glScalef(factor, factor, 1.0F);
+        }
+        try {
+            AngelicaBatchTextQueue.flush();
+        } finally {
+            GL11.glPopMatrix();
+            GL11.glMatrixMode(GL11.GL_PROJECTION);
+            GL11.glPopMatrix();
+            GL11.glMatrixMode(GL11.GL_MODELVIEW);
         }
     }
 
@@ -279,16 +317,9 @@ public final class F3FontBridge {
             } catch (Throwable ignored) {
                 // No scaling information: draw in normal GUI coordinates.
             }
-            if (scaled) {
-                GL11.glPushMatrix();
-                GL11.glScalef(factor, factor, 1.0F);
-            }
             try {
-                AngelicaBatchTextQueue.flush();
+                flushQueueWithGuiProjection(scaled, factor);
             } finally {
-                if (scaled) {
-                    GL11.glPopMatrix();
-                }
                 drawingFrame = false;
             }
         }
