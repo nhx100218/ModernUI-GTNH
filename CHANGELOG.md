@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Notes
+
+- The Angelica F3+F6 debug-options screen is intentionally left stock. It is a developer screen and is not restyled by ModernUI.
+
+### 说明
+
+- Angelica 的 F3+F6 调试选项界面保持原版，不做 ModernUI 适配（开发调试界面，玩家一般不会使用）。
+
 ## [2.0.0] - 2026-11-14
 
 ### English
