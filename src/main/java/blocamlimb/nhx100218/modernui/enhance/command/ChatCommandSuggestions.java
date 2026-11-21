@@ -132,6 +132,11 @@ public final class ChatCommandSuggestions {
         if (start < 0) {
             start = 0;
         }
+        // Root command suggestions align after the leading slash; the list
+        // displays the command names without it.
+        if (start == 0 && text.startsWith("/")) {
+            start = 1;
+        }
         int wordX = inputField.xPosition
                 + minecraft.fontRenderer.getStringWidth(text.substring(0, Math.min(start, text.length())));
         int max = inputField.xPosition + inputField.width - width;
