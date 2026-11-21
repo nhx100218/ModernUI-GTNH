@@ -63,11 +63,12 @@ public final class F3OptionsTooltip {
                     "[F3DIAG] tooltip draw lines={} first='{}'", Integer.valueOf(tooltip.size()), tooltip.get(0));
         }
         DefaultFontRendererAdapter adapter = DefaultFontRendererAdapter.getInstance();
-        int width = 0;
+        int textWidth = 0;
         for (String line : tooltip) {
-            width = Math.max(width, adapter.getStringWidth(strip(line)));
+            textWidth = Math.max(textWidth, adapter.getStringWidth(strip(line)));
         }
-        int height = tooltip.size() > 1 ? 10 + (tooltip.size() - 1) * 10 : 8;
+        int width = textWidth + 8;
+        int height = tooltip.size() * 10 + 4;
         int x = mouseX + OFFSET;
         int y = mouseY - OFFSET;
         int screenWidth = minecraft.currentScreen == null
@@ -84,17 +85,31 @@ public final class F3OptionsTooltip {
         y = Math.max(4, y);
 
         ModernGuiRenderer.beginUi();
-        // ModernUI tooltip panel: dark translucent body with a 1px light border.
-        ModernGuiRenderer.fill(x - 1, y - 1, x + width + 1, y + height + 1, BORDER);
-        ModernGuiRenderer.fill(x, y, x + width, y + height, BACKGROUND);
+        roundedFill(x, y, x + width, y + height, BORDER);
+        roundedFill(x + 1, y + 1, x + width - 1, y + height - 1, BACKGROUND);
         ModernGuiRenderer.beginUi();
 
-        int textY = y;
+        int textX = x + 4;
+        int textY = y + 2;
         for (int i = 0; i < tooltip.size(); i++) {
-            adapter.drawString(strip(tooltip.get(i)), x, textY, TEXT, false,
-                    TextContentMode.UILIB_RAW, UiFontWeight.BOLD, UiFontStyle.NORMAL);
-            textY += i == 0 ? 12 : 10;
+            adapter.drawString(strip(tooltip.get(i)), textX, textY, TEXT, false,
+                    TextContentMode.UILIB_RAW, UiFontWeight.NORMAL, UiFontStyle.NORMAL);
+            textY += 10;
         }
+    }
+
+    /** Two-pixel-radius filled rectangle so the tooltip matches ModernUI's soft corners. */
+    private static void roundedFill(int left, int top, int right, int bottom, int color) {
+        if (right - left < 4 || bottom - top < 4) {
+            ModernGuiRenderer.fill(left, top, right, bottom, color);
+            return;
+        }
+        ModernGuiRenderer.fill(left + 2, top, right - 2, bottom, color);
+        ModernGuiRenderer.fill(left, top + 2, right, bottom - 2, color);
+        ModernGuiRenderer.fill(left + 1, top + 1, left + 2, top + 2, color);
+        ModernGuiRenderer.fill(right - 2, top + 1, right - 1, top + 2, color);
+        ModernGuiRenderer.fill(left + 1, bottom - 2, left + 2, bottom - 1, color);
+        ModernGuiRenderer.fill(right - 2, bottom - 2, right - 1, bottom - 1, color);
     }
 
     private static String strip(String text) {
