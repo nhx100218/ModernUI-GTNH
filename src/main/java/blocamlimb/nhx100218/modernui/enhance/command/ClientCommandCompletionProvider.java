@@ -2,9 +2,11 @@ package blocamlimb.nhx100218.modernui.enhance.command;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -112,7 +114,6 @@ public final class ClientCommandCompletionProvider implements CommandCompletionP
         } catch (Throwable ignored) {
             // Ignore malformed command trees.
         }
-        // Player names are only offered where the command expects a player.
         int spaces = 0;
         for (int i = 0; i < before.length(); i++) {
             if (before.charAt(i) == ' ') {
@@ -120,6 +121,9 @@ public final class ClientCommandCompletionProvider implements CommandCompletionP
             }
         }
         int argIndex = Math.max(0, spaces - 1);
+        // Values learned from the server (gamerule rules, time/weather values,
+        // plugin arguments, ...) so they show up without pressing Tab first.
+        addCachedArguments(command, argIndex, word, out, limit);
         if ("give".equals(command) && argIndex == 1) {
             addItemSuggestions(word, out, limit);
         }
@@ -235,6 +239,154 @@ public final class ClientCommandCompletionProvider implements CommandCompletionP
             out.add(new CommandCompletionEntry("spectator", "Game mode (EFR)",
                     CommandCompletionEntry.Kind.ARGUMENT, 1000 - out.size()));
         }
+    }
+
+    /** Argument entries learned from server responses, keyed by command|argIndex. */
+    private static final Map<String, ArgumentCache> SERVER_ARGUMENTS = new HashMap<String, ArgumentCache>();
+    private static final long ARGUMENT_CACHE_MS = 2L * 60L * 1000L;
+    private static final int MAX_CACHED_ARGUMENTS = 256;
+
+    private static final class ArgumentCache {
+
+        final String prefix;
+        final List<String> values;
+        final long at;
+
+        ArgumentCache(String prefix, List<String> values, long at) {
+            this.prefix = prefix;
+            this.values = values;
+            this.at = at;
+        }
+    }
+
+    private static final class ArgumentRef {
+
+        final String key;
+        final String word;
+
+        ArgumentRef(String key, String word) {
+            this.key = key;
+            this.word = word;
+        }
+    }
+
+    /** True when the server should be asked for the current argument again. */
+    public static boolean needsArgumentRefresh(String textBeforeCaret) {
+        ArgumentRef ref = parseArgument(textBeforeCaret);
+        if (ref == null) {
+            return false;
+        }
+        synchronized (SERVER_ARGUMENTS) {
+            ArgumentCache cached = SERVER_ARGUMENTS.get(ref.key);
+            if (cached == null) {
+                return true;
+            }
+            if (System.currentTimeMillis() - cached.at > ARGUMENT_CACHE_MS) {
+                return true;
+            }
+            return !covers(cached, ref.word);
+        }
+    }
+
+    /** Stores server suggestions for the argument that produced {@code requestedText}. */
+    public static void learnArguments(String requestedText, String[] options) {
+        ArgumentRef ref = parseArgument(requestedText);
+        if (ref == null || options == null) {
+            return;
+        }
+        List<String> values = new ArrayList<String>();
+        Set<String> seen = new HashSet<String>();
+        for (String option : options) {
+            if (values.size() >= MAX_CACHED_ARGUMENTS) {
+                break;
+            }
+            if (option == null) {
+                continue;
+            }
+            String clean = EnumChatFormatting.getTextWithoutFormattingCodes(option).trim();
+            if (clean.isEmpty() || !seen.add(clean.toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+            values.add(clean);
+        }
+        synchronized (SERVER_ARGUMENTS) {
+            if (SERVER_ARGUMENTS.size() > 128) {
+                SERVER_ARGUMENTS.clear();
+            }
+            SERVER_ARGUMENTS.put(ref.key, new ArgumentCache(ref.word.toLowerCase(Locale.ROOT), values,
+                    System.currentTimeMillis()));
+        }
+    }
+
+    public static void clearServerArguments() {
+        synchronized (SERVER_ARGUMENTS) {
+            SERVER_ARGUMENTS.clear();
+        }
+    }
+
+    private static void addCachedArguments(String command, int argIndex, String word,
+            List<CommandCompletionEntry> out, int limit) {
+        if (command == null || command.isEmpty()) {
+            return;
+        }
+        ArgumentCache cached;
+        synchronized (SERVER_ARGUMENTS) {
+            cached = SERVER_ARGUMENTS.get(command + "|" + argIndex);
+        }
+        if (cached == null || !covers(cached, word)) {
+            return;
+        }
+        for (String value : cached.values) {
+            if (out.size() >= limit) {
+                return;
+            }
+            if (!matches(value, word) || containsText(out, value)) {
+                continue;
+            }
+            out.add(new CommandCompletionEntry(value, "Suggestion", CommandCompletionEntry.Kind.ARGUMENT,
+                    700 - out.size()));
+        }
+    }
+
+    private static boolean covers(ArgumentCache cached, String word) {
+        return cached.prefix.isEmpty() || word.toLowerCase(Locale.ROOT).startsWith(cached.prefix);
+    }
+
+    private static boolean containsText(List<CommandCompletionEntry> entries, String text) {
+        for (CommandCompletionEntry entry : entries) {
+            if (entry.text.equalsIgnoreCase(text)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static ArgumentRef parseArgument(String text) {
+        if (text == null || !text.startsWith("/")) {
+            return null;
+        }
+        String before = text.substring(1);
+        int firstSpace = before.indexOf(' ');
+        if (firstSpace < 0) {
+            return null;
+        }
+        String command = before.substring(0, firstSpace).trim().toLowerCase(Locale.ROOT);
+        if (command.isEmpty()) {
+            return null;
+        }
+        String rest = before.substring(firstSpace + 1);
+        int argIndex = 0;
+        int cursor = 0;
+        while (true) {
+            int next = rest.indexOf(' ', cursor);
+            if (next < 0) {
+                break;
+            }
+            argIndex++;
+            cursor = next + 1;
+        }
+        String word = rest.substring(Math.max(0, rest.lastIndexOf(' ') + 1)).trim();
+        return new ArgumentRef(command + "|" + argIndex, word);
     }
 
     private static Boolean efrSpectator;

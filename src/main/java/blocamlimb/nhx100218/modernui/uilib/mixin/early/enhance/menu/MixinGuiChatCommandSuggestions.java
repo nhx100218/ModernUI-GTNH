@@ -48,17 +48,25 @@ public abstract class MixinGuiChatCommandSuggestions {
     @Unique
     private boolean modernui$tabRequested;
 
+    @Unique
+    private String modernui$argRequest;
+
+    @Unique
+    private long modernui$argRequestAt;
+
     @Inject(method = "initGui", at = @At("RETURN"))
     private void modernui$resetPopup(CallbackInfo callbackInfo) {
         ChatCommandSuggestions.bindField(inputField);
         ChatCommandSuggestions.reset();
         modernui$awaitingCommands = false;
         modernui$tabRequested = false;
+        modernui$argRequest = null;
         if (inputField != null) {
             // Opening chat with "/" must show the popup immediately.
             ChatCommandSuggestions.onInput(inputField.getText(), inputField.getCursorPosition());
             if (inputField.getText().startsWith("/")) {
                 modernui$fetchCommandList();
+                modernui$maybeFetchArguments();
             }
         }
     }
@@ -69,6 +77,7 @@ public abstract class MixinGuiChatCommandSuggestions {
         ChatCommandSuggestions.reset();
         modernui$awaitingCommands = false;
         modernui$tabRequested = false;
+        modernui$argRequest = null;
     }
 
     @Inject(method = "keyTyped", at = @At("HEAD"), cancellable = true)
@@ -100,6 +109,7 @@ public abstract class MixinGuiChatCommandSuggestions {
         ChatCommandSuggestions.onInput(inputField.getText(), inputField.getCursorPosition());
         if (inputField.getText().startsWith("/")) {
             modernui$fetchCommandList();
+            modernui$maybeFetchArguments();
         }
     }
 
@@ -116,6 +126,15 @@ public abstract class MixinGuiChatCommandSuggestions {
             ClientCommandCompletionProvider.learnCommands(options);
             ClientCommandCompletionProvider.markCommandListFetched();
             ChatCommandSuggestions.onInput(inputField.getText(), inputField.getCursorPosition());
+            modernui$maybeFetchArguments();
+            return;
+        }
+        if (modernui$argRequest != null) {
+            String requested = modernui$argRequest;
+            modernui$argRequest = null;
+            ClientCommandCompletionProvider.learnArguments(requested, options);
+            ChatCommandSuggestions.onInput(inputField.getText(), inputField.getCursorPosition());
+            modernui$maybeFetchArguments();
             return;
         }
         if (!modernui$tabRequested) {
@@ -150,6 +169,44 @@ public abstract class MixinGuiChatCommandSuggestions {
         if (mouseButton == 0 && ChatCommandSuggestions.mouseClicked(mouseX, mouseY, inputField)) {
             callbackInfo.cancel();
         }
+    }
+
+    /** Requests server suggestions for the argument currently being typed. */
+    @Unique
+    private void modernui$maybeFetchArguments() {
+        if (inputField == null) {
+            return;
+        }
+        long now = net.minecraft.client.Minecraft.getSystemTime();
+        if (modernui$argRequest != null) {
+            if (now - modernui$argRequestAt < 3000L) {
+                return;
+            }
+            modernui$argRequest = null;
+        }
+        String text = inputField.getText();
+        if (text == null || text.indexOf(' ') < 0) {
+            return;
+        }
+        int caret = Math.max(0, Math.min(inputField.getCursorPosition(), text.length()));
+        String before = text.substring(0, caret);
+        if (before.indexOf(' ') < 0) {
+            return;
+        }
+        // Local suggestions are already complete for this argument.
+        if (ChatCommandSuggestions.isPopupOpen()) {
+            return;
+        }
+        if (modernui$awaitingCommands) {
+            return;
+        }
+        if (!ClientCommandCompletionProvider.needsArgumentRefresh(before)) {
+            return;
+        }
+        modernui$argRequest = before;
+        modernui$argRequestAt = now;
+        int wordStart = before.lastIndexOf(' ') + 1;
+        func_146405_a(before, before.substring(Math.max(0, wordStart)));
     }
 
     /** Requests the full command tree once, using the vanilla C14 path. */

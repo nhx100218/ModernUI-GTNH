@@ -55,5 +55,6 @@ public abstract class MixinNetHandlerPlayClient {
     private void modernui$onClientDisconnected(IChatComponent reason, CallbackInfo ci) {
         VanillaMixinTransport.onClientDisconnected(reason);
         blocamlimb.nhx100218.modernui.enhance.command.ClientCommandCompletionProvider.clearServerCommands();
+        blocamlimb.nhx100218.modernui.enhance.command.ClientCommandCompletionProvider.clearServerArguments();
     }
 }
