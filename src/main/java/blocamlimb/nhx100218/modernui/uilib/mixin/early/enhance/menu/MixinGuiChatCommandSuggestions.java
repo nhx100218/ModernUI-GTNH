@@ -66,6 +66,13 @@ public abstract class MixinGuiChatCommandSuggestions {
         ChatCommandSuggestions.render(net.minecraft.client.Minecraft.getMinecraft(), inputField);
     }
 
+    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
+    private void modernui$clickPopup(int mouseX, int mouseY, int mouseButton, CallbackInfo callbackInfo) {
+        if (mouseButton == 0 && ChatCommandSuggestions.mouseClicked(mouseX, mouseY, inputField)) {
+            callbackInfo.cancel();
+        }
+    }
+
     @Redirect(method = "func_146404_p_",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/GuiNewChat;"

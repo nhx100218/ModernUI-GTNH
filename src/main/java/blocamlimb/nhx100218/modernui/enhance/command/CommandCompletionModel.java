@@ -14,7 +14,10 @@ public final class CommandCompletionModel {
 
     private final List<CommandCompletionEntry> entries = new ArrayList<CommandCompletionEntry>();
     private int selected;
+    private int scrollOffset;
     private boolean open;
+
+    private static final int VISIBLE_ROWS = 8;
 
     public void update(CommandCompletionProvider provider, String input, int cursor, int limit) {
         entries.clear();
@@ -35,12 +38,14 @@ public final class CommandCompletionModel {
         open = false;
         entries.clear();
         selected = 0;
+        scrollOffset = 0;
     }
 
     /** Replaces the popup contents (used by the classic Tab response path). */
     public void setEntries(List<CommandCompletionEntry> next, String currentText) {
         entries.clear();
         selected = 0;
+        scrollOffset = 0;
         if (next == null || next.isEmpty()) {
             open = false;
             return;
@@ -48,6 +53,7 @@ public final class CommandCompletionModel {
         entries.addAll(next);
         open = true;
         selectText(currentText);
+        ensureVisible();
     }
 
     /** Highlights the entry that matches the committed input. */
@@ -60,6 +66,7 @@ public final class CommandCompletionModel {
             String text = entries.get(i).text.toLowerCase(java.util.Locale.ROOT);
             if (folded.endsWith(text) || text.endsWith(folded)) {
                 selected = i;
+                ensureVisible();
                 return;
             }
         }
@@ -69,10 +76,7 @@ public final class CommandCompletionModel {
         if (!open || entries.isEmpty()) {
             return;
         }
-        selected = (selected + delta) % entries.size();
-        if (selected < 0) {
-            selected += entries.size();
-        }
+        selectIndex(selected + delta);
     }
 
     public boolean isOpen() {
@@ -91,11 +95,38 @@ public final class CommandCompletionModel {
     public void selectIndex(int index) {
         if (entries.isEmpty()) {
             selected = 0;
+            scrollOffset = 0;
             return;
         }
         selected = index % entries.size();
         if (selected < 0) {
             selected += entries.size();
+        }
+        ensureVisible();
+    }
+
+    /** First visible row; the popup scrolls to keep the selection visible. */
+    public int scrollOffset() {
+        return scrollOffset;
+    }
+
+    public int visibleRows() {
+        return VISIBLE_ROWS;
+    }
+
+    private void ensureVisible() {
+        int rows = VISIBLE_ROWS;
+        if (selected < scrollOffset) {
+            scrollOffset = selected;
+        } else if (selected >= scrollOffset + rows) {
+            scrollOffset = selected - rows + 1;
+        }
+        int maxOffset = Math.max(0, entries.size() - rows);
+        if (scrollOffset > maxOffset) {
+            scrollOffset = maxOffset;
+        }
+        if (scrollOffset < 0) {
+            scrollOffset = 0;
         }
     }
 
