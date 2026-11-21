@@ -1,5 +1,8 @@
 package blocamlimb.nhx100218.modernui.uilib.mixin.early.enhance.menu;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.GuiNewChat;
 import net.minecraft.client.gui.GuiScreen;
@@ -24,11 +27,16 @@ import blocamlimb.nhx100218.modernui.enhance.command.ClientCommandCompletionProv
  *
  * <p>Tab is handled by the popup while it is open, so no C14 request is sent
  * for completions we can build locally (this keeps large lists such as
- * {@code /give} instant). Server responses are processed through the same model,
- * without letting vanilla rewrite the input line.</p>
+ * {@code /give} instant). Server suggestions for the command list and for
+ * individual arguments are requested automatically and cached, so lists such
+ * as {@code /gamerule} appear without pressing Tab first.</p>
  */
 @Mixin(GuiChat.class)
 public abstract class MixinGuiChatCommandSuggestions {
+
+    private static final String REQUEST_COMMANDS = "commands";
+    private static final String REQUEST_ARGUMENT = "args:";
+    private static final String REQUEST_TAB = "tab";
 
     @Shadow
     protected GuiTextField inputField;
@@ -42,25 +50,15 @@ public abstract class MixinGuiChatCommandSuggestions {
         throw new AssertionError();
     }
 
+    /** Types of the requests sent to the server, in send order. */
     @Unique
-    private boolean modernui$awaitingCommands;
-
-    @Unique
-    private boolean modernui$tabRequested;
-
-    @Unique
-    private String modernui$argRequest;
-
-    @Unique
-    private long modernui$argRequestAt;
+    private final Deque<String> modernui$requests = new ArrayDeque<String>();
 
     @Inject(method = "initGui", at = @At("RETURN"))
     private void modernui$resetPopup(CallbackInfo callbackInfo) {
         ChatCommandSuggestions.bindField(inputField);
         ChatCommandSuggestions.reset();
-        modernui$awaitingCommands = false;
-        modernui$tabRequested = false;
-        modernui$argRequest = null;
+        modernui$requests.clear();
         if (inputField != null) {
             // Opening chat with "/" must show the popup immediately.
             ChatCommandSuggestions.onInput(inputField.getText(), inputField.getCursorPosition());
@@ -75,9 +73,7 @@ public abstract class MixinGuiChatCommandSuggestions {
     private void modernui$closePopup(CallbackInfo callbackInfo) {
         ChatCommandSuggestions.bindField(null);
         ChatCommandSuggestions.reset();
-        modernui$awaitingCommands = false;
-        modernui$tabRequested = false;
-        modernui$argRequest = null;
+        modernui$requests.clear();
     }
 
     @Inject(method = "keyTyped", at = @At("HEAD"), cancellable = true)
@@ -88,8 +84,6 @@ public abstract class MixinGuiChatCommandSuggestions {
         if (ChatCommandSuggestions.tabComplete(inputField, GuiScreen.isShiftKeyDown())) {
             // The popup owns this Tab; skip vanilla's C14 request and chat line.
             callbackInfo.cancel();
-        } else {
-            modernui$tabRequested = true;
         }
     }
 
@@ -99,13 +93,13 @@ public abstract class MixinGuiChatCommandSuggestions {
             return;
         }
         if (keyCode == 15) {
-            // Vanilla handled this Tab (the popup had no local candidates).
-            if (!field_146414_r) {
-                modernui$tabRequested = false;
+            // Vanilla handled this Tab (the popup had no local candidates) and
+            // sent its own request; remember its response slot.
+            if (field_146414_r) {
+                modernui$requests.addLast(REQUEST_TAB);
             }
             return;
         }
-        modernui$tabRequested = false;
         ChatCommandSuggestions.onInput(inputField.getText(), inputField.getCursorPosition());
         if (inputField.getText().startsWith("/")) {
             modernui$fetchCommandList();
@@ -121,26 +115,26 @@ public abstract class MixinGuiChatCommandSuggestions {
         // Always keep vanilla's prefix insertion / cycling out of the text:
         // the popup applies the response itself.
         callbackInfo.cancel();
-        if (modernui$awaitingCommands) {
-            modernui$awaitingCommands = false;
+        String request = modernui$requests.pollFirst();
+        if (request == null) {
+            return;
+        }
+        if (REQUEST_COMMANDS.equals(request)) {
             ClientCommandCompletionProvider.learnCommands(options);
             ClientCommandCompletionProvider.markCommandListFetched();
             ChatCommandSuggestions.onInput(inputField.getText(), inputField.getCursorPosition());
             modernui$maybeFetchArguments();
             return;
         }
-        if (modernui$argRequest != null) {
-            String requested = modernui$argRequest;
-            modernui$argRequest = null;
-            ClientCommandCompletionProvider.learnArguments(requested, options);
+        if (request.startsWith(REQUEST_ARGUMENT)) {
+            ClientCommandCompletionProvider.learnArguments(request.substring(REQUEST_ARGUMENT.length()), options);
             ChatCommandSuggestions.onInput(inputField.getText(), inputField.getCursorPosition());
             modernui$maybeFetchArguments();
             return;
         }
-        if (!modernui$tabRequested) {
+        if (!REQUEST_TAB.equals(request)) {
             return;
         }
-        modernui$tabRequested = false;
         ClientCommandCompletionProvider.learnCommands(options);
         java.util.List<String> merged = new java.util.ArrayList<String>();
         String[] client = net.minecraftforge.client.ClientCommandHandler.instance.latestAutoComplete;
@@ -177,12 +171,8 @@ public abstract class MixinGuiChatCommandSuggestions {
         if (inputField == null) {
             return;
         }
-        long now = net.minecraft.client.Minecraft.getSystemTime();
-        if (modernui$argRequest != null) {
-            if (now - modernui$argRequestAt < 3000L) {
-                return;
-            }
-            modernui$argRequest = null;
+        if (modernui$hasPendingRequest(REQUEST_ARGUMENT)) {
+            return;
         }
         String text = inputField.getText();
         if (text == null || text.indexOf(' ') < 0) {
@@ -197,22 +187,22 @@ public abstract class MixinGuiChatCommandSuggestions {
         if (ChatCommandSuggestions.isPopupOpen()) {
             return;
         }
-        if (modernui$awaitingCommands) {
-            return;
-        }
         if (!ClientCommandCompletionProvider.needsArgumentRefresh(before)) {
             return;
         }
-        modernui$argRequest = before;
-        modernui$argRequestAt = now;
+        modernui$requests.addLast(REQUEST_ARGUMENT + before);
         int wordStart = before.lastIndexOf(' ') + 1;
-        func_146405_a(before, before.substring(Math.max(0, wordStart)));
+        try {
+            func_146405_a(before, before.substring(Math.max(0, wordStart)));
+        } catch (Throwable ignored) {
+            modernui$requests.pollLast();
+        }
     }
 
     /** Requests the full command tree once, using the vanilla C14 path. */
     @Unique
     private void modernui$fetchCommandList() {
-        if (modernui$awaitingCommands) {
+        if (modernui$hasPendingRequest(REQUEST_COMMANDS)) {
             return;
         }
         if (!ClientCommandCompletionProvider.needsCommandRefresh()) {
@@ -221,8 +211,22 @@ public abstract class MixinGuiChatCommandSuggestions {
         if (inputField == null || !inputField.getText().startsWith("/")) {
             return;
         }
-        modernui$awaitingCommands = true;
-        func_146405_a("/", "");
+        modernui$requests.addLast(REQUEST_COMMANDS);
+        try {
+            func_146405_a("/", "");
+        } catch (Throwable ignored) {
+            modernui$requests.pollLast();
+        }
+    }
+
+    @Unique
+    private boolean modernui$hasPendingRequest(String prefix) {
+        for (String request : modernui$requests) {
+            if (request.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Redirect(method = "func_146404_p_",
