@@ -184,34 +184,39 @@ public final class ClientCommandCompletionProvider implements CommandCompletionP
     }
 
     private static void addItemSuggestions(String word, List<CommandCompletionEntry> out, int limit) {
-        List<String> ids = new ArrayList<String>();
+        // Keep only the alphabetically first candidates instead of sorting the
+        // whole registry on every keystroke (GTNH registers tens of thousands
+        // of item ids).
+        TreeSet<String> ids = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+        int keep = Math.max(limit, 1) + 1;
         try {
-            for (Object keyObject : Item.itemRegistry.getKeys()) {
-                if (keyObject instanceof String) {
-                    String id = (String) keyObject;
-                    if (matches(id, word)) {
-                        ids.add(id);
-                    }
-                }
-            }
-            for (Object keyObject : Block.blockRegistry.getKeys()) {
-                if (keyObject instanceof String) {
-                    String id = (String) keyObject;
-                    if (matches(id, word) && !ids.contains(id)) {
-                        ids.add(id);
-                    }
-                }
-            }
+            collectRegistryKeys(Item.itemRegistry.getKeys(), word, ids, keep);
+            collectRegistryKeys(Block.blockRegistry.getKeys(), word, ids, keep);
         } catch (Throwable ignored) {
             return;
         }
-        Collections.sort(ids);
         for (String id : ids) {
             if (out.size() >= limit) {
                 return;
             }
             out.add(new CommandCompletionEntry(id, "Item", CommandCompletionEntry.Kind.ARGUMENT,
                     500 - out.size()));
+        }
+    }
+
+    private static void collectRegistryKeys(Set<?> keys, String word, TreeSet<String> ids, int keep) {
+        for (Object keyObject : keys) {
+            if (!(keyObject instanceof String)) {
+                continue;
+            }
+            String id = (String) keyObject;
+            if (!matches(id, word)) {
+                continue;
+            }
+            ids.add(id);
+            if (ids.size() > keep) {
+                ids.pollLast();
+            }
         }
     }
 
