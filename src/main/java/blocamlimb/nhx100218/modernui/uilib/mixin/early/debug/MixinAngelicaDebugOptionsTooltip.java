@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import blocamlimb.nhx100218.modernui.enhance.client.F3OptionsTooltip;
+import blocamlimb.nhx100218.modernui.enhance.tooltip.TooltipRenderer;
 
 /**
  * Takes over the debug-options tooltip so it can be redrawn with ModernUI SDF
@@ -20,6 +21,9 @@ public abstract class MixinAngelicaDebugOptionsTooltip {
     @Inject(method = "drawTooltip", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void modernui$captureTooltip(List<String> lines, int mouseX, int mouseY,
             CallbackInfo callbackInfo) {
+        if (!TooltipRenderer.isEnabled()) {
+            return;
+        }
         F3OptionsTooltip.capture(lines, mouseX, mouseY);
         callbackInfo.cancel();
     }
