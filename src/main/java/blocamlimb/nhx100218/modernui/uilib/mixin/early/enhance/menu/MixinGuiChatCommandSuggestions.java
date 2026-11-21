@@ -98,7 +98,7 @@ public abstract class MixinGuiChatCommandSuggestions {
         }
         modernui$tabRequested = false;
         ChatCommandSuggestions.onInput(inputField.getText(), inputField.getCursorPosition());
-        if ("/".equals(inputField.getText())) {
+        if (inputField.getText().startsWith("/")) {
             modernui$fetchCommandList();
         }
     }
