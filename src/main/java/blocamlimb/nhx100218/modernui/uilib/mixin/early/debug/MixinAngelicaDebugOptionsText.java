@@ -5,10 +5,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import net.minecraft.client.gui.GuiScreen;
-
-import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
-import blocamlimb.nhx100218.modernui.enhance.menu.ModernMenuFrame;
 import blocamlimb.nhx100218.modernui.uilib.font.AngelicaBatchTextQueue;
 import blocamlimb.nhx100218.modernui.uilib.font.config.FontConfig;
 
@@ -27,8 +23,6 @@ public abstract class MixinAngelicaDebugOptionsText {
     @Inject(method = "func_73863_a", at = @At("HEAD"), remap = false, require = 0)
     private void modernui$beginTextFrame(int mouseX, int mouseY, float partialTicks,
             CallbackInfo callbackInfo) {
-        GuiScreen screen = (GuiScreen) (Object) this;
-        ModernMenuFrame.drawWorldMask(screen.width, screen.height);
         if (FontConfig.replaceOrigin) {
             AngelicaBatchTextQueue.begin();
         }
@@ -37,11 +31,7 @@ public abstract class MixinAngelicaDebugOptionsText {
     @Inject(method = "func_73863_a", at = @At("RETURN"), remap = false, require = 0)
     private void modernui$flushTextFrame(int mouseX, int mouseY, float partialTicks,
             CallbackInfo callbackInfo) {
-        GuiScreen screen = (GuiScreen) (Object) this;
-        ModernGuiRenderer.beginUi();
-        ModernMenuFrame.drawFrame(screen.width, screen.height);
         if (FontConfig.replaceOrigin) {
-            ModernGuiRenderer.beginUi();
             AngelicaBatchTextQueue.flush();
         }
     }

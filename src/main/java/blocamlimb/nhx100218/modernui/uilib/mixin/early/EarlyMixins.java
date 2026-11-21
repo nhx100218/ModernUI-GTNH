@@ -66,7 +66,6 @@ public class EarlyMixins implements IFMLLoadingPlugin {
                 mixins.add("debug.MixinAngelicaDebugKeyHandler");
                 mixins.add("debug.MixinAngelicaDebugOptionsText");
                 mixins.add("debug.MixinAngelicaFpsGraphText");
-                mixins.add("debug.MixinIrisGuiSlotFade");
             }
             // Merged enhancement
             mixins.add("enhance.MixinGuiScreenTooltip");
@@ -94,7 +93,6 @@ public class EarlyMixins implements IFMLLoadingPlugin {
             mixins.add("enhance.menu.MixinGuiDownloadTerrain");
             mixins.add("enhance.menu.MixinGuiScreenBackground");
             mixins.add("enhance.menu.MixinGuiSlotBackground");
-            mixins.add("enhance.menu.MixinGuiSlotFadeAccessor");
             mixins.add("enhance.menu.MixinGuiScrollingListBackground");
             mixins.add("enhance.menu.MixinGuiSelectWorldAccessor");
             mixins.add("enhance.menu.MixinGuiSelectWorldList");

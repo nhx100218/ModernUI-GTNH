@@ -69,8 +69,8 @@ public abstract class MixinGuiSlotBackground {
         if (!usesSharedBackdrop()) {
             return;
         }
-        // Iris lists call overlayBackground themselves; their mixin replaces the
-        // call with an alpha-0 invocation so the flush/state restore still runs.
+        // Iris lists keep the call so its tessellator flush and GL-state restore
+        // still run; the redirect below makes the fade colours transparent.
         Minecraft minecraft = Minecraft.getMinecraft();
         if (minecraft != null && ModernMenuScreens.isIrisListScreen(minecraft.currentScreen)) {
             endListClip();
@@ -78,6 +78,19 @@ public abstract class MixinGuiSlotBackground {
         }
         endListClip();
         callbackInfo.cancel();
+    }
+
+    @Redirect(method = "overlayBackground",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/Tessellator;setColorRGBA_I(II)V"),
+            require = 0)
+    private void modernui$transparentIrisFade(Tessellator tessellator, int color, int alpha) {
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft != null && ModernMenuScreens.isIrisListScreen(minecraft.currentScreen)) {
+            tessellator.setColorRGBA_I(color, 0);
+            return;
+        }
+        tessellator.setColorRGBA_I(color, alpha);
     }
 
     /**

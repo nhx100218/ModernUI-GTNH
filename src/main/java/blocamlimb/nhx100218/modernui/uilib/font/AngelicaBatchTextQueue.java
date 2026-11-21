@@ -50,8 +50,24 @@ public final class AngelicaBatchTextQueue {
             if (ENTRIES.size() >= 4096) {
                 return;
             }
-            ENTRIES.add(new Entry(text, x, y, color, shadow));
+            ENTRIES.add(new Entry(text, x, y, normalize(color), shadow));
         }
+    }
+
+    /**
+     * Angelica's debug text is often a light grey with a reduced alpha. ModernUI
+     * renders that as washed-out grey; make debug text opaque and promote neutral
+     * labels to pure white while keeping semantic colours.
+     */
+    private static int normalize(int color) {
+        int argb = color == 0 ? 0xFFFFFFFF : (color | 0xFF000000);
+        int red = (argb >> 16) & 0xFF;
+        int green = (argb >> 8) & 0xFF;
+        int blue = argb & 0xFF;
+        if (red >= 0x80 && Math.abs(red - green) <= 12 && Math.abs(green - blue) <= 12) {
+            return 0xFFFFFFFF;
+        }
+        return argb;
     }
 
     public static void flush() {

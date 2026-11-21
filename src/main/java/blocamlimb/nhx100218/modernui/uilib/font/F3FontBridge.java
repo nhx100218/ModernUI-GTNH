@@ -52,6 +52,12 @@ public final class F3FontBridge {
             "com.gtnewhorizons.angelica.debug.screen.DebugScreenOverlay", "chrome");
     private static final Field OVERLAY_CHROME_DIRTY = fieldOf(
             "com.gtnewhorizons.angelica.debug.screen.DebugScreenOverlay", "chromeDirty");
+    private static final Field OVERLAY_SCALED = fieldOf(
+            "com.gtnewhorizons.angelica.debug.screen.DebugScreenOverlay", "scaled");
+    private static final Field OVERLAY_SCALE = fieldOf(
+            "com.gtnewhorizons.angelica.debug.screen.DebugScreenOverlay", "scale");
+    private static final Field OVERLAY_GAME_SCALE = fieldOf(
+            "com.gtnewhorizons.angelica.debug.screen.DebugScreenOverlay", "gameScale");
 
     private static final Map<Object, List<Entry>> RECORDED = Collections
             .synchronizedMap(new IdentityHashMap<Object, List<Entry>>());
@@ -115,7 +121,10 @@ public final class F3FontBridge {
             if (value.isEmpty()) {
                 return false;
             }
-            record(mesh, value, x, y, normalizeColor(color));
+            // Draw through the shared batch-text queue instead of replaying the
+            // recorded fixed-function matrices. The queue uses the live GUI
+            // projection (the same path that already works for the FPS graph).
+            AngelicaBatchTextQueue.queue(value, Math.round(x), Math.round(y), normalizeColor(color), false);
             if (!recordedLogged) {
                 recordedLogged = true;
                 LOG.info("F3 文本桥接已接管 Angelica 批量字形（sample=\"{}\"）", value);
@@ -234,9 +243,31 @@ public final class F3FontBridge {
             }
         } finally {
             lastCapturing = null;
+            boolean scaled = false;
+            float factor = 1.0F;
+            try {
+                Object scaledValue = readField(OVERLAY_SCALED, overlay);
+                if (scaledValue instanceof Boolean && ((Boolean) scaledValue).booleanValue()) {
+                    int scale = readInt(OVERLAY_SCALE, overlay);
+                    int gameScale = readInt(OVERLAY_GAME_SCALE, overlay);
+                    if (scale > 0 && gameScale > 0 && scale != gameScale) {
+                        scaled = true;
+                        factor = scale / (float) gameScale;
+                    }
+                }
+            } catch (Throwable ignored) {
+                // No scaling information: draw in normal GUI coordinates.
+            }
+            if (scaled) {
+                GL11.glPushMatrix();
+                GL11.glScalef(factor, factor, 1.0F);
+            }
             try {
                 AngelicaBatchTextQueue.flush();
             } finally {
+                if (scaled) {
+                    GL11.glPopMatrix();
+                }
                 drawingFrame = false;
             }
         }
