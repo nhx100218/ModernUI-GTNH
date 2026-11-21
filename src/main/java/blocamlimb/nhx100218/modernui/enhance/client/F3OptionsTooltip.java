@@ -21,8 +21,8 @@ import blocamlimb.nhx100218.modernui.uilib.ui.text.TextContentMode;
  */
 public final class F3OptionsTooltip {
 
-    private static final int BACKGROUND = 0xF0100010;
-    private static final int BORDER = 0x505000FF;
+    private static final int BACKGROUND = 0xE6101014;
+    private static final int BORDER = 0x33FFFFFF;
     private static final int TEXT = 0xFFFFFFFF;
     private static final int OFFSET = 12;
 
@@ -30,6 +30,7 @@ public final class F3OptionsTooltip {
     private static int mouseX;
     private static int mouseY;
     private static boolean LOGGED_CAPTURE;
+    private static boolean LOGGED_DRAW;
 
     private F3OptionsTooltip() {
     }
@@ -56,8 +57,11 @@ public final class F3OptionsTooltip {
         if (tooltip == null || tooltip.isEmpty() || minecraft == null) {
             return;
         }
-        blocamlimb.nhx100218.modernui.uilib.MyMod.LOG.info(
-                "[F3DIAG] tooltip draw lines={} first='{}'", Integer.valueOf(tooltip.size()), tooltip.get(0));
+        if (!LOGGED_DRAW) {
+            LOGGED_DRAW = true;
+            blocamlimb.nhx100218.modernui.uilib.MyMod.LOG.info(
+                    "[F3DIAG] tooltip draw lines={} first='{}'", Integer.valueOf(tooltip.size()), tooltip.get(0));
+        }
         DefaultFontRendererAdapter adapter = DefaultFontRendererAdapter.getInstance();
         int width = 0;
         for (String line : tooltip) {
@@ -80,21 +84,15 @@ public final class F3OptionsTooltip {
         y = Math.max(4, y);
 
         ModernGuiRenderer.beginUi();
-        ModernGuiRenderer.fill(x - 3, y - 4, x + width + 3, y - 3, BACKGROUND);
-        ModernGuiRenderer.fill(x - 3, y + height + 3, x + width + 3, y + height + 4, BACKGROUND);
-        ModernGuiRenderer.fill(x - 3, y - 3, x + width + 3, y + height + 3, BACKGROUND);
-        ModernGuiRenderer.fill(x - 4, y - 3, x - 3, y + height + 3, BACKGROUND);
-        ModernGuiRenderer.fill(x + width + 3, y - 3, x + width + 4, y + height + 3, BACKGROUND);
-        ModernGuiRenderer.fill(x - 3, y - 2, x - 2, y + height + 2, BORDER);
-        ModernGuiRenderer.fill(x + width + 2, y - 2, x + width + 3, y + height + 2, BORDER);
-        ModernGuiRenderer.fill(x - 3, y - 3, x + width + 3, y - 2, BORDER);
-        ModernGuiRenderer.fill(x - 3, y + height + 2, x + width + 3, y + height + 3, BORDER);
+        // ModernUI tooltip panel: dark translucent body with a 1px light border.
+        ModernGuiRenderer.fill(x - 1, y - 1, x + width + 1, y + height + 1, BORDER);
+        ModernGuiRenderer.fill(x, y, x + width, y + height, BACKGROUND);
         ModernGuiRenderer.beginUi();
 
         int textY = y;
         for (int i = 0; i < tooltip.size(); i++) {
             adapter.drawString(strip(tooltip.get(i)), x, textY, TEXT, false,
-                    TextContentMode.UILIB_RAW, UiFontWeight.NORMAL, UiFontStyle.NORMAL);
+                    TextContentMode.UILIB_RAW, UiFontWeight.BOLD, UiFontStyle.NORMAL);
             textY += i == 0 ? 12 : 10;
         }
     }
