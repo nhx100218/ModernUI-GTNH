@@ -184,6 +184,23 @@ public final class F3FontBridge {
         return drawingFrame && System.nanoTime() - drawingFrameStartNanos < 100000000L;
     }
 
+    /** FPS 图表在独立的事件里绘制，单独开一个批量文本捕获窗口。 */
+    public static void beginGraphFrame() {
+        if (!drawingFrame) {
+            AngelicaBatchTextQueue.begin();
+        }
+        drawingFrameStartNanos = System.nanoTime();
+        drawingFrame = true;
+    }
+
+    public static void endGraphFrame() {
+        try {
+            AngelicaBatchTextQueue.flush();
+        } finally {
+            drawingFrame = false;
+        }
+    }
+
     /**
      * F3 绘制结束：只对当前实际显示的 chrome / 分组网格补画 ModernUI 文本。
      *
@@ -346,15 +363,14 @@ public final class F3FontBridge {
     }
 
     private static int normalizeColor(int color) {
-        int argb = color;
-        if ((argb & 0xFF000000) == 0 && argb != 0) {
-            argb |= 0xFF000000;
-        }
-        // Angelica's debug labels are neutral greys; ModernUI reads them as
-        // washed out. Promote neutral text to pure white, keep semantic colours.
+        // Debug text is always opaque; Angelica sometimes passes a reduced alpha
+        // that ModernUI would honour, making the glyphs look like faint shadows.
+        int argb = color == 0 ? 0xFFFFFFFF : (color | 0xFF000000);
         int red = (argb >> 16) & 0xFF;
         int green = (argb >> 8) & 0xFF;
         int blue = argb & 0xFF;
+        // Angelica's debug labels are neutral greys; promote them to pure white
+        // while keeping semantic colours (red errors, green values, ...).
         if (red >= 0x80 && Math.abs(red - green) <= 12 && Math.abs(green - blue) <= 12) {
             return 0xFFFFFFFF;
         }

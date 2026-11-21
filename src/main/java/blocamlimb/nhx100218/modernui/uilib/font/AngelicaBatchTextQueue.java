@@ -5,6 +5,7 @@ import java.util.List;
 
 import net.minecraft.client.Minecraft;
 
+import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
 import blocamlimb.nhx100218.modernui.uilib.font.api.DefaultFontRendererAdapter;
 
 /**
@@ -63,6 +64,10 @@ public final class AngelicaBatchTextQueue {
             ENTRIES.clear();
         }
         DefaultFontRendererAdapter adapter = DefaultFontRendererAdapter.getInstance();
+        // The host may leave depth test / alpha test enabled after its geometry.
+        // SDF quads would then be depth-rejected and only the native shadow stays
+        // visible, which reads as grey "missing" text.
+        ModernGuiRenderer.beginUi();
         for (Entry entry : snapshot) {
             try {
                 adapter.drawString(entry.text, entry.x, entry.y, entry.color, entry.shadow);

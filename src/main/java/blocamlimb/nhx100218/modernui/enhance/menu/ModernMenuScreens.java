@@ -38,7 +38,7 @@ public final class ModernMenuScreens {
             "com.gtnewhorizons.angelica.client.gui.AtlasPackScreen";
     private static final String ANGELICA_DYNAMIC_LIGHTS_SCREEN =
             "com.gtnewhorizons.angelica.client.gui.DynamicLightsEntityScreen";
-    /** Iris shader pack screen (shipped inside Angelica). */
+    /** Iris renders its own panel; keep the fade path intact for its lists. */
     private static final String IRIS_SHADER_PACK_SCREEN = "net.coderbot.iris.gui.screen.ShaderPackScreen";
     /** Hodgepodge's enhanced sound options page. */
     private static final String HODGEPODGE_SOUND_SCREEN =
@@ -91,6 +91,21 @@ public final class ModernMenuScreens {
     /** The whitelist also controls list backgrounds; mod list screens use the same panorama. */
     public static boolean usesSharedListBackdrop(GuiScreen screen) {
         return usesSharedBackdrop(screen);
+    }
+
+    /**
+     * Whether the screen uses Iris' custom {@code IrisGuiSlot} lists. Those lists
+     * override the vanilla render pass and manage their own GL state, so ModernUI
+     * only decorates them in a post-draw hook.
+     */
+    public static boolean isIrisListScreen(GuiScreen screen) {
+        if (screen == null) {
+            return false;
+        }
+        String name = screen.getClass().getName();
+        return IRIS_SHADER_PACK_SCREEN.equals(name)
+                || ANGELICA_ATLAS_PACK_SCREEN.equals(name)
+                || ANGELICA_DYNAMIC_LIGHTS_SCREEN.equals(name);
     }
 
     /**

@@ -66,10 +66,18 @@ public abstract class MixinGuiSlotBackground {
 
     @Inject(method = "overlayBackground", at = @At("HEAD"), cancellable = true, require = 0)
     private void modernui$skipListFade(int top, int bottom, int topAlpha, int bottomAlpha, CallbackInfo callbackInfo) {
-        if (usesSharedBackdrop()) {
-            endListClip();
-            callbackInfo.cancel();
+        if (!usesSharedBackdrop()) {
+            return;
         }
+        // Iris lists call overlayBackground themselves; their mixin replaces the
+        // call with an alpha-0 invocation so the flush/state restore still runs.
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft != null && ModernMenuScreens.isIrisListScreen(minecraft.currentScreen)) {
+            endListClip();
+            return;
+        }
+        endListClip();
+        callbackInfo.cancel();
     }
 
     /**
