@@ -3,9 +3,7 @@ package blocamlimb.nhx100218.modernui.uilib.mixin.early.enhance;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.renderer.Tessellator;
 
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -76,6 +74,11 @@ public abstract class MixinGuiTextFieldChatColors {
     @Shadow
     public int height;
 
+    @Shadow
+    private void drawCursorVertical(int x1, int y1, int x2, int y2) {
+        throw new AssertionError();
+    }
+
     @Inject(method = "drawTextBox", at = @At("HEAD"), cancellable = true)
     private void modernui$drawChatInput(CallbackInfo callbackInfo) {
         GuiTextField field = (GuiTextField) (Object) this;
@@ -135,41 +138,7 @@ public abstract class MixinGuiTextFieldChatColors {
 
         if (selectionInLine != caretInLine) {
             int selectionX = textX + field_146211_a.getStringWidth(visibleText.substring(0, selectionInLine));
-            drawSelectionVertical(caretX, textY - 1, selectionX - 1, textY + 1 + field_146211_a.FONT_HEIGHT);
+            drawCursorVertical(caretX, textY - 1, selectionX - 1, textY + 1 + field_146211_a.FONT_HEIGHT);
         }
-    }
-
-    /** Vanilla {@code GuiTextField.drawCursorVertical}: inverted selection. */
-    private void drawSelectionVertical(int x1, int y1, int x2, int y2) {
-        int swap;
-        if (x1 < x2) {
-            swap = x1;
-            x1 = x2;
-            x2 = swap;
-        }
-        if (y1 < y2) {
-            swap = y1;
-            y1 = y2;
-            y2 = swap;
-        }
-        if (x2 > xPosition + width) {
-            x2 = xPosition + width;
-        }
-        if (x1 > xPosition + width) {
-            x1 = xPosition + width;
-        }
-        Tessellator tessellator = Tessellator.instance;
-        GL11.glColor4f(0.0F, 0.0F, 255.0F, 255.0F);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_COLOR_LOGIC_OP);
-        GL11.glLogicOp(GL11.GL_OR_REVERSE);
-        tessellator.startDrawingQuads();
-        tessellator.addVertex(x1, y2, 0.0D);
-        tessellator.addVertex(x2, y2, 0.0D);
-        tessellator.addVertex(x2, y1, 0.0D);
-        tessellator.addVertex(x1, y1, 0.0D);
-        tessellator.draw();
-        GL11.glDisable(GL11.GL_COLOR_LOGIC_OP);
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
     }
 }
