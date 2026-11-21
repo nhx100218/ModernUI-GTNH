@@ -271,7 +271,7 @@ public final class F3FontBridge {
             return;
         }
         Minecraft minecraft = Minecraft.getMinecraft();
-        if (minecraft == null || minecraft.currentScreen != null) {
+        if (minecraft == null) {
             drawingFrame = false;
             overlayRef = null;
             return;

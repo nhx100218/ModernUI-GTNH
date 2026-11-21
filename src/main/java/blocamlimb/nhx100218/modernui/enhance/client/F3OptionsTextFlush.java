@@ -2,6 +2,7 @@ package blocamlimb.nhx100218.modernui.enhance.client;
 
 import java.lang.reflect.Field;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraftforge.client.event.GuiScreenEvent;
 
@@ -32,6 +33,7 @@ public final class F3OptionsTextFlush {
         }
         drawSeparators(screen);
         F3FontBridge.flushScreenText();
+        F3OptionsTooltip.draw(Minecraft.getMinecraft());
     }
 
     private static void drawSeparators(GuiScreen screen) {
