@@ -37,6 +37,34 @@ public final class CommandCompletionModel {
         selected = 0;
     }
 
+    /** Replaces the popup contents (used by the classic Tab response path). */
+    public void setEntries(List<CommandCompletionEntry> next, String currentText) {
+        entries.clear();
+        selected = 0;
+        if (next == null || next.isEmpty()) {
+            open = false;
+            return;
+        }
+        entries.addAll(next);
+        open = true;
+        selectText(currentText);
+    }
+
+    /** Highlights the entry that matches the committed input. */
+    public void selectText(String currentText) {
+        if (currentText == null || entries.isEmpty()) {
+            return;
+        }
+        String folded = currentText.toLowerCase(java.util.Locale.ROOT);
+        for (int i = 0; i < entries.size(); i++) {
+            String text = entries.get(i).text.toLowerCase(java.util.Locale.ROOT);
+            if (folded.endsWith(text) || text.endsWith(folded)) {
+                selected = i;
+                return;
+            }
+        }
+    }
+
     public void move(int delta) {
         if (!open || entries.isEmpty()) {
             return;

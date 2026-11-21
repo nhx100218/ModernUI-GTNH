@@ -12,6 +12,10 @@ import net.minecraft.network.play.client.C14PacketTabComplete;
 import net.minecraft.util.ChatComponentText;
 import net.minecraftforge.client.ClientCommandHandler;
 
+import blocamlimb.nhx100218.modernui.enhance.command.ClientCommandCompletionProvider;
+import blocamlimb.nhx100218.modernui.enhance.command.CommandCompletionEntry;
+import blocamlimb.nhx100218.modernui.enhance.command.CommandCompletionModel;
+import blocamlimb.nhx100218.modernui.enhance.command.CommandCompletionProvider;
 import blocamlimb.nhx100218.modernui.uilib.ui.reactive.Signal;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.MaxLengthUnit;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneInputType;
@@ -45,6 +49,10 @@ public final class ChatInputBar implements ChatCompletionEngine.Host {
     private ChatCompletionEngine completion;
     /** 独立外观作用域，背景/边框各自只有一个绑定写入者。 */
     private final ChatInputChrome chrome;
+    /** ModernUI command suggestion popup. */
+    private final CommandCompletionModel completionPopup = new CommandCompletionModel();
+    private final CommandCompletionProvider completionProvider = new ClientCommandCompletionProvider();
+    private boolean suppressPopupUpdate;
 
     /**
      * @param runtime     宿主场景运行时(primitive 挂载 + 焦点)
@@ -60,6 +68,9 @@ public final class ChatInputBar implements ChatCompletionEngine.Host {
                 "输入消息…", MAX_INPUT_LENGTH, SceneInputType.TEXT, next -> {
                     inputText.set(next);
                     completion.onTextEdited();
+                    if (!suppressPopupUpdate) {
+                        updatePopup(next);
+                    }
                 }, MaxLengthUnit.UTF16, BLOCKED_CHARS);
         this.inputHandle = SceneTextInputPrimitive.create(runtime, props);
         this.inputRoot = inputHandle.root();
@@ -237,8 +248,11 @@ public final class ChatInputBar implements ChatCompletionEngine.Host {
         String next = sanitize(nextText);
         // 先写 value 再对齐 caret 到词尾(primitive moveCaretToEndOf 语义:
         // autocomplete commit 在外部 value signal flush 前同步对齐 caret)
+        suppressPopupUpdate = true;
         inputText.set(next);
         inputHandle.moveCaretToEndOf().accept(next);
+        suppressPopupUpdate = false;
+        updatePopup(next);
     }
 
     @Override
@@ -309,20 +323,37 @@ public final class ChatInputBar implements ChatCompletionEngine.Host {
 
     @Override
     public void printCandidates(List<String> candidates) {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc == null || mc.ingameGUI == null || mc.ingameGUI.getChatGUI() == null) {
+        List<CommandCompletionEntry> entries = new ArrayList<CommandCompletionEntry>();
+        if (candidates != null) {
+            for (String candidate : candidates) {
+                if (candidate == null || candidate.isEmpty()) {
+                    continue;
+                }
+                boolean command = candidate.startsWith("/") || candidate.indexOf(' ') < 0;
+                entries.add(new CommandCompletionEntry(candidate, command ? "Command" : "Suggestion",
+                        command ? CommandCompletionEntry.Kind.COMMAND : CommandCompletionEntry.Kind.ARGUMENT,
+                        1000 - entries.size()));
+            }
+        }
+        completionPopup.setEntries(entries, currentText());
+    }
+
+    /** ModernUI command suggestion popup model, rendered by the chat surface. */
+    public CommandCompletionModel completionPopup() {
+        return completionPopup;
+    }
+
+    private void updatePopup(String text) {
+        if (text == null || !text.startsWith("/")) {
+            completionPopup.close();
             return;
         }
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < candidates.size(); i++) {
-            if (i > 0) {
-                sb.append(", ");
-            }
-            sb.append(candidates.get(i));
+        List<CommandCompletionEntry> entries = completionProvider.collect(text, text.length(), 8);
+        if (entries.isEmpty()) {
+            completionPopup.close();
+        } else {
+            completionPopup.setEntries(entries, text);
         }
-        // 原版同款:messageId=1 同 id 覆盖打印(ChatHistory 对非 0 id 是替换语义,不刷屏)
-        mc.ingameGUI.getChatGUI().printChatMessageWithOptionalDeletion(
-                new ChatComponentText(sb.toString()), 1);
     }
 
     /** 原版发送列表快照(继承自 Facade)。 */
