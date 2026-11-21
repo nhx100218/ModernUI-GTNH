@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import blocamlimb.nhx100218.modernui.uilib.font.FontType;
@@ -35,6 +36,12 @@ public class LatexSoftwareRenderTest {
     /** 释放共享字形表（约 123MiB），避免后续测试类 OOM。 */
     @AfterClass
     public static void releaseSharedTables() {
+        LatexSoftwareRenderKit.resetShared();
+    }
+
+    /** 完整套件中前面的字体测试可能留下另一套共享度量，先重建再断言。 */
+    @BeforeClass
+    public static void resetSharedBeforeClass() {
         LatexSoftwareRenderKit.resetShared();
     }
 
@@ -411,20 +418,26 @@ public class LatexSoftwareRenderTest {
                 "<latex>x^2</latex>", BASE_SIZE);
         List<Quad> glyphs = collectGlyphQuads(result);
         Assert.assertTrue("x^2 应有 2 个字形 quad", glyphs.size() >= 2);
+        // 基字取最左侧字形（"x"），上标取右侧、顶部更高的字形。不能按“最高字形”
+        // 选基字：不同字体下数字上标的 ink 可能比 x 更高，会误把上标当基字。
         Quad base = null;
-        Quad sup = null;
         for (Quad glyph : glyphs) {
-            if (base == null || glyph.height() > base.height()) {
+            if (base == null || glyph.left < base.left
+                    || (glyph.left == base.left && glyph.height() > base.height())) {
                 base = glyph;
             }
         }
+        Quad sup = null;
         for (Quad glyph : glyphs) {
-            if (glyph != base && glyph.top < base.top && glyph.left >= base.left) {
-                sup = glyph;
+            if (glyph != base && glyph.left > base.left && glyph.top < base.top) {
+                if (sup == null || glyph.height() < sup.height()) {
+                    sup = glyph;
+                }
             }
         }
         Assert.assertNotNull("应存在位于基字右上方的上标 quad", sup);
-        Assert.assertTrue("上标字号应小于基字（0.7× 缩放）", sup.height() < base.height());
+        Assert.assertTrue("上标字号不应大于基字（0.7× 缩放，允许整像素取整）: sup="
+                + sup.height() + " base=" + base.height(), sup.height() <= base.height());
         Assert.assertTrue("上标中心应高于基字顶部", sup.centerY() < base.top);
     }
 

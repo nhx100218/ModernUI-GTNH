@@ -52,7 +52,8 @@ public class MixinFontRendererCancelContractTest {
     @Test
     public void cancelNeverEscapesHandledBranches() throws IOException {
         String source = source(MIXIN);
-        assertEquals("draw 接管点必须恰有 3 处显式 cir.cancel()", 3, occurrences(source, "cir.cancel();"));
+        assertEquals("draw 接管点（含 Angelica batched）必须共 4 处显式 cir.cancel()", 4,
+                occurrences(source, "cir.cancel();"));
         assertEquals("范本 drawSplitString 保持 1 处 ci.cancel()", 1, occurrences(source, "ci.cancel();"));
         assertTrue("cancel 必须位于 isHandled() 分支判定之后",
                 source.indexOf("cir.cancel();") > source.indexOf("if (result.isHandled()) {"));

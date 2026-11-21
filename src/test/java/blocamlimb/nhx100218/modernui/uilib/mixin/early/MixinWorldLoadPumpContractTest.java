@@ -27,11 +27,12 @@ public class MixinWorldLoadPumpContractTest {
         String mixin = source(PUMP_MIXIN);
 
         assertTrue(mixin.contains("@Mixin(value = Minecraft.class, priority = 900)"));
-        assertEquals(2, occurrences(mixin, "@Inject("));
+        assertEquals(4, occurrences(mixin, "@Inject("));
         assertTrue(mixin.contains(
                 "launchIntegratedServer(Ljava/lang/String;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;)V"));
         assertTrue(mixin.contains("target = \"Ljava/lang/Thread;sleep(J)V\""));
         assertTrue(mixin.contains("loadWorld(Lnet/minecraft/client/multiplayer/WorldClient;Ljava/lang/String;)V"));
+        assertTrue(mixin.contains("displayGuiScreen(Lnet/minecraft/client/gui/GuiScreen;)V"));
         assertTrue(mixin.contains("@At(\"HEAD\")"));
         assertEquals(2, occurrences(mixin, "FontService.getInstance().pumpWorldLoadUploads()"));
         assertEquals(0, occurrences(mixin, "flushPendingUploads"));
