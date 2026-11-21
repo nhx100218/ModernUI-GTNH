@@ -1,58 +1,84 @@
 # CHANGELOG
 
-本项目采用 [Keep a Changelog](https://keepachangelog.com/) 风格记录变更，版本号遵循
-`主.次.修订[-标签]` 格式：主版本号变更代表破坏性 API 调整，次版本号代表能力扩展，
-修订号代表行为修复或文档调整。
-
-## [Unreleased]
-
-### Notes
-
-- The Angelica F3+F6 debug-options screen is intentionally left stock. It is a developer screen and is not restyled by ModernUI.
-
-### 说明
-
-- Angelica 的 F3+F6 调试选项界面保持原版，不做 ModernUI 适配（开发调试界面，玩家一般不会使用）。
-
-## [2.0.0] - 2026-11-14
+## [2.0.0] - 2026-11-22
 
 ### English
 
 #### Added
 
-- The world loading screen uses the 26.3 layout: a centred mark, title and a thin progress bar. Nether and End loads use the matching portal backdrop; other dimensions use the shared panorama.
-- Menu screens share one translucent panorama instead of each drawing the dirt background.
-- The singleplayer world list shows a join arrow on the world icon. Clicking the icon opens that world.
-- The server list shows a join arrow on the right half of the server icon and move up/down arrows on the left quarters. Reordering writes back to `servers.dat`.
-- Both arrow sets reuse `textures/gui/resource_packs.png`. No new GUI art is shipped.
-- Et Futurum Requiem compatibility is optional. When EFR is installed, ModernUI takes over its loading screen; when EFR is absent, the vanilla loading path is used.
+- Modern menu overhaul ported from Minecraft 26.3: a shared translucent panorama with matching camera projection, 2px list separators, a roughly 30% black scrim, opaque selection frames and clean row clipping. Main-menu screens keep the panorama; in-world screens use a transparent world mask instead.
+- A 26.3 world loading screen with the centred mark, title, thin progress bar and chunk grid. Nether and End loads use their matching portal backdrops; resource-reload and world-save status boxes are drawn inside the screen and presented once to avoid flicker.
+- Reworked singleplayer and multiplayer lists. World rows show a join arrow on the icon; server rows show a join arrow on the icon and up/down arrows on the left quarters, with the new order written back to `servers.dat`. Both arrow sets reuse `textures/gui/resource_packs.png`, so no new GUI art is shipped.
+- 26.3 cursor mapping for vanilla screens: pointer for buttons, clickable rows and sliders; I-beam for text fields; EW-resize for sliders. World and server rows only show the hand over the icon, and all screens share one cursor cache with ModernUI scenes.
+- Smooth scrolling for lists and text fields, configurable through `smoothscroll.listAmount` (default 40 px).
+- White search-field borders matching the 26.3 list treatment.
+- Optional Et Futurum Requiem integration: when EFR is installed, ModernUI takes over its loading screen; when it is absent, the vanilla loading path is used.
+- 26.3-style command suggestions in vanilla chat. The popup uses 10 rows of 12 px, a `0xD0000000` panel, white dashed scroll edges, a yellow selected row and grey other rows. It is anchored to the completed word and clamped to the input width.
+- Tab and Shift+Tab cycle the suggestions with automatic scrolling; the mouse can hover and click a row, the wheel scrolls the list, and the cursor becomes a hand over the popup. Vanilla's comma-separated candidate chat line is suppressed.
+- Chat input colours now follow 26.3: grey command literals, aqua/yellow/green/light-purple/gold arguments, yellow for the word being completed, and red for unknown players, items or game modes.
+- Suggestions combine client commands with a cached server command list, online players, item and block ids, game modes, and server-provided arguments such as `gamerule` rules, `time`/`weather` values and `scoreboard` subcommands. `/gamemode` offers `spectator` when Et Futurum Requiem is installed.
+- Server requests are processed in send order and applied by the popup without rewriting the input. Tab uses the local list when possible, avoiding full item-id round trips, and large candidate sets are capped to keep `/give` responsive.
 
 #### Changed
 
 - The remote compatibility range is now `[2.0.0,2.1.0)`.
+- Smooth scrolling defaults to 40 px and is configurable.
+- Debug key bindings are remapped and unified, including F3 combinations, gamemode, the FPS graph, Angelica options and the EFR switcher.
+- F3 text is rendered with ModernUI SDF text (pure white, formatting codes stripped) while the native layer is hidden. Angelica's F3+F6 debug-options screen keeps its stock layout and gains SDF text/tooltips, smooth scrolling and separators.
+
+#### Fixed
+
+- Loading-screen flicker, status-box layout, list clipping at separators, menu backdrop coverage, in-world scrim blending, snooper freezes and stream/stats alignment.
+- Iris list separator flicker; separators are now drawn after the list with an alpha-0 fade.
+- Cursor state no longer sticks after leaving a list or switching screens.
+- Angelica's video and shader screens, together with ModernUI option pages, now receive the matching backdrop.
 
 #### Notes
 
+- The main menu keeps the vanilla button layout. This release applies the shared backdrop and list/loading treatments rather than rewriting every screen.
+- The Angelica F3+F6 debug-options screen is intentionally stock because it is a developer screen; only text rendering, tooltips, scrolling and separators are adapted.
 - The singleplayer and multiplayer screens keep vanilla buttons and row actions. This release adds the shared backdrop and icon actions, not a full screen rewrite.
+
+Compatibility: 2.0.0 accepts remote versions `[2.0.0,2.1.0)`.
 
 ### 中文
 
 #### 新增
 
-- 加载界面改为 26.3 布局：居中标记、标题和细进度条。进入下界或末地时使用对应传送门背景，其他维度使用共享全景图。
-- 菜单界面共用一张半透明全景图，不再各自绘制泥土背景。
-- 单人世界列表在世界图标上显示进入箭头，点击图标直接进入世界。
-- 服务器列表在服务器图标右半区显示进入箭头，左半区显示上移/下移箭头；排序结果写回 `servers.dat`。
-- 两组箭头都复用 `textures/gui/resource_packs.png`，不新增 GUI 贴图。
-- Et Futurum Requiem 兼容为可选：装 EFR 时 ModernUI 接管其加载界面，没装时走原版加载路径。
+- 菜单整体升级到 Minecraft 26.3 风格：共享半透明全景图、匹配的相机投影、2px 列表分隔线、约 30% 黑色遮罩、不透明选中框和干净的列表裁剪。主菜单类界面使用全景图，游戏内界面改为透明世界遮罩。
+- 加载界面采用 26.3 布局：居中标记、标题、细进度条和区块网格。下界与末地使用对应传送门背景；资源重载和世界保存状态框绘制在加载界面内，并只提交一次以避免闪烁。
+- 重做单人/多人列表。世界行在图标上显示进入箭头；服务器行在图标右侧显示进入箭头、左侧显示上移/下移箭头，排序结果写回 `servers.dat`。两组箭头都复用 `textures/gui/resource_packs.png`，不新增 GUI 贴图。
+- 原版界面接入 26.3 鼠标指针：按钮、可点击行和滑条使用手型，文本框使用 I 型，滑条使用左右缩放。世界与服务器行只在图标上显示手型，所有界面与 ModernUI 场景共用一个指针缓存。
+- 列表和文本框支持平滑滚动，可通过 `smoothscroll.listAmount` 配置（默认 40px）。
+- 搜索框改为白色边框，与 26.3 列表风格一致。
+- Et Futurum Requiem 兼容为可选：安装 EFR 时由 ModernUI 接管其加载界面，未安装时走原版加载路径。
+- 原版聊天加入 26.3 风格指令补全：10 行、行高 12px、`0xD0000000` 背景、白色虚线滚动边、黄色选中行、灰色其他行。列表对齐当前补全词，并按输入框宽度收拢。
+- Tab / Shift+Tab 循环候选并自动滚动；鼠标悬停选中、点击应用、滚轮滚动列表，悬停在列表上显示手型；不再向聊天栏打印逗号分隔的候选行。
+- 聊天输入颜色对齐 26.3：命令字面量为灰色，参数按青/黄/绿/粉紫/金色循环，正在补全的词为黄色，未知玩家、物品或游戏模式显示红色。
+- 候选来源合并客户端指令、缓存的服务器指令表、在线玩家、物品与方块 ID、游戏模式，以及服务器返回的参数（如 `gamerule` 规则、`time`/`weather` 取值、`scoreboard` 子命令）。安装 EFR 时 `/gamemode` 会提供 `spectator`。
+- 服务器请求按发送顺序处理，由弹窗直接应用，不再让原版改写输入框。本地能补全时 Tab 不发送 C14 请求，避免拉取全部物品 ID；候选数量设有上限，保证 `/give` 流畅。
 
 #### 变更
 
 - 远端兼容范围改为 `[2.0.0,2.1.0)`。
+- 平滑滚动默认 40px，并可在配置中调整。
+- 调试快捷键重新映射并统一，包括 F3 组合键、游戏模式、FPS 图表、Angelica 选项和 EFR 切换器。
+- F3 文本改用 ModernUI SDF 渲染（纯白、剥离格式码），并隐藏原版图层。Angelica 的 F3+F6 调试选项界面保留原版布局，新增 SDF 文本/提示框、平滑滚动和分隔线。
+
+#### 修复
+
+- 加载界面闪烁、状态框布局、分隔线处的列表裁剪、菜单背景覆盖、游戏内遮罩混合、snooper 卡死以及直播/统计界面对齐。
+- Iris 列表分隔线闪烁；分隔线改为列表绘制后追加，并通过 alpha-0 淡出。
+- 离开列表或切换界面后鼠标指针不再卡住。
+- Angelica 的视频和着色器界面，以及 ModernUI 选项页，现在也会应用匹配的背景。
 
 #### 说明
 
-- 单人/多人界面保留原版按钮和行操作。本次只加共享背景和图标快捷操作，不重写整个界面。
+- 主菜单保留原版按钮布局。本次发布应用共享背景和列表/加载处理，而不是重写所有界面。
+- Angelica F3+F6 调试选项界面属于开发者界面，保持原版布局，仅适配文字、提示框、滚动和分隔线。
+- 单人/多人界面保留原版按钮和行操作；本次新增共享背景和图标快捷操作，不重写整个界面。
+
+兼容性：2.0.0 接受远端版本 `[2.0.0,2.1.0)`。
 
 ## [1.2.5] - 2026-11-14
 
