@@ -100,7 +100,9 @@ public final class ChatCommandSuggestions {
             return;
         }
         MODEL.setEntries(entries, text);
-        MODEL.selectIndex(selected);
+        if (selected >= 0) {
+            MODEL.selectIndex(selected);
+        }
     }
 
     private static int popupWidth(Minecraft minecraft, GuiTextField inputField) {

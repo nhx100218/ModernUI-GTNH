@@ -67,8 +67,9 @@ public abstract class MixinGuiChatCommandSuggestions {
         if (!ChatCommandSuggestions.isChatField(inputField)) {
             return;
         }
-        ChatCommandSuggestions.onServerCandidates(field_146412_t, inputField.getText(),
-                field_146413_s);
+        // The response may have written the common prefix or cycled a
+        // candidate; highlight whichever text is actually in the field.
+        ChatCommandSuggestions.onServerCandidates(field_146412_t, inputField.getText(), -1);
     }
 
     @Inject(method = "drawScreen", at = @At("RETURN"))
