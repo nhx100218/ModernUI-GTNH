@@ -29,6 +29,7 @@ public final class F3OptionsTooltip {
     private static List<String> lines;
     private static int mouseX;
     private static int mouseY;
+    private static boolean LOGGED_CAPTURE;
 
     private F3OptionsTooltip() {
     }
@@ -37,6 +38,12 @@ public final class F3OptionsTooltip {
         if (tooltipLines == null || tooltipLines.isEmpty()) {
             lines = null;
             return;
+        }
+        if (!LOGGED_CAPTURE) {
+            LOGGED_CAPTURE = true;
+            blocamlimb.nhx100218.modernui.uilib.MyMod.LOG.info(
+                    "[F3DIAG] tooltip capture lines={} first='{}'", Integer.valueOf(tooltipLines.size()),
+                    tooltipLines.get(0));
         }
         lines = new ArrayList<String>(tooltipLines);
         mouseX = x;
@@ -49,6 +56,8 @@ public final class F3OptionsTooltip {
         if (tooltip == null || tooltip.isEmpty() || minecraft == null) {
             return;
         }
+        blocamlimb.nhx100218.modernui.uilib.MyMod.LOG.info(
+                "[F3DIAG] tooltip draw lines={} first='{}'", Integer.valueOf(tooltip.size()), tooltip.get(0));
         DefaultFontRendererAdapter adapter = DefaultFontRendererAdapter.getInstance();
         int width = 0;
         for (String line : tooltip) {
