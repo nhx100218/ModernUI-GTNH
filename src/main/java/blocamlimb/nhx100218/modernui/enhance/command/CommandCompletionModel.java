@@ -17,7 +17,8 @@ public final class CommandCompletionModel {
     private int scrollOffset;
     private boolean open;
 
-    private static final int VISIBLE_ROWS = 8;
+    /** Vanilla 26.3 uses {@code suggestionLineLimit = 10} for the chat screen. */
+    private static final int VISIBLE_ROWS = 10;
 
     public void update(CommandCompletionProvider provider, String input, int cursor, int limit) {
         entries.clear();
@@ -112,6 +113,21 @@ public final class CommandCompletionModel {
 
     public int visibleRows() {
         return VISIBLE_ROWS;
+    }
+
+    /** Scrolls the visible window without changing the selected row. */
+    public void scrollBy(int rows) {
+        if (!open || entries.isEmpty()) {
+            return;
+        }
+        scrollOffset += rows;
+        int maxOffset = Math.max(0, entries.size() - VISIBLE_ROWS);
+        if (scrollOffset > maxOffset) {
+            scrollOffset = maxOffset;
+        }
+        if (scrollOffset < 0) {
+            scrollOffset = 0;
+        }
     }
 
     private void ensureVisible() {

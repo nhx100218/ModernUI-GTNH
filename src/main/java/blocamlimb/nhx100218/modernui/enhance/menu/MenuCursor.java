@@ -16,6 +16,7 @@ import net.minecraft.client.gui.GuiSelectWorld;
 import net.minecraft.client.gui.GuiSlot;
 import net.minecraft.client.gui.GuiTextField;
 
+import blocamlimb.nhx100218.modernui.enhance.command.ChatCommandSuggestions;
 import blocamlimb.nhx100218.modernui.uilib.ui.base.props.UiCursor;
 import blocamlimb.nhx100218.modernui.uilib.ui.host.SystemUiCursorHost;
 import blocamlimb.nhx100218.modernui.uilib.ui.screen.McScreenBridge;
@@ -81,6 +82,11 @@ public final class MenuCursor {
             return;
         }
 
+        if (screen instanceof net.minecraft.client.gui.GuiChat
+                && ChatCommandSuggestions.isPopupHovered(mouseX, mouseY)) {
+            apply(UiCursor.POINTER);
+            return;
+        }
         if (overTextField(screen, mouseX, mouseY)) {
             apply(UiCursor.TEXT);
             return;

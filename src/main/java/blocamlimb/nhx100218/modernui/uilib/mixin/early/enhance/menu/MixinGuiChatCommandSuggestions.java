@@ -7,6 +7,8 @@ import net.minecraft.client.gui.GuiNewChat;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.util.IChatComponent;
 
+import org.lwjgl.input.Mouse;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -37,33 +39,49 @@ public abstract class MixinGuiChatCommandSuggestions {
 
     @Inject(method = "initGui", at = @At("RETURN"))
     private void modernui$resetPopup(CallbackInfo callbackInfo) {
+        ChatCommandSuggestions.bindField(inputField);
         ChatCommandSuggestions.reset();
     }
 
     @Inject(method = "onGuiClosed", at = @At("RETURN"))
     private void modernui$closePopup(CallbackInfo callbackInfo) {
+        ChatCommandSuggestions.bindField(null);
         ChatCommandSuggestions.reset();
     }
 
     @Inject(method = "keyTyped", at = @At("RETURN"))
     private void modernui$updatePopup(char typedChar, int keyCode, CallbackInfo callbackInfo) {
+        if (!ChatCommandSuggestions.isChatField(inputField)) {
+            return;
+        }
         if (keyCode == 15) {
             ChatCommandSuggestions.onServerCandidates(field_146412_t, inputField.getText(),
                     field_146413_s - 1);
         } else {
-            ChatCommandSuggestions.onInput(inputField.getText());
+            ChatCommandSuggestions.onInput(inputField.getText(), inputField.getCursorPosition());
         }
     }
 
     @Inject(method = "func_146406_a", at = @At("RETURN"))
     private void modernui$serverResponse(String[] options, CallbackInfo callbackInfo) {
+        if (!ChatCommandSuggestions.isChatField(inputField)) {
+            return;
+        }
         ChatCommandSuggestions.onServerCandidates(field_146412_t, inputField.getText(),
                 field_146413_s);
     }
 
     @Inject(method = "drawScreen", at = @At("RETURN"))
     private void modernui$drawPopup(int mouseX, int mouseY, float partialTicks, CallbackInfo callbackInfo) {
-        ChatCommandSuggestions.render(net.minecraft.client.Minecraft.getMinecraft(), inputField);
+        ChatCommandSuggestions.render(net.minecraft.client.Minecraft.getMinecraft(), inputField, mouseX, mouseY);
+    }
+
+    @Inject(method = "handleMouseInput", at = @At("HEAD"), cancellable = true)
+    private void modernui$scrollPopup(CallbackInfo callbackInfo) {
+        int wheel = Mouse.getEventDWheel();
+        if (wheel != 0 && ChatCommandSuggestions.mouseScrolled(wheel, inputField)) {
+            callbackInfo.cancel();
+        }
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)

@@ -83,6 +83,7 @@ public class EarlyMixins implements IFMLLoadingPlugin {
             mixins.add("enhance.MixinGuiTextFieldSmoothScroll");
             mixins.add("enhance.MixinGuiTextFieldSelection");
             mixins.add("enhance.MixinGuiTextFieldSearchBorder");
+            mixins.add("enhance.MixinGuiTextFieldChatColors");
             mixins.add("enhance.MixinMinecraftScreenPoke");
             mixins.add("enhance.MixinGuiIngameHotbarScroll");
             mixins.add("enhance.MixinGuiHotbarTexture");

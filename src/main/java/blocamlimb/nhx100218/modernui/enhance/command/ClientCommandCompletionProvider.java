@@ -5,10 +5,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiPlayerInfo;
 import net.minecraft.command.ICommand;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.Item;
 import net.minecraftforge.client.ClientCommandHandler;
 
 /**
@@ -65,6 +67,14 @@ public final class ClientCommandCompletionProvider implements CommandCompletionP
 
     private static void collectArguments(Minecraft mc, String before, String word, List<CommandCompletionEntry> out,
             int limit) {
+        int firstSpace = before.indexOf(' ');
+        String command = firstSpace >= 0
+                ? before.substring(0, firstSpace).trim().toLowerCase(Locale.ROOT) : "";
+        if (("gamemode".equals(command) || "gm".equals(command))
+                && firstSpace >= 0 && firstSpace == before.lastIndexOf(' ')) {
+            addGamemodeSuggestions(word, out, limit);
+            return;
+        }
         // Sub-commands / argument hints registered by the client command, if any.
         try {
             List<String> options = ClientCommandHandler.instance.getPossibleCommands(mc.thePlayer, before);
@@ -80,8 +90,18 @@ public final class ClientCommandCompletionProvider implements CommandCompletionP
         } catch (Throwable ignored) {
             // Ignore malformed command trees.
         }
-        // Player names are valid for many server commands (msg/tp/kill/...).
-        if (mc.thePlayer.sendQueue != null) {
+        // Player names are only offered where the command expects a player.
+        int spaces = 0;
+        for (int i = 0; i < before.length(); i++) {
+            if (before.charAt(i) == ' ') {
+                spaces++;
+            }
+        }
+        int argIndex = Math.max(0, spaces - 1);
+        if ("give".equals(command) && argIndex == 1) {
+            addItemSuggestions(word, out, limit);
+        }
+        if (isPlayerArgument(command, argIndex) && mc.thePlayer.sendQueue != null) {
             try {
                 for (Object infoObject : mc.thePlayer.sendQueue.playerInfoList) {
                     if (!(infoObject instanceof GuiPlayerInfo) || out.size() >= limit) {
@@ -99,10 +119,104 @@ public final class ClientCommandCompletionProvider implements CommandCompletionP
             }
         }
         EntityPlayer player = mc.thePlayer;
-        if (player != null && out.size() < limit && matches(player.getCommandSenderName(), word)) {
+        if (isPlayerArgument(command, argIndex) && player != null && out.size() < limit
+                && matches(player.getCommandSenderName(), word)) {
             out.add(new CommandCompletionEntry(player.getCommandSenderName(), "Player",
                     CommandCompletionEntry.Kind.PLAYER, 50));
         }
+    }
+
+    private static boolean isPlayerArgument(String command, int argIndex) {
+        if (command == null) {
+            return false;
+        }
+        switch (command) {
+            case "give":
+            case "kill":
+            case "msg":
+            case "tell":
+            case "w":
+            case "op":
+            case "deop":
+            case "kick":
+            case "ban":
+            case "pardon":
+                return argIndex == 0;
+            case "gamemode":
+            case "gm":
+                return argIndex == 1;
+            case "tp":
+            case "tpx":
+            case "tphere":
+            case "teleport":
+                return argIndex <= 1;
+            default:
+                return false;
+        }
+    }
+
+    private static void addItemSuggestions(String word, List<CommandCompletionEntry> out, int limit) {
+        List<String> ids = new ArrayList<String>();
+        try {
+            for (Object keyObject : Item.itemRegistry.getKeys()) {
+                if (keyObject instanceof String) {
+                    String id = (String) keyObject;
+                    if (matches(id, word)) {
+                        ids.add(id);
+                    }
+                }
+            }
+            for (Object keyObject : Block.blockRegistry.getKeys()) {
+                if (keyObject instanceof String) {
+                    String id = (String) keyObject;
+                    if (matches(id, word) && !ids.contains(id)) {
+                        ids.add(id);
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+            return;
+        }
+        Collections.sort(ids);
+        for (String id : ids) {
+            if (out.size() >= limit) {
+                return;
+            }
+            out.add(new CommandCompletionEntry(id, "Item", CommandCompletionEntry.Kind.ARGUMENT,
+                    500 - out.size()));
+        }
+    }
+
+    private static void addGamemodeSuggestions(String word, List<CommandCompletionEntry> out, int limit) {
+        String[] base = {"survival", "creative", "adventure"};
+        for (String mode : base) {
+            if (out.size() >= limit) {
+                return;
+            }
+            if (matches(mode, word)) {
+                out.add(new CommandCompletionEntry(mode, "Game mode", CommandCompletionEntry.Kind.ARGUMENT,
+                        1000 - out.size()));
+            }
+        }
+        if (supportsSpectator() && out.size() < limit && matches("spectator", word)) {
+            out.add(new CommandCompletionEntry("spectator", "Game mode (EFR)",
+                    CommandCompletionEntry.Kind.ARGUMENT, 1000 - out.size()));
+        }
+    }
+
+    private static Boolean efrSpectator;
+
+    /** True when Et Futurum Requiem is installed and can run spectator mode. */
+    public static boolean supportsSpectator() {
+        if (efrSpectator == null) {
+            try {
+                Class.forName("ganymedes01.etfuturum.spectator.SpectatorMode");
+                efrSpectator = Boolean.TRUE;
+            } catch (Throwable ignored) {
+                efrSpectator = Boolean.FALSE;
+            }
+        }
+        return efrSpectator.booleanValue();
     }
 
     private static String commandUsage(Minecraft mc, String name) {

@@ -2,12 +2,16 @@ package blocamlimb.nhx100218.modernui.enhance.command;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.GuiPlayerInfo;
 import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.item.Item;
 
-import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
+import org.lwjgl.input.Mouse;
 
 /**
  * Drives the ModernUI command suggestion popup for vanilla 1.7.10
@@ -18,6 +22,19 @@ public final class ChatCommandSuggestions {
 
     private static final CommandCompletionProvider PROVIDER = new ClientCommandCompletionProvider();
     private static final CommandCompletionModel MODEL = new CommandCompletionModel();
+    /** The list renders 10 rows; keep enough candidates to scroll like 26.3. */
+    private static final int MAX_CANDIDATES = 256;
+
+    private static final int COLOR_CHAT = 0xE0E0E0;
+    private static final int COLOR_LITERAL = 0xAAAAAA;
+    private static final int COLOR_RED = 0xFF5555;
+    /** 26.3 {@code CommandSuggestions.ARGUMENT_STYLES}, keyed by argument index. */
+    private static final int[] ARGUMENT_COLORS = {0x55FFFF, 0xFFFF55, 0x55FF55, 0xFF55FF, 0xFFAA00};
+
+    /** The field currently drawn by {@code GuiChat}; used by the text-field mixin. */
+    private static GuiTextField chatField;
+    private static int lastMouseX = Integer.MIN_VALUE;
+    private static int lastMouseY = Integer.MIN_VALUE;
 
     private ChatCommandSuggestions() {
     }
@@ -26,16 +43,31 @@ public final class ChatCommandSuggestions {
         return MODEL;
     }
 
-    public static void reset() {
-        MODEL.close();
+    public static void bindField(GuiTextField field) {
+        chatField = field;
     }
 
-    public static void onInput(String text) {
+    public static boolean isChatField(GuiTextField field) {
+        return field != null && field == chatField;
+    }
+
+    public static boolean isPopupOpen() {
+        return MODEL.isOpen();
+    }
+
+    public static void reset() {
+        MODEL.close();
+        lastMouseX = Integer.MIN_VALUE;
+        lastMouseY = Integer.MIN_VALUE;
+    }
+
+    public static void onInput(String text, int cursor) {
         if (text == null || !text.startsWith("/")) {
             MODEL.close();
             return;
         }
-        List<CommandCompletionEntry> entries = PROVIDER.collect(text, text.length(), 8);
+        int caret = Math.max(0, Math.min(cursor <= 0 ? text.length() : cursor, text.length()));
+        List<CommandCompletionEntry> entries = PROVIDER.collect(text, caret, MAX_CANDIDATES);
         if (entries.isEmpty()) {
             MODEL.close();
         } else {
@@ -45,13 +77,20 @@ public final class ChatCommandSuggestions {
 
     public static void onServerCandidates(List<String> candidates, String text, int selected) {
         List<CommandCompletionEntry> entries = new ArrayList<CommandCompletionEntry>();
+        java.util.Set<String> seen = new java.util.HashSet<String>();
         if (candidates != null) {
             for (String candidate : candidates) {
                 if (candidate == null || candidate.isEmpty()) {
                     continue;
                 }
-                boolean command = candidate.startsWith("/") || candidate.indexOf(' ') < 0;
-                entries.add(new CommandCompletionEntry(candidate, command ? "Command" : "Suggestion",
+                // Forge colour-codes its client completions ("§7/gamemode§r");
+                // the popup and the applied text must stay plain.
+                String clean = net.minecraft.util.EnumChatFormatting.getTextWithoutFormattingCodes(candidate).trim();
+                if (clean.isEmpty() || !seen.add(clean.toLowerCase(Locale.ROOT))) {
+                    continue;
+                }
+                boolean command = clean.startsWith("/") || clean.indexOf(' ') < 0;
+                entries.add(new CommandCompletionEntry(clean, command ? "Command" : "Suggestion",
                         command ? CommandCompletionEntry.Kind.COMMAND : CommandCompletionEntry.Kind.ARGUMENT,
                         1000 - entries.size()));
             }
@@ -71,11 +110,11 @@ public final class ChatCommandSuggestions {
         FontRenderer font = minecraft.fontRenderer;
         int max = 0;
         for (CommandCompletionEntry entry : MODEL.entries()) {
-            max = Math.max(max, font.getStringWidth(entry.text));
+            max = Math.max(max, font.getStringWidth(CommandCompletionRenderer.displayText(entry)));
         }
         int screenWidth = minecraft.currentScreen == null
                 ? inputField.width + inputField.xPosition : minecraft.currentScreen.width;
-        return Math.max(20, Math.min(screenWidth - inputField.xPosition, max + 2));
+        return Math.max(20, Math.min(screenWidth - inputField.xPosition, max + 1));
     }
 
     private static int popupLeft(Minecraft minecraft, GuiTextField inputField, int width) {
@@ -93,33 +132,240 @@ public final class ChatCommandSuggestions {
         }
         int wordX = inputField.xPosition
                 + minecraft.fontRenderer.getStringWidth(text.substring(0, Math.min(start, text.length())));
-        int min = inputField.xPosition;
         int max = inputField.xPosition + inputField.width - width;
-        if (max < min) {
-            max = min;
+        if (max < inputField.xPosition) {
+            max = inputField.xPosition;
         }
-        return Math.max(min, Math.min(wordX, max));
+        // 26.3 places an unbordered suggestion list one pixel left of the
+        // completed word and clamps it inside the input.
+        return Math.max(inputField.xPosition, Math.min(wordX - 1, max));
     }
 
     private static int popupTop(GuiTextField inputField, int height) {
-        return inputField.yPosition - height - 1;
+        // 26.3 (anchorToBottom, unbordered input): bottom = inputY - 3.
+        int top = inputField.yPosition - 3 - height;
+        return top < 0 ? 0 : top;
     }
 
-    public static void render(Minecraft minecraft, GuiTextField inputField) {
+    public static void render(Minecraft minecraft, GuiTextField inputField, int mouseX, int mouseY) {
         if (minecraft == null || inputField == null || minecraft.currentScreen == null || !MODEL.isOpen()) {
+            if (mouseX != lastMouseX || mouseY != lastMouseY) {
+                lastMouseX = mouseX;
+                lastMouseY = mouseY;
+            }
             return;
         }
         int width = popupWidth(minecraft, inputField);
         int height = CommandCompletionRenderer.preferredHeight(MODEL, MODEL.visibleRows());
         int top = popupTop(inputField, height);
-        if (top < 0) {
-            top = 0;
-        }
         int left = popupLeft(minecraft, inputField, width);
-        ModernGuiRenderer.beginUi();
-        CommandCompletionRenderer.render(minecraft, MODEL, left, top, width,
-                MODEL.visibleRows());
-        ModernGuiRenderer.beginUi();
+
+        // 26.3 moves the highlighted row when the mouse moves over the list.
+        if (mouseX != lastMouseX || mouseY != lastMouseY) {
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+            if (inside(left, top, width, height, mouseX, mouseY)) {
+                int row = (mouseY - top) / CommandCompletionRenderer.ROW_HEIGHT;
+                int index = MODEL.scrollOffset() + row;
+                if (row >= 0 && row < MODEL.visibleRows() && index < MODEL.entries().size()) {
+                    MODEL.selectIndex(index);
+                }
+            }
+        }
+        CommandCompletionRenderer.render(minecraft, MODEL, left, top, width, MODEL.visibleRows());
+    }
+
+    /** True when the cursor is over the suggestion list (used for the hand). */
+    public static boolean isPopupHovered(int mouseX, int mouseY) {
+        GuiTextField field = chatField;
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (field == null || minecraft == null || !MODEL.isOpen()) {
+            return false;
+        }
+        int width = popupWidth(minecraft, field);
+        int height = CommandCompletionRenderer.preferredHeight(MODEL, MODEL.visibleRows());
+        return inside(popupLeft(minecraft, field, width), popupTop(field, height), width, height, mouseX, mouseY);
+    }
+
+    private static boolean inside(int left, int top, int width, int height, int mouseX, int mouseY) {
+        return mouseX >= left && mouseX < left + width && mouseY >= top && mouseY < top + height;
+    }
+
+    /** Mouse wheel over the popup scrolls the visible rows. */
+    public static boolean mouseScrolled(int wheel, GuiTextField inputField) {
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft == null || minecraft.currentScreen == null || inputField == null || !MODEL.isOpen()) {
+            return false;
+        }
+        int width = popupWidth(minecraft, inputField);
+        int height = CommandCompletionRenderer.preferredHeight(MODEL, MODEL.visibleRows());
+        int left = popupLeft(minecraft, inputField, width);
+        int top = popupTop(inputField, height);
+        int mouseX = Mouse.getEventX() * minecraft.currentScreen.width / minecraft.displayWidth;
+        int mouseY = minecraft.currentScreen.height
+                - Mouse.getEventY() * minecraft.currentScreen.height / minecraft.displayHeight - 1;
+        if (!inside(left, top, width, height, mouseX, mouseY)) {
+            return false;
+        }
+        MODEL.scrollBy(-Integer.signum(wheel));
+        return true;
+    }
+
+    /**
+     * Draws chat input text with the 26.3 colour grammar: command literals and
+     * spaces grey, arguments cycling through aqua / yellow / green / light
+     * purple / gold, and values that cannot exist in red.
+     *
+     * @param caret index of the cursor inside {@code text}, or -1 when the
+     *              cursor is outside the visible part of the field
+     */
+    public static void drawTokenText(FontRenderer font, String text, int x, int y, int caret, boolean popupOpen) {
+        if (font == null || text == null || text.isEmpty()) {
+            return;
+        }
+        int cursorX = x;
+        if (!text.startsWith("/")) {
+            font.drawStringWithShadow(text, cursorX, y, COLOR_CHAT);
+            return;
+        }
+        String commandName = "";
+        int tokenIndex = 0;
+        int i = 0;
+        while (i < text.length()) {
+            int start = i;
+            while (i < text.length() && text.charAt(i) != ' ') {
+                i++;
+            }
+            int end = i;
+            String token = text.substring(start, end);
+            boolean current = caret >= 0 && caret >= start && caret <= end;
+            int color;
+            if (tokenIndex == 0) {
+                commandName = token.startsWith("/")
+                        ? token.substring(1).toLowerCase(Locale.ROOT) : token.toLowerCase(Locale.ROOT);
+                // The candidate Tab selected is shown in the bar too, so the
+                // word currently being completed is yellow like the list row.
+                if (current && popupOpen && !commandName.isEmpty()) {
+                    color = ARGUMENT_COLORS[1];
+                } else {
+                    // 1.7.10 has no client-side command tree, so an unknown
+                    // server command must not be shown as invalid.
+                    color = COLOR_LITERAL;
+                }
+            } else {
+                int argument = tokenIndex - 1;
+                // While the popup offers candidates for the word being typed,
+                // it is a valid prefix; only finished values can be missing.
+                if (current && popupOpen) {
+                    color = ARGUMENT_COLORS[1];
+                } else if (!validArgument(commandName, argument, token)) {
+                    color = COLOR_RED;
+                } else {
+                    color = ARGUMENT_COLORS[argument % ARGUMENT_COLORS.length];
+                }
+            }
+            font.drawStringWithShadow(token, cursorX, y, color);
+            cursorX += font.getStringWidth(token);
+            if (i < text.length() && text.charAt(i) == ' ') {
+                cursorX += font.getCharWidth(' ');
+                i++;
+            }
+            tokenIndex++;
+        }
+    }
+
+    private static boolean validArgument(String command, int index, String token) {
+        if (token == null || token.isEmpty()) {
+            return true;
+        }
+        if (command == null) {
+            return true;
+        }
+        switch (command) {
+            case "gamemode":
+            case "gm":
+                if (index == 0) {
+                    String value = token.toLowerCase(Locale.ROOT);
+                    if (value.equals("spectator") || value.equals("3")) {
+                        return ClientCommandCompletionProvider.supportsSpectator();
+                    }
+                    return value.equals("survival") || value.equals("creative") || value.equals("adventure")
+                            || value.equals("0") || value.equals("1") || value.equals("2");
+                }
+                if (index == 1) {
+                    return isOnlinePlayer(token);
+                }
+                return true;
+            case "give":
+                if (index == 0) {
+                    return isOnlinePlayer(token);
+                }
+                if (index == 1) {
+                    return isItem(token);
+                }
+                if (index == 2) {
+                    return isNumber(token);
+                }
+                return true;
+            case "tp":
+            case "tpx":
+            case "tphere":
+            case "teleport":
+            case "kill":
+            case "msg":
+            case "tell":
+            case "w":
+            case "op":
+            case "deop":
+            case "kick":
+                return index != 0 || isOnlinePlayer(token);
+            default:
+                return true;
+        }
+    }
+
+    private static boolean isItem(String token) {
+        String id = token;
+        int first = id.indexOf(':');
+        int second = first >= 0 ? id.indexOf(':', first + 1) : -1;
+        if (second > 0) {
+            id = id.substring(0, second);
+        }
+        try {
+            return Item.itemRegistry.getObject(id) != null || Block.blockRegistry.getObject(id) != null;
+        } catch (Throwable ignored) {
+            return true;
+        }
+    }
+
+    private static boolean isOnlinePlayer(String name) {
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft == null || minecraft.thePlayer == null || minecraft.thePlayer.sendQueue == null) {
+            return true;
+        }
+        if (name.equalsIgnoreCase(minecraft.thePlayer.getCommandSenderName())) {
+            return true;
+        }
+        try {
+            for (Object infoObject : minecraft.thePlayer.sendQueue.playerInfoList) {
+                if (infoObject instanceof GuiPlayerInfo
+                        && name.equalsIgnoreCase(((GuiPlayerInfo) infoObject).name)) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isNumber(String token) {
+        try {
+            Integer.parseInt(token);
+            return true;
+        } catch (NumberFormatException ignored) {
+            return false;
+        }
     }
 
     /** Mouse click on a suggestion row; returns true when consumed. */
@@ -131,16 +377,13 @@ public final class ChatCommandSuggestions {
         int width = popupWidth(minecraft, inputField);
         int height = CommandCompletionRenderer.preferredHeight(MODEL, MODEL.visibleRows());
         int top = popupTop(inputField, height);
-        if (top < 0) {
-            top = 0;
-        }
         int left = popupLeft(minecraft, inputField, width);
-        if (mouseX < left || mouseX >= left + width || mouseY < top || mouseY >= top + height) {
+        if (!inside(left, top, width, height, mouseX, mouseY)) {
             return false;
         }
-        int row = (mouseY - top - 1) / CommandCompletionRenderer.ROW_HEIGHT;
+        int row = (mouseY - top) / CommandCompletionRenderer.ROW_HEIGHT;
         int index = MODEL.scrollOffset() + row;
-        if (index < 0 || index >= MODEL.entries().size()) {
+        if (row < 0 || row >= MODEL.visibleRows() || index < 0 || index >= MODEL.entries().size()) {
             return false;
         }
         MODEL.selectIndex(index);
@@ -158,15 +401,18 @@ public final class ChatCommandSuggestions {
         if (start < 0) {
             start = 0;
         }
+        // The leading '/' of a command is kept: 26.3 suggestions carry the
+        // command name only, so replace the word after the slash.
+        if (start == 0 && text.startsWith("/")) {
+            start = 1;
+        }
         String candidate = entry.text;
-        // The input already starts with '/', so do not duplicate it for the
-        // first word (client command candidates carry their own '/').
-        if (start <= 1 && candidate.startsWith("/")) {
+        if (start == 1 && candidate.startsWith("/")) {
             candidate = candidate.substring(1);
         }
         String next = text.substring(0, start) + candidate;
         inputField.setText(next);
         inputField.setCursorPosition(Math.min(next.length(), start + candidate.length()));
-        onInput(next);
+        onInput(next, inputField.getCursorPosition());
     }
 }
