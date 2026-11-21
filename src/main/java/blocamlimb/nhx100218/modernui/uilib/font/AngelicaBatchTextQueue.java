@@ -9,6 +9,9 @@ import org.lwjgl.opengl.GL11;
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
 import blocamlimb.nhx100218.modernui.uilib.MyMod;
 import blocamlimb.nhx100218.modernui.uilib.font.api.DefaultFontRendererAdapter;
+import blocamlimb.nhx100218.modernui.uilib.ui.base.props.UiFontStyle;
+import blocamlimb.nhx100218.modernui.uilib.ui.base.props.UiFontWeight;
+import blocamlimb.nhx100218.modernui.uilib.ui.text.TextContentMode;
 
 /**
  * Collects Angelica's batched debug text and replays it with ModernUI's SDF font
@@ -122,7 +125,7 @@ public final class AngelicaBatchTextQueue {
         for (Entry entry : snapshot) {
             try {
                 adapter.drawString(entry.text, entry.x, entry.y, entry.color, entry.shadow,
-                        blocamlimb.nhx100218.modernui.uilib.ui.text.TextContentMode.UILIB_RAW);
+                        TextContentMode.UILIB_RAW, UiFontWeight.BOLD, UiFontStyle.NORMAL);
             } catch (Throwable ignored) {
                 // Never let debug text break the host draw.
             }

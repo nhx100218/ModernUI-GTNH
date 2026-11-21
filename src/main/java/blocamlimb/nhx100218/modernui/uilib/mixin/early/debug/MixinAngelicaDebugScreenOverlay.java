@@ -29,12 +29,7 @@ public abstract class MixinAngelicaDebugScreenOverlay {
     @Inject(method = "draw", at = @At("HEAD"), remap = false, require = 0)
     private void modernui$beginOverlayText(CallbackInfo callbackInfo) {
         forceRecapture();
-        F3FontBridge.beginFrame();
-    }
-
-    @Inject(method = "draw", at = @At("RETURN"), remap = false, require = 0)
-    private void modernui$flushOverlayText(CallbackInfo callbackInfo) {
-        F3FontBridge.flushFrame(this);
+        F3FontBridge.beginFrame(this);
     }
 
     private void forceRecapture() {

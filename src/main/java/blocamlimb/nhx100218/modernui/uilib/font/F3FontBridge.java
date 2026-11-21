@@ -73,6 +73,7 @@ public final class F3FontBridge {
 
     /** 当前正在采集的网格；变化时说明开始了新一轮捕获，需要清掉该网格旧文本。 */
     private static Object lastCapturing;
+    private static Object overlayRef;
     private static volatile boolean drawingFrame;
     private static volatile long drawingFrameStartNanos;
     private static boolean drawWarned;
@@ -201,7 +202,12 @@ public final class F3FontBridge {
 
     /** 开始一帧 F3 绘制：下一轮 capture 必须重新清理对应网格。 */
     public static void beginFrame() {
+        beginFrame(null);
+    }
+
+    public static void beginFrame(Object overlay) {
         lastCapturing = null;
+        overlayRef = overlay;
         drawingFrameStartNanos = System.nanoTime();
         drawingFrame = true;
         AngelicaBatchTextQueue.begin();
@@ -228,44 +234,56 @@ public final class F3FontBridge {
 
     public static void endGraphFrame() {
         try {
-            flushQueueWithGuiProjection(false, 1.0F);
+            AngelicaBatchTextQueue.flush();
         } finally {
             drawingFrame = false;
         }
     }
 
     /**
-     * Flushes the batch text queue with the vanilla GUI orthographic projection.
-     *
-     * <p>At the F3 overlay's RETURN the GL matrices may still be in world space.
-     * The ModernUI font renderer then classifies the text as world-space, applies
-     * lightmap/lighting and the white glyphs come out dim/grey. Setting the same
-     * ortho projection the GUI uses makes it render as normal white UI text.</p>
+     * Flushes the queued F3 text at the end of the HUD pass, where the vanilla
+     * GUI orthographic projection is active. Flushing inside the overlay's own
+     * draw leaves world-space matrices and the SDF font renders dim/grey.
      */
-    private static void flushQueueWithGuiProjection(boolean scaled, float factor) {
-        Minecraft minecraft = Minecraft.getMinecraft();
-        if (minecraft == null) {
+    public static void flushFramePost() {
+        if (!drawingFrame) {
             return;
         }
-        ScaledResolution resolution = new ScaledResolution(minecraft, minecraft.displayWidth,
-                minecraft.displayHeight);
-        GL11.glMatrixMode(GL11.GL_PROJECTION);
-        GL11.glPushMatrix();
-        GL11.glLoadIdentity();
-        GL11.glOrtho(0.0D, resolution.getScaledWidth(), resolution.getScaledHeight(), 0.0D, 1000.0D, 3000.0D);
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-        GL11.glPushMatrix();
-        GL11.glLoadIdentity();
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft == null || minecraft.currentScreen != null) {
+            drawingFrame = false;
+            overlayRef = null;
+            return;
+        }
+        boolean scaled = false;
+        float factor = 1.0F;
+        Object overlay = overlayRef;
+        try {
+            Object scaledValue = readField(OVERLAY_SCALED, overlay);
+            if (scaledValue instanceof Boolean && ((Boolean) scaledValue).booleanValue()) {
+                int scale = readInt(OVERLAY_SCALE, overlay);
+                int gameScale = readInt(OVERLAY_GAME_SCALE, overlay);
+                if (scale > 0 && gameScale > 0 && scale != gameScale) {
+                    scaled = true;
+                    factor = scale / (float) gameScale;
+                }
+            }
+        } catch (Throwable ignored) {
+            // Draw in normal GUI coordinates.
+        }
         if (scaled) {
+            GL11.glPushMatrix();
             GL11.glScalef(factor, factor, 1.0F);
         }
         try {
             AngelicaBatchTextQueue.flush();
         } finally {
-            GL11.glPopMatrix();
-            GL11.glMatrixMode(GL11.GL_PROJECTION);
-            GL11.glPopMatrix();
-            GL11.glMatrixMode(GL11.GL_MODELVIEW);
+            if (scaled) {
+                GL11.glPopMatrix();
+            }
+            drawingFrame = false;
+            overlayRef = null;
+            lastCapturing = null;
         }
     }
 
@@ -318,9 +336,10 @@ public final class F3FontBridge {
                 // No scaling information: draw in normal GUI coordinates.
             }
             try {
-                flushQueueWithGuiProjection(scaled, factor);
+                AngelicaBatchTextQueue.flush();
             } finally {
                 drawingFrame = false;
+                overlayRef = null;
             }
         }
     }

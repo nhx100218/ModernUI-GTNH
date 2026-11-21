@@ -27,6 +27,8 @@ public class ClientProxy extends CommonProxy {
         // Post-draw separators for Iris' custom list screens.
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(
                 new blocamlimb.nhx100218.modernui.enhance.client.IrisListSeparators());
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(
+                new blocamlimb.nhx100218.modernui.enhance.client.F3OverlayTextFlush());
         // 逐帧驱动 HUD 缓存重建（Angelica HUD 缓存下让聊天/快捷栏缓动可见）
         blocamlimb.nhx100218.modernui.enhance.client.SmoothScrollHudTicker ticker = new blocamlimb.nhx100218.modernui.enhance.client.SmoothScrollHudTicker();
         FMLCommonHandler.instance().bus().register(ticker);
