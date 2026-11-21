@@ -18,15 +18,9 @@ public abstract class MixinAngelicaDebugTextColor {
     @ModifyVariable(method = "draw", at = @At("HEAD"), argsOnly = true, index = 6,
             remap = false, require = 0)
     private int modernui$whiteDebugText(int color) {
-        int argb = color == 0 ? 0xFFFFFFFF : (color | 0xFF000000);
-        int red = (argb >> 16) & 0xFF;
-        int green = (argb >> 8) & 0xFF;
-        int blue = argb & 0xFF;
-        // Neutral labels (the usual F3 grey) become pure white; keep red/green/
-        // yellow warnings and values readable.
-        if (red >= 0x80 && Math.abs(red - green) <= 12 && Math.abs(green - blue) <= 12) {
-            return 0xFFFFFFFF;
-        }
-        return argb;
+        // The native glyphs are only a layout/cache carrier now; ModernUI draws
+        // the visible SDF text on top at the end of the overlay. Making the
+        // native layer transparent avoids double/bold text.
+        return color & 0x00FFFFFF;
     }
 }

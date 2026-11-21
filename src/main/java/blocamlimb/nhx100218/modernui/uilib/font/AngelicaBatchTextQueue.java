@@ -40,7 +40,9 @@ public final class AngelicaBatchTextQueue {
             if (ENTRIES.size() >= 4096) {
                 return;
             }
-            ENTRIES.add(new Entry(text, x, y, normalize(color), shadow));
+            // Debug text is always rendered pure white by ModernUI; the native
+            // Angelica colours (0xFFE0E0E0 / 0xFFD0D0D0) look grey.
+            ENTRIES.add(new Entry(text, x, y, 0xFFFFFFFF, shadow));
         }
     }
 
