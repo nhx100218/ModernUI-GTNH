@@ -46,6 +46,9 @@ public final class AngelicaBatchTextQueue {
             return;
         }
         synchronized (ENTRIES) {
+            if (ENTRIES.size() >= 4096) {
+                return;
+            }
             ENTRIES.add(new Entry(text, x, y, color, shadow));
         }
     }

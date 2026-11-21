@@ -65,6 +65,7 @@ public final class F3FontBridge {
     /** 当前正在采集的网格；变化时说明开始了新一轮捕获，需要清掉该网格旧文本。 */
     private static Object lastCapturing;
     private static volatile boolean drawingFrame;
+    private static volatile long drawingFrameStartNanos;
     private static boolean drawWarned;
     private static boolean measureWarned;
     private static boolean recordedLogged;
@@ -168,13 +169,19 @@ public final class F3FontBridge {
     /** 开始一帧 F3 绘制：下一轮 capture 必须重新清理对应网格。 */
     public static void beginFrame() {
         lastCapturing = null;
+        drawingFrameStartNanos = System.nanoTime();
         drawingFrame = true;
         AngelicaBatchTextQueue.begin();
     }
 
-    /** 是否处于 F3 覆盖层的绘制过程中（供批量文本队列判断接管范围）。 */
+    /**
+     * 是否处于 F3 覆盖层的绘制过程中（供批量文本队列判断接管范围）。
+     *
+     * <p>带 100ms 时间护栏：即使某一帧的结束钩子缺失，也不会把之后普通界面的
+     * 批量文本错误地当成 F3 文本收走。</p>
+     */
     public static boolean isDrawingFrame() {
-        return drawingFrame;
+        return drawingFrame && System.nanoTime() - drawingFrameStartNanos < 100000000L;
     }
 
     /**
