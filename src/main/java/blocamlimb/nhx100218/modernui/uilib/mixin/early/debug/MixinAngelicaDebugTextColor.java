@@ -4,6 +4,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
+import blocamlimb.nhx100218.modernui.uilib.MyMod;
+
 /**
  * Recolors Angelica's F3 text without replacing its renderer.
  *
@@ -15,12 +17,20 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 @Mixin(targets = "com.gtnewhorizons.angelica.debug.screen.DebugText$Batched", remap = false)
 public abstract class MixinAngelicaDebugTextColor {
 
+    private static boolean modernui$diagLogged;
+
     @ModifyVariable(method = "draw", at = @At("HEAD"), argsOnly = true, index = 6,
             remap = false, require = 0)
     private int modernui$whiteDebugText(int color) {
         // The native glyphs are only a layout/cache carrier now; ModernUI draws
         // the visible SDF text on top at the end of the overlay. Making the
         // native layer transparent avoids double/bold text.
-        return color & 0x00FFFFFF;
+        int modified = color & 0x00FFFFFF;
+        if (!modernui$diagLogged) {
+            modernui$diagLogged = true;
+            MyMod.LOG.info("[F3DIAG] native text argb {} -> {}", Integer.toHexString(color),
+                    Integer.toHexString(modified));
+        }
+        return modified;
     }
 }

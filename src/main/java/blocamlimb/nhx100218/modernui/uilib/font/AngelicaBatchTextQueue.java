@@ -3,7 +3,11 @@ package blocamlimb.nhx100218.modernui.uilib.font;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
+
 import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
+import blocamlimb.nhx100218.modernui.uilib.MyMod;
 import blocamlimb.nhx100218.modernui.uilib.font.api.DefaultFontRendererAdapter;
 
 /**
@@ -17,6 +21,7 @@ import blocamlimb.nhx100218.modernui.uilib.font.api.DefaultFontRendererAdapter;
 public final class AngelicaBatchTextQueue {
 
     private static final List<Entry> ENTRIES = new ArrayList<Entry>();
+    private static boolean diagLogged;
 
     private AngelicaBatchTextQueue() {
     }
@@ -40,10 +45,35 @@ public final class AngelicaBatchTextQueue {
             if (ENTRIES.size() >= 4096) {
                 return;
             }
+            String plain = stripFormatting(text);
+            if (plain.isEmpty()) {
+                return;
+            }
             // Debug text is always rendered pure white by ModernUI; the native
-            // Angelica colours (0xFFE0E0E0 / 0xFFD0D0D0) look grey.
-            ENTRIES.add(new Entry(text, x, y, 0xFFFFFFFF, shadow));
+            // Angelica colours (0xFFE0E0E0 / 0xFFD0D0D0) and §7 codes look grey.
+            ENTRIES.add(new Entry(plain, x, y, 0xFFFFFFFF, shadow));
         }
+    }
+
+    /** Removes Minecraft § formatting codes so they cannot tint the SDF text. */
+    private static String stripFormatting(String text) {
+        int length = text.length();
+        StringBuilder out = null;
+        for (int i = 0; i < length; i++) {
+            char c = text.charAt(i);
+            if (c == '\u00a7' && i + 1 < length) {
+                if (out == null) {
+                    out = new StringBuilder(length);
+                    out.append(text, 0, i);
+                }
+                i++;
+                continue;
+            }
+            if (out != null) {
+                out.append(c);
+            }
+        }
+        return out == null ? text : out.toString();
     }
 
     /**
@@ -76,9 +106,23 @@ public final class AngelicaBatchTextQueue {
         // SDF quads would then be depth-rejected and only the native shadow stays
         // visible, which reads as grey "missing" text.
         ModernGuiRenderer.beginUi();
+        if (!diagLogged) {
+            diagLogged = true;
+            java.nio.FloatBuffer current = BufferUtils.createFloatBuffer(4);
+            GL11.glGetFloat(GL11.GL_CURRENT_COLOR, current);
+            MyMod.LOG.info("[F3DIAG] flush entries={} first='{}' color={} glColor=({},{},{},{}) blend={} depth={} alphaTest={}",
+                    Integer.valueOf(snapshot.size()), snapshot.get(0).text,
+                    Integer.toHexString(snapshot.get(0).color),
+                    Float.valueOf(current.get(0)), Float.valueOf(current.get(1)),
+                    Float.valueOf(current.get(2)), Float.valueOf(current.get(3)),
+                    Boolean.valueOf(GL11.glIsEnabled(GL11.GL_BLEND)),
+                    Boolean.valueOf(GL11.glIsEnabled(GL11.GL_DEPTH_TEST)),
+                    Boolean.valueOf(GL11.glIsEnabled(GL11.GL_ALPHA_TEST)));
+        }
         for (Entry entry : snapshot) {
             try {
-                adapter.drawString(entry.text, entry.x, entry.y, entry.color, entry.shadow);
+                adapter.drawString(entry.text, entry.x, entry.y, entry.color, entry.shadow,
+                        blocamlimb.nhx100218.modernui.uilib.ui.text.TextContentMode.UILIB_RAW);
             } catch (Throwable ignored) {
                 // Never let debug text break the host draw.
             }
