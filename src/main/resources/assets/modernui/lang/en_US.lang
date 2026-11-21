@@ -274,3 +274,5 @@ key.modernui.debug.profiler=Toggle Profiler
 key.modernui.debug.gamemode=Gamemode Switcher
 
 key.modernui.debug.fpsGraph=Toggle FPS Graph
+
+key.modernui.debug.angelicaOptions=Angelica Debug Options

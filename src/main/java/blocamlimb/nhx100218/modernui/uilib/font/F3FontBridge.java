@@ -139,9 +139,31 @@ public final class F3FontBridge {
         }
     }
 
+    /**
+     * Queues F3 overlay text for an SDF overlay **without** cancelling the native
+     * glyphs. Angelica caches glyph meshes and replays them without calling the
+     * draw hook again; keeping the native text as the base layer means cached
+     * frames never flash grey, and the SDF layer simply draws on top.
+     */
+    public static void queueOverlayText(CharSequence text, int start, int end, float x, float y, int color) {
+        if (!shouldReplace() || !isDrawingFrame() || text == null) {
+            return;
+        }
+        try {
+            int from = Math.max(0, Math.min(start, text.length()));
+            int to = Math.max(from, Math.min(end, text.length()));
+            String value = text.subSequence(from, to).toString();
+            if (value.isEmpty()) {
+                return;
+            }
+            AngelicaBatchTextQueue.queue(value, Math.round(x), Math.round(y), normalizeColor(color), false);
+        } catch (Throwable ignored) {
+            // Overlay only: the native glyphs remain visible.
+        }
+    }
+
     /** 文本宽度（ModernUI 度量）；失败返回 null 表示保留 Angelica 度量。 */
-    public static Float tryMeasure(CharSequence text, int start, int end) {
-        if (!shouldReplace() || text == null) {
+    public static Float tryMeasure(CharSequence text, int start, int end) {        if (!shouldReplace() || text == null) {
             return null;
         }
         try {
@@ -159,8 +181,7 @@ public final class F3FontBridge {
     }
 
     /** 单个字符宽度（ModernUI 度量）；失败返回 null。 */
-    public static Float tryAdvance(char character) {
-        if (!shouldReplace() || character == '\u00a7') {
+    public static Float tryAdvance(char character) {        if (!shouldReplace() || character == '\u00a7') {
             return null;
         }
         try {
