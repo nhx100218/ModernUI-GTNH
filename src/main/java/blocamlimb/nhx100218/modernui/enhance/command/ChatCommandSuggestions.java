@@ -35,6 +35,8 @@ public final class ChatCommandSuggestions {
     private static GuiTextField chatField;
     private static int lastMouseX = Integer.MIN_VALUE;
     private static int lastMouseY = Integer.MIN_VALUE;
+    /** True while Tab is cycling through the list captured before the first press. */
+    private static boolean cycling;
 
     private ChatCommandSuggestions() {
     }
@@ -57,11 +59,13 @@ public final class ChatCommandSuggestions {
 
     public static void reset() {
         MODEL.close();
+        cycling = false;
         lastMouseX = Integer.MIN_VALUE;
         lastMouseY = Integer.MIN_VALUE;
     }
 
     public static void onInput(String text, int cursor) {
+        cycling = false;
         if (text == null || !text.startsWith("/")) {
             MODEL.close();
             return;
@@ -76,10 +80,14 @@ public final class ChatCommandSuggestions {
     }
 
     public static void onServerCandidates(List<String> candidates, String text, int selected) {
+        cycling = false;
         List<CommandCompletionEntry> entries = new ArrayList<CommandCompletionEntry>();
         java.util.Set<String> seen = new java.util.HashSet<String>();
         if (candidates != null) {
             for (String candidate : candidates) {
+                if (entries.size() >= MAX_CANDIDATES) {
+                    break;
+                }
                 if (candidate == null || candidate.isEmpty()) {
                     continue;
                 }
@@ -373,6 +381,119 @@ public final class ChatCommandSuggestions {
         } catch (NumberFormatException ignored) {
             return false;
         }
+    }
+
+    /**
+     * Handles Tab/Shift+Tab locally while the popup is open: fills the common
+     * prefix once, then cycles the list captured for the typed prefix. Returns
+     * false when there is nothing local to complete, so vanilla can ask the
+     * server.
+     */
+    public static boolean tabComplete(GuiTextField inputField, boolean backwards) {
+        if (inputField == null || !MODEL.isOpen()) {
+            return false;
+        }
+        String text = inputField.getText();
+        if (text == null) {
+            return false;
+        }
+        int caret = Math.max(0, Math.min(inputField.getCursorPosition(), text.length()));
+        int start = wordStart(text, caret);
+        if (!cycling) {
+            String word = text.substring(start, caret);
+            if (!hasPrefixMatch(word)) {
+                return false;
+            }
+            String common = commonPrefix(word);
+            if (common.length() > word.length()) {
+                write(inputField, text, start, caret, common);
+                return true;
+            }
+            cycling = true;
+        } else if (backwards) {
+            MODEL.move(-1);
+        } else {
+            MODEL.move(1);
+        }
+        CommandCompletionEntry entry = MODEL.selected();
+        if (entry == null) {
+            cycling = false;
+            return false;
+        }
+        write(inputField, text, start, caret, candidateText(entry.text, start));
+        return true;
+    }
+
+    private static int wordStart(String text, int caret) {
+        int start = text.lastIndexOf(' ', Math.max(0, caret - 1)) + 1;
+        if (start < 0) {
+            start = 0;
+        }
+        if (start == 0 && text.startsWith("/")) {
+            start = 1;
+        }
+        return Math.min(start, caret);
+    }
+
+    private static String candidateText(String candidate, int start) {
+        if (start == 1 && candidate.startsWith("/")) {
+            return candidate.substring(1);
+        }
+        return candidate;
+    }
+
+    private static boolean hasPrefixMatch(String word) {
+        String folded = word.toLowerCase(Locale.ROOT);
+        for (CommandCompletionEntry entry : MODEL.entries()) {
+            if (CommandCompletionRenderer.displayText(entry).toLowerCase(Locale.ROOT).startsWith(folded)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String commonPrefix(String word) {
+        String folded = word.toLowerCase(Locale.ROOT);
+        String prefix = null;
+        for (CommandCompletionEntry entry : MODEL.entries()) {
+            String display = CommandCompletionRenderer.displayText(entry);
+            if (!display.toLowerCase(Locale.ROOT).startsWith(folded)) {
+                continue;
+            }
+            if (prefix == null) {
+                prefix = display;
+            } else {
+                prefix = commonOf(prefix, display);
+            }
+            if (prefix.length() <= word.length()) {
+                break;
+            }
+        }
+        return prefix == null ? word : prefix;
+    }
+
+    private static String commonOf(String left, String right) {
+        int limit = Math.min(left.length(), right.length());
+        int i = 0;
+        while (i < limit && left.charAt(i) == right.charAt(i)) {
+            i++;
+        }
+        return left.substring(0, i);
+    }
+
+    private static void write(GuiTextField inputField, String text, int start, int caret, String replacement) {
+        String next = text.substring(0, start) + replacement + text.substring(caret);
+        inputField.setText(next);
+        inputField.setCursorPosition(Math.min(next.length(), start + replacement.length()));
+    }
+
+    /** Applies a server response: rebuilds the list, then completes like Tab. */
+    public static boolean onServerTabResponse(List<String> options, GuiTextField inputField) {
+        if (inputField == null) {
+            return false;
+        }
+        onServerCandidates(options, inputField.getText(), -1);
+        return MODEL.isOpen() && tabComplete(inputField, false);
     }
 
     /** Mouse click on a suggestion row; returns true when consumed. */
