@@ -93,6 +93,7 @@ public class EarlyMixins implements IFMLLoadingPlugin {
             mixins.add("enhance.menu.MixinLoadingScreenRenderer");
             mixins.add("enhance.menu.MixinGuiDownloadTerrain");
             mixins.add("enhance.menu.MixinGuiScreenBackground");
+            mixins.add("enhance.menu.MixinGuiChatCommandSuggestions");
             mixins.add("enhance.menu.MixinGuiSlotBackground");
             mixins.add("enhance.menu.MixinGuiScrollingListBackground");
             mixins.add("enhance.menu.MixinGuiSelectWorldAccessor");

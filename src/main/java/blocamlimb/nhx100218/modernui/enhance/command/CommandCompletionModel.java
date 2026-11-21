@@ -87,6 +87,18 @@ public final class CommandCompletionModel {
         return selected;
     }
 
+    /** Forces the highlighted row (used by the vanilla Tab cycle). */
+    public void selectIndex(int index) {
+        if (entries.isEmpty()) {
+            selected = 0;
+            return;
+        }
+        selected = index % entries.size();
+        if (selected < 0) {
+            selected += entries.size();
+        }
+    }
+
     public CommandCompletionEntry selected() {
         return isOpen() ? entries.get(selected) : null;
     }

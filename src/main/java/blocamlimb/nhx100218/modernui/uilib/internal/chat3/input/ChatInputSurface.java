@@ -11,9 +11,6 @@ import net.minecraft.util.IChatComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import blocamlimb.nhx100218.modernui.enhance.command.CommandCompletionModel;
-import blocamlimb.nhx100218.modernui.enhance.command.CommandCompletionRenderer;
-import blocamlimb.nhx100218.modernui.enhance.menu.ModernGuiRenderer;
 import blocamlimb.nhx100218.modernui.uilib.internal.chat3.ChatMarkdownSettings;
 import blocamlimb.nhx100218.modernui.uilib.internal.chat3.data.ChatLineRecord;
 import blocamlimb.nhx100218.modernui.uilib.internal.chat3.view.ChatLinkClick;
@@ -45,7 +42,6 @@ import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneEventContext;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneEventType;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneMouseButton;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.AnchorRect;
-import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.SceneGeometry;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.node.SceneNode;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.ScenePortalHandle;
 
@@ -272,36 +268,6 @@ public final class ChatInputSurface extends AbstractSceneHostWidget
         super.render(Math.max(1, (int) Math.floor(w / frameScale)),
                 Math.max(1, (int) Math.floor(h / frameScale)), ctx.scaled(frameScale),
                 Math.round(absX / frameScale), Math.round(absY / frameScale));
-        renderCommandPopup(absX, absY);
-    }
-
-    /** Draws the ModernUI command suggestion popup just above the chat input bar. */
-    private void renderCommandPopup(int absX, int absY) {
-        ChatInputBar bar = container.bar();
-        if (bar == null) {
-            return;
-        }
-        CommandCompletionModel model = bar.completionPopup();
-        if (model == null || !model.isOpen()) {
-            return;
-        }
-        float scale = frameScale <= 0.0F ? 1.0F : frameScale;
-        AnchorRect box = SceneGeometry.absoluteBox(bar.root(), Math.round(absX / scale),
-                Math.round(absY / scale));
-        int width = Math.max(120, Math.round(box.getWidth() * scale));
-        int height = CommandCompletionRenderer.preferredHeight(model, 8);
-        int left = Math.round(box.getX() * scale);
-        int top = Math.round(box.getY() * scale) - height - 2;
-        if (top < 2) {
-            top = Math.round(box.getY() * scale) + Math.round(box.getHeight() * scale) + 2;
-        }
-        Minecraft minecraft = Minecraft.getMinecraft();
-        if (minecraft == null) {
-            return;
-        }
-        ModernGuiRenderer.beginUi();
-        CommandCompletionRenderer.render(minecraft, model, left, top, width, 8);
-        ModernGuiRenderer.beginUi();
     }
 
     /** 屏幕打开:聚焦输入框 + 同步发送历史(委托输入条)。 */
