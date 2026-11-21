@@ -160,7 +160,7 @@ public final class F3FontBridge {
             if (value.isEmpty()) {
                 return;
             }
-            AngelicaBatchTextQueue.queue(value, Math.round(x), Math.round(y), normalizeColor(color), false);
+            AngelicaBatchTextQueue.queue(value, Math.round(x), Math.round(y), 0xFFFFFFFF, false);
         } catch (Throwable ignored) {
             // Overlay only: the native glyphs remain visible.
         }
@@ -221,6 +221,27 @@ public final class F3FontBridge {
      */
     public static boolean isDrawingFrame() {
         return drawingFrame && System.nanoTime() - drawingFrameStartNanos < 100000000L;
+    }
+
+    private static volatile boolean screenTextCapture;
+
+    /** Starts SDF text capture for the Angelica debug-options screen. */
+    public static void beginScreenText() {
+        AngelicaBatchTextQueue.begin();
+        screenTextCapture = true;
+    }
+
+    public static boolean isScreenTextCapture() {
+        return screenTextCapture;
+    }
+
+    /** Flushes the debug-options SDF text after the whole screen has drawn. */
+    public static void flushScreenText() {
+        try {
+            AngelicaBatchTextQueue.flush();
+        } finally {
+            screenTextCapture = false;
+        }
     }
 
     /** FPS 图表在独立的事件里绘制，单独开一个批量文本捕获窗口。 */

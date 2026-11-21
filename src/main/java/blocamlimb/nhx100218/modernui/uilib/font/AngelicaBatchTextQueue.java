@@ -35,9 +35,9 @@ public final class AngelicaBatchTextQueue {
         }
     }
 
-    /** Whether the current draw is one this queue owns (FPS/TPS graph labels). */
+    /** Whether the current draw is one this queue owns. */
     public static boolean shouldCapture() {
-        return F3FontBridge.isDrawingFrame();
+        return F3FontBridge.isDrawingFrame() || F3FontBridge.isScreenTextCapture();
     }
 
     public static void queue(String text, int x, int y, int color, boolean shadow) {
@@ -54,7 +54,7 @@ public final class AngelicaBatchTextQueue {
             }
             // Debug text is always rendered pure white by ModernUI; the native
             // Angelica colours (0xFFE0E0E0 / 0xFFD0D0D0) and §7 codes look grey.
-            ENTRIES.add(new Entry(plain, x, y, 0xFFFFFFFF, shadow));
+            ENTRIES.add(new Entry(plain, x, y, normalize(color), shadow));
         }
     }
 
