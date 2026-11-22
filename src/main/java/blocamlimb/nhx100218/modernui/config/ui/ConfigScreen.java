@@ -76,7 +76,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     };
     private static final String[][] GROUP_SECTION_IDS = {
             {"tooltip", "waila", "chat"},
-            {"smoothscroll", "screentransition", "zoom", "ui", "fontSystem"},
+            {"fontSystem", "smoothscroll", "screentransition", "zoom", "ui"},
             {"general", "textselection", "emoji", "performance", "renderer"}
     };
 
@@ -892,7 +892,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             tab.setCursor(SceneCursor.POINTER);
             int labelWidth = Math.min(runtime.measureTextWidth(
                     sections.get(sectionIndex).title(), ConfigTheme.NAV_TAB_FONT_SIZE), maxLabelWidth);
-            tab.setPreferredWidth(labelWidth + ConfigTheme.dp(16));
+            tab.setPreferredWidth(labelWidth + ConfigTheme.dp(24));
             ReadableSignal<Boolean> selected = Computed.create(
                     () -> Boolean.valueOf(activeSectionSignal.get().intValue() == sectionIndex));
             runtime.bind(Computed.create(() -> Integer.valueOf(selected.get()
