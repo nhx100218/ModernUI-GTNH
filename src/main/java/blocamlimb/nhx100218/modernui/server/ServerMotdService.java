@@ -132,6 +132,14 @@ public final class ServerMotdService {
         return ServerFeatureConfig.motdEnabled;
     }
 
+    /** Legacy (0xFE) ping text, including the same MiniMOTD/YAML content. */
+    public static String legacyMotd(MinecraftServer server) {
+        if (!isEnabled()) {
+            return server == null ? "" : server.getMOTD();
+        }
+        return selection(false).legacyText;
+    }
+
     private static Selection selection(boolean hexColors) {
         MiniMotdConfig.Data mini = MiniMotdConfig.current();
         if (mini != null && mini.enabled && !mini.motds.isEmpty()) {

@@ -69,6 +69,15 @@ public class ServerMotdServiceTest {
     }
 
     @Test
+    public void legacyPingUsesMiniMotdContent() {
+        String legacy = ServerMotdService.legacyMotd(null);
+        assertTrue(legacy.startsWith(LegacyMotdText.MARKER));
+        assertTrue(legacy.contains("\u00a7"));
+        assertTrue(legacy.contains("A"));
+        assertTrue(legacy.contains("B"));
+    }
+
+    @Test
     public void disabledMiniMotdDoesNotSuppressYamlMotd() {
         // isEnabled must still consult the YAML flag when a generated
         // MiniMOTD/main.conf is present but disabled.
