@@ -44,6 +44,7 @@ public final class ServerMotdService {
     private static String cachedIcon;
     private static String cachedIconPath;
     private static long cachedIconStamp = -1L;
+    private static long lastDiagnosticMs;
 
     private ServerMotdService() {}
 
@@ -95,6 +96,7 @@ public final class ServerMotdService {
         }
         boolean hexColors = protocol >= HEX_COLOR_PROTOCOL;
         Selection selection = selection(hexColors);
+        logDiagnostic(protocol, hexColors);
         // Copy the cached status so one ping's protocol/random MOTD cannot
         // leak into another client's response.
         ServerStatusResponse out = new ServerStatusResponse();
@@ -137,7 +139,30 @@ public final class ServerMotdService {
         if (!isEnabled()) {
             return server == null ? "" : server.getMOTD();
         }
+        logLegacyDiagnostic();
         return selection(false).legacyText;
+    }
+
+    private static void logDiagnostic(int protocol, boolean hexColors) {
+        long now = System.currentTimeMillis();
+        if (now - lastDiagnosticMs < 5000L) {
+            return;
+        }
+        lastDiagnosticMs = now;
+        MiniMotdConfig.Data mini = MiniMotdConfig.current();
+        MyMod.LOG.info("MOTD ping: protocol={} rgb={} mini={} yaml={}",
+                Integer.valueOf(protocol), Boolean.valueOf(hexColors),
+                Boolean.valueOf(mini != null && mini.enabled),
+                Boolean.valueOf(ServerFeatureConfig.motdEnabled));
+    }
+
+    private static void logLegacyDiagnostic() {
+        long now = System.currentTimeMillis();
+        if (now - lastDiagnosticMs < 5000L) {
+            return;
+        }
+        lastDiagnosticMs = now;
+        MyMod.LOG.info("MOTD ping: legacy 0xFE (no protocol; legacy colours only)");
     }
 
     private static Selection selection(boolean hexColors) {
