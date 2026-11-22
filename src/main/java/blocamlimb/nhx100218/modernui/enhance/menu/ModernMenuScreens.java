@@ -18,6 +18,7 @@ import net.minecraft.client.gui.ScreenChatOptions;
 import net.minecraft.client.gui.achievement.GuiAchievements;
 import net.minecraft.client.gui.achievement.GuiStats;
 import net.minecraft.client.gui.stream.GuiStreamOptions;
+import net.minecraft.client.multiplayer.GuiConnecting;
 
 /**
  * Screens that share ModernUI's panorama instead of drawing the vanilla dirt
@@ -67,6 +68,7 @@ public final class ModernMenuScreens {
         }
         if (screen instanceof GuiSelectWorld
                 || screen instanceof GuiMultiplayer
+                || screen instanceof GuiConnecting
                 || screen instanceof GuiDownloadTerrain
                 || screen instanceof GuiDisconnected
                 || screen instanceof GuiScreenAddServer
