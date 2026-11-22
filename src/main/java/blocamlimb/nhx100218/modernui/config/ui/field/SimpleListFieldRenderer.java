@@ -125,6 +125,11 @@ public final class SimpleListFieldRenderer implements FieldRenderer {
      */
     private final Supplier<List<String>> prefillWhenEmpty;
 
+    /** 最小条目数；0 表示不限制。 */
+    private final int minItems;
+    /** 最大条目数；0 表示不限制。 */
+    private final int maxItems;
+
     /**
      * 创建非拖拽形态（{@code draggable=false}，向后兼容）。
      *
@@ -154,8 +159,23 @@ public final class SimpleListFieldRenderer implements FieldRenderer {
      * @param prefillWhenEmpty 预填充源（null 表示不预填充，行为等同单参构造）
      */
     public SimpleListFieldRenderer(boolean draggable, Supplier<List<String>> prefillWhenEmpty) {
+        this(draggable, prefillWhenEmpty, 0, 0);
+    }
+
+    /**
+     * 创建固定行数 + 预填充的文本行列表（字体家族栈使用）。
+     *
+     * @param draggable true 启用拖拽；字体家族栈传 false
+     * @param prefillWhenEmpty 草稿为空时的只读展示初值
+     * @param minItems 最少行数；0 表示不限制
+     * @param maxItems 最多行数；0 表示不限制
+     */
+    public SimpleListFieldRenderer(boolean draggable, Supplier<List<String>> prefillWhenEmpty,
+            int minItems, int maxItems) {
         this.draggable = draggable;
         this.prefillWhenEmpty = prefillWhenEmpty;
+        this.minItems = Math.max(0, minItems);
+        this.maxItems = Math.max(0, maxItems);
     }
 
     /**
@@ -206,8 +226,8 @@ public final class SimpleListFieldRenderer implements FieldRenderer {
                 .placeholder("")
                 .onItemsChanged(items -> bridge.commit(path, adapter, items,
                         DraftListBridge.CommitMode.CONTROL_ALREADY_SET))
-                .maxItems(0)
-                .minItems(0)
+                .maxItems(maxItems)
+                .minItems(minItems)
                 .draggable(draggable)
                 .build();
 

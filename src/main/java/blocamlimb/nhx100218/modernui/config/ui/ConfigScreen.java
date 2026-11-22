@@ -76,7 +76,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     };
     private static final String[][] GROUP_SECTION_IDS = {
             {"tooltip", "waila", "chat"},
-            {"smoothscroll", "screentransition", "zoom", "ui"},
+            {"smoothscroll", "screentransition", "zoom", "ui", "fontSystem"},
             {"general", "textselection", "emoji", "performance", "renderer"}
     };
 
@@ -880,8 +880,13 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             SceneNode tab = SceneNode.column();
             tab.setWidthSizing(SceneNode.WidthSizing.SHRINK);
             tab.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
-            tab.setPadding(0, ConfigTheme.dp(8), 0, ConfigTheme.dp(8));
+            tab.setPadding(ConfigTheme.dp(10), ConfigTheme.dp(8), ConfigTheme.dp(10), ConfigTheme.dp(8));
             tab.setGap(ConfigTheme.dp(4));
+            // The page shell became transparent; sub-tabs need their own tonal
+            // surface so the tab row remains readable over the world.
+            tab.setCornerRadius(ConfigTheme.dp(12));
+            tab.setBorderWidth(1);
+            tab.setBorderColor(0xFF53433F);
             tab.setCrossAxisAlign(CrossAxisAlign.CENTER);
             tab.setMainAxisAlign(MainAxisAlign.CENTER);
             tab.setCursor(SceneCursor.POINTER);
@@ -890,6 +895,9 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             tab.setPreferredWidth(labelWidth + ConfigTheme.dp(16));
             ReadableSignal<Boolean> selected = Computed.create(
                     () -> Boolean.valueOf(activeSectionSignal.get().intValue() == sectionIndex));
+            runtime.bind(Computed.create(() -> Integer.valueOf(selected.get()
+                    ? ConfigTheme.SURFACE_CONTAINER_HIGH : ConfigTheme.SURFACE_CONTAINER)),
+                    tab::setBackgroundColor);
             SceneNode label = text(sections.get(sectionIndex).title(),
                     Computed.create(() -> Integer.valueOf(selected.get()
                             ? 0xFFFFB5A1 : 0xFFD8C2BC)),

@@ -94,7 +94,7 @@ public class FontResourceFingerprintTest {
         Assert.assertFalse("render owner 冻结 request 时不得创建目录", fontDirectory.exists());
         Assert.assertTrue(request.shouldCreateFontDirectoryIfMissing());
 
-        FontResourceSnapshot.capture(request, 1, 8L, 8L);
+        FontResourceSnapshot.capture(request);
 
         Assert.assertTrue("冷启动 snapshot 阶段负责创建首次字体目录", fontDirectory.isDirectory());
     }

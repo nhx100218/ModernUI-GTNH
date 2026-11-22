@@ -91,7 +91,7 @@ public final class FontOrderPlanner {
             if (font == null) {
                 continue;
             }
-            String displayName = normalizeDisplayName(font.getName());
+            String displayName = FontFamilyNames.familyName(font);
             if (displayName.isEmpty()) {
                 continue;
             }
@@ -113,7 +113,7 @@ public final class FontOrderPlanner {
         List<String> normalizedNames = new ArrayList<String>(configuredOrder.length);
         Set<String> seenKeys = new HashSet<String>();
         for (String configuredName : configuredOrder) {
-            String resolvedName = normalizeDisplayName(configuredName);
+            String resolvedName = FontFamilyNames.canonicalName(configuredName);
             if (resolvedName.isEmpty()) {
                 continue;
             }

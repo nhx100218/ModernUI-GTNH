@@ -226,7 +226,7 @@ public class ModernConfigBootstrapTest {
         assertTrue("default fontSort is non-empty",
                 FontConfig.fontSortConfigured);
         // fontSort / characterFontRules 默认空 list → 空 String[]
-        assertArrayEquals("default fontSort", new String[] {"Inter Frozen Medium", "Source Han Sans CN Medium"}, FontConfig.fontSort);
+        assertArrayEquals("default fontSort", new String[] {"Inter", "思源黑体"}, FontConfig.fontSort);
         assertArrayEquals("characterFontRules 默认空数组", new String[0], FontConfig.characterFontRules);
 
         // fontSizeSetting section

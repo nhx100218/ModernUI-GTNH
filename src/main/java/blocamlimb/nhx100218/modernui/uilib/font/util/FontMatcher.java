@@ -402,7 +402,10 @@ public class FontMatcher {
         if (font == null || lookupKey == null || lookupKey.isEmpty()) {
             return false;
         }
-        return normalizeFontName(font.getName()).equals(lookupKey);
+        // lookupKey is the lower-cased configured family name. Compare canonical
+        // families so "Inter", "Inter Frozen Medium" and a localized Source Han
+        // family all resolve to the same group and real bold/italic faces win.
+        return FontFamilyNames.key(FontFamilyNames.familyName(font)).equals(FontFamilyNames.key(lookupKey));
     }
 
     private String normalizeFontName(String value) {

@@ -26,6 +26,16 @@ public final class LegacyMotdText {
     /** Invisible legacy-reset prefix; lets a ModernUI client recognise our MOTD. */
     public static final String MARKER = "\u00a7r\u00a7r\u00a7r";
 
+    /**
+     * Invisible payload marker for the exact per-glyph RGB colours.
+     *
+     * <p>Vanilla 1.7.10 treats every {@code §x} sequence as a reset and skips
+     * it, so the appended payload has no visible width or text. ModernUI's
+     * client parser consumes it and draws the same RGB values the 1.16+ JSON
+     * component carries.</p>
+     */
+    public static final String EXACT_MARKER = "\u00a7r\u00a7r\u00a7r\u00a7r";
+
     private static final char[] CODES = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e',
             'f' };
     private static final int[] COLORS = { 0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
@@ -62,6 +72,48 @@ public final class LegacyMotdText {
             renderSegment(line2, sink);
         }
         return sink.toJson();
+    }
+
+    /**
+     * Builds the invisible exact-colour payload appended to the legacy MOTD.
+     *
+     * <p>The payload is derived from the same component JSON sent to 1.16+
+     * clients, including its legacy-run smoothing. A ModernUI 1.7.10 client can
+     * therefore draw exactly the same gradient as 26.3, while vanilla 1.7.10
+     * clients keep the normal 16-colour text.</p>
+     */
+    public static String exactColorPayload(String line1, String line2) {
+        JsonObject json = renderJson(line1, line2);
+        JsonArray extra = json.getAsJsonArray("extra");
+        StringBuilder payload = new StringBuilder(EXACT_MARKER);
+        if (extra == null) {
+            return payload.toString();
+        }
+        for (int i = 0; i < extra.size(); i++) {
+            JsonObject part = extra.get(i).getAsJsonObject();
+            String text = part.has("text") ? part.get("text").getAsString() : "";
+            int rgb = 0xFFFFFF;
+            if (part.has("color")) {
+                rgb = parseJsonColor(part.get("color").getAsString());
+            }
+            for (int offset = 0; offset < text.length();) {
+                int codePoint = text.codePointAt(offset);
+                appendHexColor(payload, rgb);
+                offset += Character.charCount(codePoint);
+            }
+        }
+        return payload.toString();
+    }
+
+    private static int parseJsonColor(String value) {
+        if (value != null && value.startsWith("#") && value.length() == 7) {
+            try {
+                return Integer.parseInt(value.substring(1), 16);
+            } catch (NumberFormatException ignored) {
+                // fall through to default
+            }
+        }
+        return 0xFFFFFF;
     }
 
     private interface Sink {

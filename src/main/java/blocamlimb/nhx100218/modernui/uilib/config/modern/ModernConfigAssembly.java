@@ -1,7 +1,6 @@
 package blocamlimb.nhx100218.modernui.uilib.config.modern;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import blocamlimb.nhx100218.modernui.config.runtime.ConfigManager;
@@ -9,8 +8,8 @@ import blocamlimb.nhx100218.modernui.config.ui.ConfigScreen;
 import blocamlimb.nhx100218.modernui.config.ui.ConfigUI;
 import blocamlimb.nhx100218.modernui.config.ui.FieldRestorePolicy;
 import blocamlimb.nhx100218.modernui.config.ui.field.FieldRendererRegistry;
-import blocamlimb.nhx100218.modernui.config.ui.field.FontSortFieldRenderer;
 import blocamlimb.nhx100218.modernui.config.ui.field.FontSortOrderModel;
+import blocamlimb.nhx100218.modernui.config.ui.field.SimpleListFieldRenderer;
 import blocamlimb.nhx100218.modernui.uilib.font.config.FontConfig;
 import blocamlimb.nhx100218.modernui.uilib.ui.env.UiEnvironment;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.PlatformInputSource;
@@ -104,24 +103,13 @@ public final class ModernConfigAssembly {
      * @param discoveredSnapshot 本次打开时冻结的发现顺序
      */
     static void configureFieldRenderers(FieldRendererRegistry registry, List<String> discoveredSnapshot) {
+        // 字体家族栈：两行文本框（第 1 行主字体，第 2 行回退字体），可填家族名或字体文件路径。
+        // 不再展示旧的“发现字体排序/六槽字面指派”；bold/italic 由家族自动选择。
         registry.registerPath("fontSystem.fontSort",
-                new FontSortFieldRenderer(discoveredSnapshot));
+                new SimpleListFieldRenderer(false,
+                        () -> Arrays.asList("Inter", "思源黑体"), 2, 2));
         registry.registerPath("fontSystem.characterFontRules", new CharacterRuleFieldRenderer());
-        // 六槽字体指派：字体列表 GUI 单选（空 = 自动），候选取本 screen 冻结的发现快照。
-        for (String path : FONT_FACE_ASSIGNMENT_PATHS) {
-            registry.registerPath(path, new FontFamilyFieldRenderer(discoveredSnapshot));
-        }
     }
-
-    /** 六槽字体指派的 schema 路径（西文/中文 × 正常/粗体/斜体）。 */
-    private static final String[] FONT_FACE_ASSIGNMENT_PATHS = {
-            "fontSystem.westernNormalFont",
-            "fontSystem.westernBoldFont",
-            "fontSystem.westernItalicFont",
-            "fontSystem.cjkNormalFont",
-            "fontSystem.cjkBoldFont",
-            "fontSystem.cjkItalicFont",
-    };
 
     /**
      * 注册 uilib 自身配置页的恢复默认策略。
@@ -140,10 +128,8 @@ public final class ModernConfigAssembly {
      */
     static void configureRestorePolicy(FieldRestorePolicy policy, List<String> discoveredSnapshot) {
         policy.skip("fontSystem.characterFontRules");
-        policy.custom("fontSystem.fontSort", adapter -> {
-            adapter.onFieldEdit("fontSystem.fontSort",
-                    FontSortOrderModel.merge(discoveredSnapshot, Collections.<String>emptyList()));
-        });
+        policy.custom("fontSystem.fontSort", adapter ->
+                adapter.onFieldEdit("fontSystem.fontSort", Arrays.asList("Inter", "思源黑体")));
     }
 
     /**

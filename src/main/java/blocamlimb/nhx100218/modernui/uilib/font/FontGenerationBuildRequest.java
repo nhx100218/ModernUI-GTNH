@@ -16,17 +16,18 @@ final class FontGenerationBuildRequest {
     private final File fontDirectory;
     private final String[] defaultOrderHints;
     private final boolean createFontDirectoryIfMissing;
+    private final boolean includeBundledFonts;
 
     FontGenerationBuildRequest(long desiredSequence, int baseRuntimeVersion, int baseTextMeasureEpoch,
             int runtimeVersion, int textMeasureEpoch, FontRuntimeSettings settings, File fontDirectory,
             String[] defaultOrderHints) {
         this(desiredSequence, baseRuntimeVersion, baseTextMeasureEpoch, runtimeVersion, textMeasureEpoch,
-                settings, fontDirectory, defaultOrderHints, false);
+                settings, fontDirectory, defaultOrderHints, false, false);
     }
 
     private FontGenerationBuildRequest(long desiredSequence, int baseRuntimeVersion, int baseTextMeasureEpoch,
             int runtimeVersion, int textMeasureEpoch, FontRuntimeSettings settings, File fontDirectory,
-            String[] defaultOrderHints, boolean createFontDirectoryIfMissing) {
+            String[] defaultOrderHints, boolean createFontDirectoryIfMissing, boolean includeBundledFonts) {
         if (desiredSequence < 0L || baseRuntimeVersion < 0 || baseTextMeasureEpoch < 0
                 || runtimeVersion != baseRuntimeVersion + 1 || textMeasureEpoch != baseTextMeasureEpoch + 1
                 || settings == null || fontDirectory == null) {
@@ -41,6 +42,7 @@ final class FontGenerationBuildRequest {
         this.fontDirectory = fontDirectory.getAbsoluteFile();
         this.defaultOrderHints = defaultOrderHints == null ? new String[0] : defaultOrderHints.clone();
         this.createFontDirectoryIfMissing = createFontDirectoryIfMissing;
+        this.includeBundledFonts = includeBundledFonts;
     }
 
     static FontGenerationBuildRequest capture(long desiredSequence, ActiveFontGeneration current) {
@@ -60,7 +62,7 @@ final class FontGenerationBuildRequest {
         File fontDirectory = new File(gameRootDirectory, "fonts");
         return new FontGenerationBuildRequest(desiredSequence, baseRuntimeVersion, baseTextMeasureEpoch,
                 baseRuntimeVersion + 1, baseTextMeasureEpoch + 1, FontRuntimeSettings.capture(), fontDirectory,
-                DefaultFontOrderHints.resolveForCurrentPlatform(), current == null);
+                DefaultFontOrderHints.resolveForCurrentPlatform(), current == null, true);
     }
 
     long getDesiredSequence() {
@@ -97,6 +99,18 @@ final class FontGenerationBuildRequest {
 
     boolean shouldCreateFontDirectoryIfMissing() {
         return createFontDirectoryIfMissing;
+    }
+
+    /**
+     * Whether the generation must load the fonts bundled inside the mod jar.
+     *
+     * <p>Production requests always enable this; direct constructor callers
+     * (snapshot unit tests) keep a directory-only fixture.</p>
+     *
+     * @return true when bundled fonts participate
+     */
+    boolean shouldIncludeBundledFonts() {
+        return includeBundledFonts;
     }
 
     private static File resolveGameRootDirectory() {

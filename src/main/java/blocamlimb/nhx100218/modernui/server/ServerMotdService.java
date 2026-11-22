@@ -150,7 +150,9 @@ public final class ServerMotdService {
             return server == null ? "" : server.getMOTD();
         }
         logLegacyDiagnostic();
-        return selection(false).legacyText;
+        String text = selection(false).legacyText;
+        int payload = text.indexOf(LegacyMotdText.EXACT_MARKER);
+        return payload < 0 ? text : text.substring(0, payload);
     }
 
     private static void logDiagnostic(int protocol, boolean hexColors) {
@@ -228,7 +230,13 @@ public final class ServerMotdService {
 
     private static Selection build(String raw1, String raw2, String legacy1, String legacy2, String icon,
             boolean hexColors) {
-        String legacy = LegacyMotdText.MARKER + (legacy2.isEmpty() ? legacy1 : legacy1 + "\n" + legacy2);
+        String text = legacy2.isEmpty() ? legacy1 : legacy1 + "\n" + legacy2;
+        String legacy = LegacyMotdText.MARKER + text;
+        if (!hexColors) {
+            // 1.7.10 only understands 16 colours. Append the exact per-glyph
+            // colours invisibly; ModernUI reads them, vanilla skips the codes.
+            legacy += LegacyMotdText.exactColorPayload(raw1, raw2);
+        }
         JsonObject description = hexColors ? LegacyMotdText.renderJson(raw1, raw2) : null;
         return new Selection(legacy, description, icon);
     }

@@ -173,13 +173,14 @@ public final class ConfigValueBridge {
         FontConfig.fontSort = listToStringArray(authority.<List<String>>get("fontSystem.fontSort"));
         FontConfig.characterFontRules = listToStringArray(authority.<List<String>>get("fontSystem.characterFontRules"));
 
-        // STRING 字段：六槽字体指派（西文/中文 × 正常/粗体/斜体），空串 = 未指派。
-        FontConfig.westernNormalFont = stringOrEmpty(authority, "fontSystem.westernNormalFont");
-        FontConfig.westernBoldFont = stringOrEmpty(authority, "fontSystem.westernBoldFont");
-        FontConfig.westernItalicFont = stringOrEmpty(authority, "fontSystem.westernItalicFont");
-        FontConfig.cjkNormalFont = stringOrEmpty(authority, "fontSystem.cjkNormalFont");
-        FontConfig.cjkBoldFont = stringOrEmpty(authority, "fontSystem.cjkBoldFont");
-        FontConfig.cjkItalicFont = stringOrEmpty(authority, "fontSystem.cjkItalicFont");
+        // 六槽字体指派不再是配置面：bold/italic 由字体家族自动选择真实字面
+        // 或由 DerivedFontCache 合成。字段保留为空，避免旧代码路径读到陈旧指派。
+        FontConfig.westernNormalFont = "";
+        FontConfig.westernBoldFont = "";
+        FontConfig.westernItalicFont = "";
+        FontConfig.cjkNormalFont = "";
+        FontConfig.cjkBoldFont = "";
+        FontConfig.cjkItalicFont = "";
 
         // fontSortConfigured 语义按 fontSort 数组是否非空决定（活消费点=FontGenerationRegistry
         // .prepare 的 orderHints 二分支，经 FontRuntimeSettings.isFontSortConfigured 读取；

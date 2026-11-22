@@ -30,6 +30,12 @@ public final class MotdGradient {
             return glyphs;
         }
         String text = hasMarker(motd) ? motd.substring(LegacyMotdText.MARKER.length()) : motd;
+        String exactPayload = null;
+        int payloadStart = text.indexOf(LegacyMotdText.EXACT_MARKER);
+        if (payloadStart >= 0) {
+            exactPayload = text.substring(payloadStart + LegacyMotdText.EXACT_MARKER.length());
+            text = text.substring(0, payloadStart);
+        }
         int rgb = DEFAULT_RGB;
         boolean bold = false;
         boolean italic = false;
@@ -73,10 +79,38 @@ public final class MotdGradient {
             glyphs.add(new Glyph(cp, rgb, bold, italic, underlined));
             i += Character.charCount(cp);
         }
-        if (!exactColors) {
+        if (exactPayload != null) {
+            applyExactPayload(glyphs, exactPayload);
+        } else if (!exactColors) {
             smooth(glyphs);
         }
         return glyphs;
+    }
+
+    /**
+     * Applies the server's invisible per-glyph RGB payload.
+     *
+     * <p>The payload is a sequence of {@code §x§R§R§G§G§B§B} colours, one per
+     * glyph, in display order. Vanilla 1.7.10 skips these codes, so the same
+     * legacy string remains readable without ModernUI.</p>
+     */
+    private static void applyExactPayload(List<Glyph> glyphs, String payload) {
+        int glyphIndex = 0;
+        int i = 0;
+        while (i < payload.length() && glyphIndex < glyphs.size()) {
+            if ((payload.charAt(i) == '\u00a7' || payload.charAt(i) == '&')
+                    && i + 1 < payload.length()
+                    && Character.toLowerCase(payload.charAt(i + 1)) == 'x') {
+                int hex = parseHexColor(payload, i);
+                if (hex >= 0) {
+                    glyphs.get(glyphIndex).rgb = hex;
+                    glyphIndex++;
+                    i += 14;
+                    continue;
+                }
+            }
+            i++;
+        }
     }
 
     /** Parses the 1.16+ {@code §x§R§R§G§G§B§B} sequence at {@code start}. */

@@ -3,9 +3,11 @@ package blocamlimb.nhx100218.modernui.uilib.font;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +26,21 @@ final class FontResourceSnapshot {
     static final int MAX_ASSET_FONT_FILES = 256;
     static final long MAX_ASSET_FONT_FILE_BYTES = 128L * 1024L * 1024L;
     static final long MAX_ASSET_FONT_TOTAL_BYTES = 256L * 1024L * 1024L;
+
+    /**
+     * Fonts shipped inside the mod jar. They are read directly from the
+     * classpath and never extracted to {@code <game>/fonts}; this mirrors
+     * ModernUI's {@code assets/modernui/font/...} registration and makes the
+     * defaults independent of a writable game directory.
+     */
+    private static final String[] BUNDLED_FONT_RESOURCES = {
+            "/assets/modernui/fonts/bundled/inter-frozen-medium.otf",
+            "/assets/modernui/fonts/bundled/inter-frozen-medium-italic.otf",
+            "/assets/modernui/fonts/bundled/inter-bold.ttf",
+            "/assets/modernui/fonts/bundled/inter-bold-italic.ttf",
+            "/assets/modernui/fonts/bundled/source-han-sans-cn-medium.otf",
+            "/assets/modernui/fonts/bundled/SourceHanSansSC-Bold.otf",
+    };
 
     private final List<AssetFontResource> assetFonts;
     private final Font[] installedFonts;
@@ -97,25 +114,122 @@ final class FontResourceSnapshot {
     private static List<AssetFontResource> captureAssetFonts(FontGenerationBuildRequest request,
             int maxAssetFontFiles, long maxAssetFontFileBytes, long maxAssetFontTotalBytes) {
         prepareFontDirectory(request);
-        List<File> files = listAssetFontFiles(request.getFontDirectory(), maxAssetFontFiles);
-        if (files.isEmpty()) {
-            return java.util.Collections.emptyList();
-        }
-        sortAssetFontFiles(files);
-        List<AssetFontResource> resources = new ArrayList<AssetFontResource>(files.size());
+        List<AssetFontResource> resources = new ArrayList<AssetFontResource>();
         long capturedBytes = 0L;
+
+        if (request.shouldIncludeBundledFonts()) {
+            for (String path : BUNDLED_FONT_RESOURCES) {
+                assertNotInterrupted();
+                if (resources.size() >= maxAssetFontFiles) {
+                    throw new IllegalStateException("字体资源文件数量超过上限: " + maxAssetFontFiles);
+                }
+                long remainingBytes = maxAssetFontTotalBytes - capturedBytes;
+                byte[] content = readBundledFont(path, Math.min(maxAssetFontFileBytes, remainingBytes));
+                if (content == null) {
+                    continue;
+                }
+                capturedBytes += content.length;
+                resources.add(new AssetFontResource(path, content, null));
+            }
+        }
+
+        List<File> files = listAssetFontFiles(request.getFontDirectory(), maxAssetFontFiles);
+        appendConfiguredFontFiles(request, files);
+        sortAssetFontFiles(files);
+        java.util.Set<String> seen = new java.util.HashSet<String>();
         for (File file : files) {
             assertNotInterrupted();
+            String path = file.getAbsolutePath();
+            if (!seen.add(path)) {
+                continue;
+            }
+            if (resources.size() >= maxAssetFontFiles) {
+                throw new IllegalStateException("字体资源文件数量超过上限: " + maxAssetFontFiles);
+            }
             try {
                 long remainingBytes = maxAssetFontTotalBytes - capturedBytes;
                 byte[] content = readStableBytes(file, Math.min(maxAssetFontFileBytes, remainingBytes));
                 capturedBytes += content.length;
-                resources.add(new AssetFontResource(file.getName(), content));
+                resources.add(new AssetFontResource(file.getName(), content, path));
             } catch (IOException exception) {
                 throw new IllegalStateException("无法冻结字体资源: " + file.getName(), exception);
             }
         }
         return java.util.Collections.unmodifiableList(resources);
+    }
+
+    /**
+     * Reads one bundled font from the classpath.
+     *
+     * @param path         absolute resource path
+     * @param maxBytes     per-file byte limit
+     * @return bytes, or null when the resource is absent
+     */
+    private static byte[] readBundledFont(String path, long maxBytes) {
+        if (maxBytes < 0L) {
+            throw new IllegalStateException("字体资源超过 snapshot bytes 上限");
+        }
+        try (InputStream input = FontResourceSnapshot.class.getResourceAsStream(path)) {
+            if (input == null) {
+                return null;
+            }
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int total = 0;
+            int read;
+            while ((read = input.read(buffer)) >= 0) {
+                assertNotInterrupted();
+                if (read == 0) {
+                    continue;
+                }
+                total += read;
+                if ((long) total > maxBytes) {
+                    throw new IOException("字体资源超过 snapshot bytes 上限");
+                }
+                output.write(buffer, 0, read);
+            }
+            return output.toByteArray();
+        } catch (IOException exception) {
+            throw new IllegalStateException("无法冻结内置字体: " + path, exception);
+        }
+    }
+
+    /**
+     * Adds explicitly configured font files/directories.
+     *
+     * <p>The player may put a family name or a file path in the font stack.
+     * Family names are resolved later against system/bundled fonts; path values
+     * are read here so a custom file is available even outside
+     * {@code <game>/fonts}.</p>
+     */
+    private static void appendConfiguredFontFiles(FontGenerationBuildRequest request, List<File> files) {
+        String[] configured = request.getSettings().getFontSort();
+        if (configured.length == 0) {
+            return;
+        }
+        File gameRoot = request.getFontDirectory().getParentFile();
+        for (String value : configured) {
+            if (value == null || value.trim().isEmpty()) {
+                continue;
+            }
+            String normalized = value.trim().replace('\\', '/');
+            if (!isFontFile(normalized) && !new File(normalized).isDirectory()) {
+                // Not a path; it is a family name resolved by FontOrderPlanner.
+                continue;
+            }
+            File candidate = new File(normalized);
+            if (!candidate.isAbsolute() && gameRoot != null) {
+                candidate = new File(gameRoot, normalized);
+            }
+            if (candidate.isDirectory()) {
+                File[] entries = candidate.listFiles((dir, name) -> isFontFile(name));
+                if (entries != null) {
+                    java.util.Collections.addAll(files, entries);
+                }
+            } else if (candidate.isFile()) {
+                files.add(candidate);
+            }
+        }
     }
 
     static void sortAssetFontFiles(List<File> files) {
@@ -284,14 +398,25 @@ final class FontResourceSnapshot {
 
         private final String name;
         private final byte[] content;
+        private final String sourcePath;
 
-        private AssetFontResource(String name, byte[] content) {
+        private AssetFontResource(String name, byte[] content, String sourcePath) {
             this.name = name;
             this.content = content;
+            this.sourcePath = sourcePath;
         }
 
         String getName() {
             return name;
+        }
+
+        /**
+         * Absolute path of a user-provided file, or null for bundled resources.
+         *
+         * @return source file path, or null
+         */
+        String getSourcePath() {
+            return sourcePath;
         }
 
         int getContentLength() {
