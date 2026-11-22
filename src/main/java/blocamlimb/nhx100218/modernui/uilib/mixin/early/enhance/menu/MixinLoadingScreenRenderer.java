@@ -38,9 +38,6 @@ public abstract class MixinLoadingScreenRenderer {
         if (!ModernLoadingScreen.isStatusScreen(minecraft)) {
             ModernLoadingScreen.resetStatusFramePresentation();
         }
-        if (EfrCompat.isActive() && !leavingWorld) {
-            return;
-        }
         ScaledResolution resolution = new ScaledResolution(minecraft, minecraft.displayWidth,
                 minecraft.displayHeight);
         int width = resolution.getScaledWidth();

@@ -23,11 +23,6 @@ public abstract class MixinGuiDownloadTerrain {
 
     @Inject(method = "drawScreen", at = @At("HEAD"), cancellable = true, require = 0)
     private void modernui$drawLoadingScreen(int mouseX, int mouseY, float partialTicks, CallbackInfo callbackInfo) {
-        // EFR owns this screen while its loading session is active. Let its mixin
-        // update the snapshot, then its renderer call is taken over below.
-        if (EfrCompat.isActive()) {
-            return;
-        }
         Minecraft minecraft = Minecraft.getMinecraft();
         if (minecraft == null) {
             return;

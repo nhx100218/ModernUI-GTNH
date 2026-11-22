@@ -8,6 +8,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
 
+import cpw.mods.fml.common.network.internal.FMLNetworkHandler;
+
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.ServerStatusResponse;
 import net.minecraft.network.status.server.S00PacketServerInfo;
@@ -131,6 +133,14 @@ public abstract class MixinS00PacketServerInfo implements RgbStatusPacket {
         }
         if (legacyColors != null) {
             json.add("modernui_rgb", legacyColors);
+        }
+        // Vanilla's serializer adds this in the Forge patch. Our manual JSON
+        // must add it too, otherwise the server list labels an FML server as
+        // "Vanilla" and Forge cannot compare the mod list.
+        try {
+            FMLNetworkHandler.enhanceStatusQuery(json);
+        } catch (Throwable failure) {
+            MyMod.LOG.warn("Could not add the FML modinfo field to the status response", failure);
         }
 
         callbackInfo.cancel();

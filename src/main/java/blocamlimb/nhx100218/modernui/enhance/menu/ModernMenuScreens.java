@@ -48,6 +48,9 @@ public final class ModernMenuScreens {
             "com.mitchej123.hodgepodge.client.gui.HodgepodgeSoundOptionsGui";
     private static final String STREAM_UNAVAILABLE_SCREEN =
             "net.minecraft.client.gui.stream.GuiStreamUnavailable";
+    /** EFR's world/server join bridge screen. */
+    private static final String EFR_GUI_LOADING_BRIDGE =
+            "ganymedes01.etfuturum.client.GuiLoadingBridge";
 
     private ModernMenuScreens() {
     }
@@ -91,7 +94,8 @@ public final class ModernMenuScreens {
                 || ANGELICA_DYNAMIC_LIGHTS_SCREEN.equals(name)
                 || IRIS_SHADER_PACK_SCREEN.equals(name)
                 || HODGEPODGE_SOUND_SCREEN.equals(name)
-                || STREAM_UNAVAILABLE_SCREEN.equals(name);
+                || STREAM_UNAVAILABLE_SCREEN.equals(name)
+                || EFR_GUI_LOADING_BRIDGE.equals(name);
     }
 
     /** The whitelist also controls list backgrounds; mod list screens use the same panorama. */
