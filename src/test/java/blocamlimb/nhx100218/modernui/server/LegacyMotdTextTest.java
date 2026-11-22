@@ -51,6 +51,26 @@ public class LegacyMotdTextTest {
     }
 
     @Test
+    public void realMiniMotdConfigProducesRgbGradient() {
+        String line1 = "<bold><#899bf3>            ▊<gradient:#71ffdd:#74ffd7:#78ffd0:#7bffca:#7effc3:"
+                + "#81ffbd:#85ffb6:#88ffb0:#8affb6:#8cffbc:#8effc2:#90ffc7:#92ffcd:#94ffd3:#96ffd9>"
+                + "IWDE 26 Minecraft分会场▊         </gradient>";
+        String line2 = "<bold><gradient:#899bf3:#89f3bf:#47d7cb:#89f3bf:#899bf3>"
+                + "▊    I Watch The Moon, Let It Run My Mood   ▊ </gradient></bold>";
+        com.google.gson.JsonObject json = LegacyMotdText.renderJson(line1, line2);
+        com.google.gson.JsonArray extra = json.getAsJsonArray("extra");
+        org.junit.Assert.assertTrue(extra.size() > 10);
+        int hexColors = 0;
+        for (com.google.gson.JsonElement element : extra) {
+            com.google.gson.JsonObject part = element.getAsJsonObject();
+            if (part.has("color") && part.get("color").getAsString().startsWith("#")) {
+                hexColors++;
+            }
+        }
+        org.junit.Assert.assertTrue("real MiniMOTD gradient must keep RGB colours", hexColors > 5);
+    }
+
+    @Test
     public void rainbowIsRenderedWithLegacyColors() {
         String rendered = LegacyMotdText.render("<rainbow>abcdef</rainbow>");
         assertTrue(rendered.contains("\u00a7"));
