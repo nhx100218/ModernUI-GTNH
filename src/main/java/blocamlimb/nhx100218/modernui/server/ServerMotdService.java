@@ -246,7 +246,16 @@ public final class ServerMotdService {
         // legacy description. Vanilla 1.7.10 ignores it, so the description
         // stays exactly the normal 16-colour MOTD and cannot break server-list
         // pinging; ModernUI's client reads the field and draws the gradient.
-        JsonArray legacyColors = hexColors ? null : LegacyMotdText.exactColors(raw1, raw2);
+        JsonArray legacyColors = null;
+        if (!hexColors) {
+            try {
+                legacyColors = LegacyMotdText.exactColors(raw1, raw2);
+            } catch (Throwable failure) {
+                // A broken/unsupported tag must never take down the status
+                // ping; vanilla clients still get the legacy fallback.
+                MyMod.LOG.warn("MOTD exact-colour payload failed; falling back to legacy colours", failure);
+            }
+        }
         return new Selection(legacy, description, legacyColors, icon);
     }
 
