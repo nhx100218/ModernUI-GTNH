@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiLanguage;
 import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.GuiOptions;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.GuiScreenAddServer;
 import net.minecraft.client.gui.GuiScreenOptionsSounds;
 import net.minecraft.client.gui.GuiScreenResourcePacks;
 import net.minecraft.client.gui.GuiSelectWorld;
@@ -61,6 +62,7 @@ public final class ModernMenuScreens {
         }
         if (screen instanceof GuiSelectWorld
                 || screen instanceof GuiMultiplayer
+                || screen instanceof GuiScreenAddServer
                 || screen instanceof GuiCreateWorld
                 || screen instanceof GuiScreenResourcePacks
                 || screen instanceof GuiOptions

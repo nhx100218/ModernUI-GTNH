@@ -26,7 +26,6 @@ public final class ServerTabService {
     public static final String SERVER_UTILITIES_MODID = "serverutilities";
 
     private static final long UPDATE_MS = 1000L;
-    private static final String TPS_LINE = "&7MSPT: &a{mspt}  &7TPS: &a{tps}";
 
     private static String lastPayload;
     private static long lastSendMs;
@@ -63,7 +62,7 @@ public final class ServerTabService {
             return;
         }
         String header = readTabField("headerText");
-        String footer = appendLine(readTabField("footerText"), ServerMetrics.expand(TPS_LINE));
+        String footer = appendLine(readTabField("footerText"), metricsLine());
         String payload = payload(header, footer);
         if (!payload.equals(lastPayload)) {
             sendAllJson(payload);
@@ -77,7 +76,7 @@ public final class ServerTabService {
             return;
         }
         String header = readTabField("headerText");
-        String footer = appendLine(readTabField("footerText"), ServerMetrics.expand(TPS_LINE));
+        String footer = appendLine(readTabField("footerText"), metricsLine());
         sendJson(player, payload(header, footer));
     }
 
@@ -92,6 +91,23 @@ public final class ServerTabService {
             return line;
         }
         return base + "\n" + line;
+    }
+
+    /**
+     * TabTPS-style metrics line: the integer part is green, the decimal part
+     * dark green. Labels stay grey.
+     */
+    private static String metricsLine() {
+        return "&7TPS: " + twoTone(ServerMetrics.formatTps())
+                + "  &7MSPT: " + twoTone(ServerMetrics.formatMspt());
+    }
+
+    private static String twoTone(String value) {
+        int dot = value.indexOf('.');
+        if (dot < 0) {
+            return "&a" + value;
+        }
+        return "&a" + value.substring(0, dot) + "&2" + value.substring(dot);
     }
 
     /**

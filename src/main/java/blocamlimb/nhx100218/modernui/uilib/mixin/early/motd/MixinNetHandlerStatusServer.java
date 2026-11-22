@@ -1,10 +1,12 @@
 package blocamlimb.nhx100218.modernui.uilib.mixin.early.motd;
 
+import net.minecraft.network.NetworkManager;
 import net.minecraft.network.ServerStatusResponse;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.NetHandlerStatusServer;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
@@ -17,12 +19,16 @@ import blocamlimb.nhx100218.modernui.server.ServerMotdService;
 @Mixin(NetHandlerStatusServer.class)
 public abstract class MixinNetHandlerStatusServer {
 
+    @Shadow
+    private NetworkManager field_147313_b;
+
     @Redirect(
             method = "processServerQuery",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/server/MinecraftServer;func_147134_at()Lnet/minecraft/network/ServerStatusResponse;"))
     private ServerStatusResponse modernui$applyMotd(MinecraftServer server) {
-        return ServerMotdService.apply(server, server.func_147134_at());
+        return ServerMotdService.apply(server, server.func_147134_at(),
+                ServerMotdService.protocolFor(field_147313_b));
     }
 }

@@ -3,11 +3,17 @@ package blocamlimb.nhx100218.modernui.server;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Locale;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 import javax.imageio.ImageIO;
 
+import com.google.gson.JsonObject;
+
+import net.minecraft.network.NetworkManager;
 import net.minecraft.network.ServerStatusResponse;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentText;
@@ -17,16 +23,50 @@ import blocamlimb.nhx100218.modernui.uilib.MyMod;
 /**
  * Builds the server-list response from {@code config/MiniMOTD/main.conf} when
  * present, otherwise from the {@code server.motd} section of modernui.yaml.
+ *
+ * <p>1.7.10 clients receive the legacy (16-colour) MOTD plus ModernUI's marker.
+ * 1.16+ clients receive a component with exact RGB colours, so MiniMOTD
+ * gradients are displayed smoothly without a client mod.</p>
  */
 public final class ServerMotdService {
 
+    /** 1.16 introduced RGB component colours and {@code §x} legacy RGB. */
+    private static final int HEX_COLOR_PROTOCOL = 735;
+
+    private static final Map<NetworkManager, Integer> PROTOCOLS =
+            Collections.synchronizedMap(new WeakHashMap<NetworkManager, Integer>());
+    private static final Map<ServerStatusResponse, JsonObject> DESCRIPTIONS =
+            Collections.synchronizedMap(new WeakHashMap<ServerStatusResponse, JsonObject>());
+
     private static Boolean enabledOverride;
-    private static String cachedText;
+    private static Selection cachedFallbackLegacy;
+    private static Selection cachedFallbackHex;
     private static String cachedIcon;
     private static String cachedIconPath;
     private static long cachedIconStamp = -1L;
 
     private ServerMotdService() {}
+
+    /** Remembers the protocol version from the status/login handshake. */
+    public static void rememberProtocol(NetworkManager manager, int protocol) {
+        if (manager != null) {
+            PROTOCOLS.put(manager, Integer.valueOf(protocol));
+        }
+    }
+
+    /** Returns the handshake protocol, or 5 (1.7.10) when it was not recorded. */
+    public static int protocolFor(NetworkManager manager) {
+        if (manager == null) {
+            return 5;
+        }
+        Integer protocol = PROTOCOLS.get(manager);
+        return protocol == null ? 5 : protocol.intValue();
+    }
+
+    /** RGB component produced for a modern status response, or null. */
+    public static JsonObject directDescription(ServerStatusResponse response) {
+        return response == null ? null : DESCRIPTIONS.get(response);
+    }
 
     public static void setEnabledOverride(Boolean enabled) {
         enabledOverride = enabled;
@@ -37,7 +77,8 @@ public final class ServerMotdService {
     }
 
     public static void invalidate() {
-        cachedText = null;
+        cachedFallbackLegacy = null;
+        cachedFallbackHex = null;
         cachedIcon = null;
         cachedIconPath = null;
         cachedIconStamp = -1L;
@@ -45,21 +86,38 @@ public final class ServerMotdService {
     }
 
     public static ServerStatusResponse apply(MinecraftServer server, ServerStatusResponse response) {
+        return apply(server, response, 5);
+    }
+
+    public static ServerStatusResponse apply(MinecraftServer server, ServerStatusResponse response, int protocol) {
         if (!isEnabled() || response == null) {
             return response;
         }
-        Selection selection = selection();
-        response.func_151315_a(new ChatComponentText(selection.text));
+        boolean hexColors = protocol >= HEX_COLOR_PROTOCOL;
+        Selection selection = selection(hexColors);
+        // Copy the cached status so one ping's protocol/random MOTD cannot
+        // leak into another client's response.
+        ServerStatusResponse out = new ServerStatusResponse();
+        out.func_151321_a(response.func_151322_c());
         if (server != null) {
-            response.func_151319_a(
+            out.func_151319_a(
                     new ServerStatusResponse.PlayerCountData(
                             server.getMaxPlayers(),
                             server.getCurrentPlayerCount()));
+        } else {
+            out.func_151319_a(response.func_151318_b());
         }
-        if (selection.icon != null) {
-            response.func_151320_a(selection.icon);
+        String icon = selection.icon != null ? selection.icon : response.func_151316_d();
+        if (icon != null) {
+            out.func_151320_a(icon);
         }
-        return response;
+        // Keep the legacy fallback in the component: if the serializer mixin
+        // is unavailable the client still sees the normal MOTD.
+        out.func_151315_a(new ChatComponentText(selection.legacyText));
+        if (selection.description != null) {
+            DESCRIPTIONS.put(out, selection.description);
+        }
+        return out;
     }
 
     public static boolean isEnabled() {
@@ -73,37 +131,58 @@ public final class ServerMotdService {
         return ServerFeatureConfig.motdEnabled;
     }
 
-    private static Selection selection() {
+    private static Selection selection(boolean hexColors) {
         MiniMotdConfig.Data mini = MiniMotdConfig.current();
         if (mini != null && !mini.motds.isEmpty()) {
             int index = mini.motds.size() == 1 ? 0 : ThreadLocalRandom.current().nextInt(mini.motds.size());
             MiniMotdConfig.Entry entry = mini.motds.get(index);
-            String line1 = LegacyMotdText.render(ServerMetrics.expand(entry.line1));
-            String line2 = LegacyMotdText.render(ServerMetrics.expand(entry.line2));
-            if (!LegacyMotdText.hasVisibleText(line1) && !LegacyMotdText.hasVisibleText(line2)) {
+            String raw1 = ServerMetrics.expand(entry.line1);
+            String raw2 = ServerMetrics.expand(entry.line2);
+            String legacy1 = LegacyMotdText.render(raw1, false);
+            String legacy2 = LegacyMotdText.render(raw2, false);
+            if (!LegacyMotdText.hasVisibleText(legacy1) && !LegacyMotdText.hasVisibleText(legacy2)) {
                 MyMod.LOG.warn("MiniMOTD 配置渲染结果为空，回退到 modernui.yaml MOTD: line1={}, line2={}",
                         entry.line1, entry.line2);
-                line1 = LegacyMotdText.render(ServerMetrics.expand(ServerFeatureConfig.motdLine1));
-                line2 = LegacyMotdText.render(ServerMetrics.expand(ServerFeatureConfig.motdLine2));
+                raw1 = ServerMetrics.expand(ServerFeatureConfig.motdLine1);
+                raw2 = ServerMetrics.expand(ServerFeatureConfig.motdLine2);
+                legacy1 = LegacyMotdText.render(raw1, false);
+                legacy2 = LegacyMotdText.render(raw2, false);
             }
-            if (!LegacyMotdText.hasVisibleText(line1) && !LegacyMotdText.hasVisibleText(line2)) {
-                line1 = "\u00a7bModernUI-GTNH";
-                line2 = "";
+            if (!LegacyMotdText.hasVisibleText(legacy1) && !LegacyMotdText.hasVisibleText(legacy2)) {
+                raw1 = "ModernUI-GTNH";
+                raw2 = "";
+                legacy1 = "\u00a7bModernUI-GTNH";
+                legacy2 = "";
             }
-            String text = LegacyMotdText.MARKER + (line2.isEmpty() ? line1 : line1 + "\n" + line2);
             String icon = mini.iconsEnabled ? miniIcon(entry.icon) : null;
-            return new Selection(text, icon);
+            return build(raw1, raw2, legacy1, legacy2, icon, hexColors);
         }
-        return new Selection(fallbackText(), fallbackIcon());
+        return fallback(hexColors);
     }
 
-    private static String fallbackText() {
-        if (cachedText == null) {
-            String line1 = LegacyMotdText.render(ServerMetrics.expand(ServerFeatureConfig.motdLine1));
-            String line2 = LegacyMotdText.render(ServerMetrics.expand(ServerFeatureConfig.motdLine2));
-            cachedText = LegacyMotdText.MARKER + (line2.isEmpty() ? line1 : line1 + "\n" + line2);
+    private static Selection fallback(boolean hexColors) {
+        Selection cached = hexColors ? cachedFallbackHex : cachedFallbackLegacy;
+        if (cached != null) {
+            return cached;
         }
-        return cachedText;
+        String raw1 = ServerMetrics.expand(ServerFeatureConfig.motdLine1);
+        String raw2 = ServerMetrics.expand(ServerFeatureConfig.motdLine2);
+        String legacy1 = LegacyMotdText.render(raw1, false);
+        String legacy2 = LegacyMotdText.render(raw2, false);
+        Selection selection = build(raw1, raw2, legacy1, legacy2, fallbackIcon(), hexColors);
+        if (hexColors) {
+            cachedFallbackHex = selection;
+        } else {
+            cachedFallbackLegacy = selection;
+        }
+        return selection;
+    }
+
+    private static Selection build(String raw1, String raw2, String legacy1, String legacy2, String icon,
+            boolean hexColors) {
+        String legacy = LegacyMotdText.MARKER + (legacy2.isEmpty() ? legacy1 : legacy1 + "\n" + legacy2);
+        JsonObject description = hexColors ? LegacyMotdText.renderJson(raw1, raw2) : null;
+        return new Selection(legacy, description, icon);
     }
 
     private static String fallbackIcon() {
@@ -179,11 +258,13 @@ public final class ServerMotdService {
 
     private static final class Selection {
 
-        private final String text;
+        private final String legacyText;
+        private final JsonObject description;
         private final String icon;
 
-        Selection(String text, String icon) {
-            this.text = text;
+        Selection(String legacyText, JsonObject description, String icon) {
+            this.legacyText = legacyText;
+            this.description = description;
             this.icon = icon;
         }
     }

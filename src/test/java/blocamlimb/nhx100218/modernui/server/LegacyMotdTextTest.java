@@ -30,6 +30,27 @@ public class LegacyMotdTextTest {
     }
 
     @Test
+    public void hexModeUsesRgbSequences() {
+        String rendered = LegacyMotdText.render("<gradient:#ff0000:#0000ff>abc</gradient>", true);
+        assertTrue(rendered.contains("\u00a7x"));
+        assertFalse(rendered.contains("<"));
+        assertTrue(LegacyMotdText.hasVisibleText(rendered));
+        assertFalse(LegacyMotdText.hasVisibleText("\u00a7x\u00a7f\u00a7f\u00a7f\u00a7f\u00a7f\u00a7f"));
+    }
+
+    @Test
+    public void modernComponentUsesExactRgb() {
+        com.google.gson.JsonObject json = LegacyMotdText.renderJson(
+                "<gradient:#ff0000:#0000ff>AB</gradient>", "");
+        com.google.gson.JsonArray extra = json.getAsJsonArray("extra");
+        org.junit.Assert.assertEquals(2, extra.size());
+        org.junit.Assert.assertEquals("A", extra.get(0).getAsJsonObject().get("text").getAsString());
+        org.junit.Assert.assertEquals("#ff0000", extra.get(0).getAsJsonObject().get("color").getAsString());
+        org.junit.Assert.assertEquals("B", extra.get(1).getAsJsonObject().get("text").getAsString());
+        org.junit.Assert.assertEquals("#0000ff", extra.get(1).getAsJsonObject().get("color").getAsString());
+    }
+
+    @Test
     public void rainbowIsRenderedWithLegacyColors() {
         String rendered = LegacyMotdText.render("<rainbow>abcdef</rainbow>");
         assertTrue(rendered.contains("\u00a7"));

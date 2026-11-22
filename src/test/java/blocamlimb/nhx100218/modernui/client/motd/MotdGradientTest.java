@@ -39,4 +39,15 @@ public class MotdGradientTest {
         assertEquals(5, glyphs.size());
         assertEquals(0x808080, glyphs.get(0).rgb);
     }
+
+    @Test
+    public void parsesHexColorsWithoutSmoothing() {
+        String motd = LegacyMotdText.MARKER
+                + "\u00a7x\u00a7f\u00a7f\u00a7f\u00a7f\u00a7f\u00a7fA"
+                + "\u00a7x\u00a70\u00a70\u00a70\u00a70\u00a7b\u00a7bB";
+        List<MotdGradient.Glyph> glyphs = MotdGradient.parse(motd);
+        assertEquals(2, glyphs.size());
+        assertEquals(0xFFFFFF, glyphs.get(0).rgb);
+        assertEquals(0x0000BB, glyphs.get(1).rgb);
+    }
 }

@@ -34,11 +34,21 @@ public final class MotdGradient {
         boolean bold = false;
         boolean italic = false;
         boolean underlined = false;
+        boolean exactColors = false;
         int i = 0;
         while (i < text.length()) {
             char c = text.charAt(i);
             if ((c == '\u00a7' || c == '&') && i + 1 < text.length()) {
                 char code = Character.toLowerCase(text.charAt(i + 1));
+                if (code == 'x') {
+                    int hex = parseHexColor(text, i);
+                    if (hex >= 0) {
+                        rgb = hex;
+                        exactColors = true;
+                        i += 14;
+                        continue;
+                    }
+                }
                 int color = legacyColor(code);
                 if (color >= 0) {
                     rgb = color;
@@ -63,8 +73,30 @@ public final class MotdGradient {
             glyphs.add(new Glyph(cp, rgb, bold, italic, underlined));
             i += Character.charCount(cp);
         }
-        smooth(glyphs);
+        if (!exactColors) {
+            smooth(glyphs);
+        }
         return glyphs;
+    }
+
+    /** Parses the 1.16+ {@code §x§R§R§G§G§B§B} sequence at {@code start}. */
+    private static int parseHexColor(String text, int start) {
+        int value = 0;
+        int digits = 0;
+        int i = start + 2;
+        while (digits < 6 && i + 1 < text.length()) {
+            if (text.charAt(i) != '\u00a7') {
+                return -1;
+            }
+            int digit = Character.digit(text.charAt(i + 1), 16);
+            if (digit < 0) {
+                return -1;
+            }
+            value = (value << 4) | digit;
+            digits++;
+            i += 2;
+        }
+        return digits == 6 ? value : -1;
     }
 
     public static boolean hasVisibleText(String motd) {

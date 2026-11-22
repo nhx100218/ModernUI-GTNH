@@ -4,13 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 /**
  * A small MiniMessage-subset renderer for the 1.7.10 server-list MOTD.
  *
  * <p>1.7.10 clients only understand the sixteen legacy colours. Gradient
  * colours are therefore interpolated per character (same sRGB math as
  * Adventure's gradient tag) and then downsampled to the nearest named colour
- * (same HSV distance as MiniMOTD's fallback).</p>
+ * (same HSV distance as MiniMOTD's fallback). For 1.16+ clients the same
+ * per-character colours are emitted as a component with RGB {@code color}
+ * values, so the gradient is exact instead of quantised.</p>
  *
  * <p>Supported tags: {@code <gradient:#rrggbb:#rrggbb>...</gradient>},
  * {@code <rainbow>...</rainbow>}, named colours, {@code <#rrggbb>}, bold,
@@ -32,27 +37,67 @@ public final class LegacyMotdText {
     private LegacyMotdText() {}
 
     public static String render(String input) {
+        return render(input, false);
+    }
+
+    /**
+     * @param hexColors true for 1.16+ clients, which understand
+     *                  {@code §x§R§R§G§G§B§B} RGB colours
+     */
+    public static String render(String input, boolean hexColors) {
         if (input == null || input.isEmpty()) {
             return "";
         }
-        StringBuilder out = new StringBuilder(input.length() + 16);
-        renderSegment(input, out);
-        return out.toString();
+        LegacySink sink = new LegacySink(hexColors);
+        renderSegment(input, sink);
+        return sink.toString();
     }
 
-    private static void renderSegment(String text, StringBuilder out) {
+    /** Builds a modern component from one or two MOTD lines. */
+    public static JsonObject renderJson(String line1, String line2) {
+        JsonSink sink = new JsonSink();
+        renderSegment(line1 == null ? "" : line1, sink);
+        if (line2 != null && !line2.isEmpty()) {
+            sink.newline();
+            renderSegment(line2, sink);
+        }
+        return sink.toJson();
+    }
+
+    private interface Sink {
+
+        void color(int rgb);
+
+        void format(char code);
+
+        void reset();
+
+        void text(int codePoint);
+
+        void newline();
+    }
+
+    private static void renderSegment(String text, Sink sink) {
         int i = 0;
         while (i < text.length()) {
             char c = text.charAt(i);
             if (c == '&' && i + 1 < text.length() && isLegacyCode(text.charAt(i + 1))) {
-                out.append('\u00a7').append(Character.toLowerCase(text.charAt(i + 1)));
+                char code = Character.toLowerCase(text.charAt(i + 1));
+                int color = legacyColor(code);
+                if (color >= 0) {
+                    sink.color(color);
+                } else if (code == 'r') {
+                    sink.reset();
+                } else {
+                    sink.format(code);
+                }
                 i += 2;
                 continue;
             }
             if (c == '<') {
                 int close = text.indexOf('>', i);
                 if (close < 0) {
-                    out.append(c);
+                    sink.text(c);
                     i++;
                     continue;
                 }
@@ -64,7 +109,7 @@ public final class LegacyMotdText {
                         end = text.length();
                     }
                     String body = text.substring(close + 1, end);
-                    appendGradient(body, parseColors(tag.substring("gradient:".length())), out);
+                    appendGradient(body, parseColors(tag.substring("gradient:".length())), sink);
                     i = end + "</gradient>".length();
                     continue;
                 }
@@ -73,40 +118,40 @@ public final class LegacyMotdText {
                     if (end < 0) {
                         end = text.length();
                     }
-                    appendRainbow(text.substring(close + 1, end), out);
+                    appendRainbow(text.substring(close + 1, end), sink);
                     i = end + "</rainbow>".length();
                     continue;
                 }
                 if (lower.equals("bold") || lower.equals("b")) {
-                    out.append('\u00a7').append('l');
+                    sink.format('l');
                     i = close + 1;
                     continue;
                 }
                 if (lower.equals("italic") || lower.equals("i") || lower.equals("em")) {
-                    out.append('\u00a7').append('o');
+                    sink.format('o');
                     i = close + 1;
                     continue;
                 }
                 if (lower.equals("underlined") || lower.equals("u")) {
-                    out.append('\u00a7').append('n');
+                    sink.format('n');
                     i = close + 1;
                     continue;
                 }
                 int color = parseColor(tag);
                 if (color >= 0) {
-                    out.append('\u00a7').append(nearestCode(color));
+                    sink.color(color);
                 } else if (lower.startsWith("/")) {
-                    out.append('\u00a7').append('r');
+                    sink.reset();
                 }
                 i = close + 1;
                 continue;
             }
-            out.append(c);
+            sink.text(c);
             i++;
         }
     }
 
-    private static void appendGradient(String body, List<Integer> stops, StringBuilder out) {
+    private static void appendGradient(String body, List<Integer> stops, Sink sink) {
         String plain = stripTags(body);
         if (plain.isEmpty()) {
             return;
@@ -116,37 +161,218 @@ public final class LegacyMotdText {
             colors[i] = stops.get(i).intValue();
         }
         int length = plain.codePointCount(0, plain.length());
-        char lastCode = 0;
         for (int i = 0; i < length; i++) {
             int cp = plain.codePointAt(plain.offsetByCodePoints(0, i));
-            int rgb = gradientAt(colors, i, length);
-            char code = nearestCode(rgb);
-            if (code != lastCode) {
-                out.append('\u00a7').append(code);
-                lastCode = code;
-            }
-            out.appendCodePoint(cp);
+            sink.color(gradientAt(colors, i, length));
+            sink.text(cp);
         }
     }
 
-    private static void appendRainbow(String body, StringBuilder out) {
+    private static void appendRainbow(String body, Sink sink) {
         String plain = stripTags(body);
         if (plain.isEmpty()) {
             return;
         }
         int length = plain.codePointCount(0, plain.length());
-        char lastCode = 0;
         for (int i = 0; i < length; i++) {
             int cp = plain.codePointAt(plain.offsetByCodePoints(0, i));
             float hue = length <= 1 ? 0.0F : (float) i / (float) (length - 1);
-            int rgb = hsvToRgb(hue, 1.0F, 1.0F);
+            sink.color(hsvToRgb(hue, 1.0F, 1.0F));
+            sink.text(cp);
+        }
+    }
+
+    private static final class LegacySink implements Sink {
+
+        private final StringBuilder out = new StringBuilder();
+        private final boolean hexColors;
+        private char lastCode;
+
+        LegacySink(boolean hexColors) {
+            this.hexColors = hexColors;
+        }
+
+        @Override
+        public void color(int rgb) {
+            if (hexColors) {
+                appendHexColor(out, rgb);
+                return;
+            }
             char code = nearestCode(rgb);
             if (code != lastCode) {
                 out.append('\u00a7').append(code);
                 lastCode = code;
             }
-            out.appendCodePoint(cp);
         }
+
+        @Override
+        public void format(char code) {
+            out.append('\u00a7').append(code);
+        }
+
+        @Override
+        public void reset() {
+            out.append('\u00a7').append('r');
+            lastCode = 0;
+        }
+
+        @Override
+        public void text(int codePoint) {
+            out.appendCodePoint(codePoint);
+        }
+
+        @Override
+        public void newline() {
+            out.append('\n');
+        }
+
+        @Override
+        public String toString() {
+            return out.toString();
+        }
+    }
+
+    private static final class JsonSink implements Sink {
+
+        private final List<Run> runs = new ArrayList<Run>();
+        private Run current;
+        private int rgb = -1;
+        private boolean bold;
+        private boolean italic;
+        private boolean underlined;
+        private boolean strike;
+        private boolean obfuscated;
+
+        @Override
+        public void color(int rgb) {
+            this.rgb = rgb;
+            this.bold = false;
+            this.italic = false;
+            this.underlined = false;
+            this.strike = false;
+            this.obfuscated = false;
+            ensureRun();
+        }
+
+        @Override
+        public void format(char code) {
+            switch (code) {
+                case 'l':
+                    bold = true;
+                    break;
+                case 'o':
+                    italic = true;
+                    break;
+                case 'n':
+                    underlined = true;
+                    break;
+                case 'm':
+                    strike = true;
+                    break;
+                case 'k':
+                    obfuscated = true;
+                    break;
+                default:
+                    return;
+            }
+            ensureRun();
+        }
+
+        @Override
+        public void reset() {
+            rgb = -1;
+            bold = false;
+            italic = false;
+            underlined = false;
+            strike = false;
+            obfuscated = false;
+        }
+
+        @Override
+        public void text(int codePoint) {
+            ensureRun().text.appendCodePoint(codePoint);
+        }
+
+        @Override
+        public void newline() {
+            ensureRun().text.append('\n');
+        }
+
+        private Run ensureRun() {
+            if (current == null || current.rgb != rgb || current.bold != bold || current.italic != italic
+                    || current.underlined != underlined || current.strike != strike
+                    || current.obfuscated != obfuscated) {
+                current = new Run(rgb, bold, italic, underlined, strike, obfuscated);
+                runs.add(current);
+            }
+            return current;
+        }
+
+        JsonObject toJson() {
+            JsonObject root = new JsonObject();
+            root.addProperty("text", "");
+            JsonArray extra = new JsonArray();
+            for (Run run : runs) {
+                if (run.text.length() == 0) {
+                    continue;
+                }
+                JsonObject part = new JsonObject();
+                part.addProperty("text", run.text.toString());
+                if (run.rgb >= 0) {
+                    part.addProperty("color", String.format(Locale.ROOT, "#%06x", Integer.valueOf(run.rgb)));
+                }
+                if (run.bold) {
+                    part.addProperty("bold", Boolean.TRUE);
+                }
+                if (run.italic) {
+                    part.addProperty("italic", Boolean.TRUE);
+                }
+                if (run.underlined) {
+                    part.addProperty("underlined", Boolean.TRUE);
+                }
+                if (run.strike) {
+                    part.addProperty("strikethrough", Boolean.TRUE);
+                }
+                if (run.obfuscated) {
+                    part.addProperty("obfuscated", Boolean.TRUE);
+                }
+                extra.add(part);
+            }
+            root.add("extra", extra);
+            return root;
+        }
+    }
+
+    private static final class Run {
+
+        final StringBuilder text = new StringBuilder();
+        final int rgb;
+        final boolean bold;
+        final boolean italic;
+        final boolean underlined;
+        final boolean strike;
+        final boolean obfuscated;
+
+        Run(int rgb, boolean bold, boolean italic, boolean underlined, boolean strike, boolean obfuscated) {
+            this.rgb = rgb;
+            this.bold = bold;
+            this.italic = italic;
+            this.underlined = underlined;
+            this.strike = strike;
+            this.obfuscated = obfuscated;
+        }
+    }
+
+    private static void appendHexColor(StringBuilder out, int rgb) {
+        out.append('\u00a7').append('x');
+        appendHexPair(out, (rgb >> 16) & 0xFF);
+        appendHexPair(out, (rgb >> 8) & 0xFF);
+        appendHexPair(out, rgb & 0xFF);
+    }
+
+    private static void appendHexPair(StringBuilder out, int value) {
+        out.append('\u00a7').append(Character.forDigit((value >> 4) & 0xF, 16));
+        out.append('\u00a7').append(Character.forDigit(value & 0xF, 16));
     }
 
     private static int gradientAt(int[] colors, int index, int length) {
@@ -193,7 +419,13 @@ public final class LegacyMotdText {
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
             if (c == '\u00a7') {
-                i++;
+                if (i + 1 < text.length() && (text.charAt(i + 1) == 'x' || text.charAt(i + 1) == 'X')
+                        && i + 13 < text.length()) {
+                    // §x§R§R§G§G§B§B is a colour sequence, never visible text.
+                    i += 13;
+                } else {
+                    i++;
+                }
                 continue;
             }
             if (c != '\n' && c != '\r' && !Character.isWhitespace(c) && c != '\u00a0') {
@@ -344,6 +576,45 @@ public final class LegacyMotdText {
                 return (t << 16) | (p << 8) | v;
             default:
                 return (v << 16) | (p << 8) | q;
+        }
+    }
+
+    private static int legacyColor(char code) {
+        switch (code) {
+            case '0':
+                return COLORS[0];
+            case '1':
+                return COLORS[1];
+            case '2':
+                return COLORS[2];
+            case '3':
+                return COLORS[3];
+            case '4':
+                return COLORS[4];
+            case '5':
+                return COLORS[5];
+            case '6':
+                return COLORS[6];
+            case '7':
+                return COLORS[7];
+            case '8':
+                return COLORS[8];
+            case '9':
+                return COLORS[9];
+            case 'a':
+                return COLORS[10];
+            case 'b':
+                return COLORS[11];
+            case 'c':
+                return COLORS[12];
+            case 'd':
+                return COLORS[13];
+            case 'e':
+                return COLORS[14];
+            case 'f':
+                return COLORS[15];
+            default:
+                return -1;
         }
     }
 
