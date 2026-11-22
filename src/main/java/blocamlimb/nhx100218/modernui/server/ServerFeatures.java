@@ -1,6 +1,7 @@
 package blocamlimb.nhx100218.modernui.server;
 
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.status.server.S00PacketServerInfo;
 
 import blocamlimb.nhx100218.modernui.config.runtime.ConfigManager;
 import blocamlimb.nhx100218.modernui.uilib.MyMod;
@@ -37,6 +38,8 @@ public final class ServerFeatures {
                 "服务端功能初始化：side={}, ServerUtilities={}",
                 FMLCommonHandler.instance().getSide() == Side.CLIENT ? "CLIENT" : "SERVER",
                 Boolean.valueOf(ServerTabService.available()));
+        MyMod.LOG.info("MOTD RGB 状态包支持: {}",
+                Boolean.valueOf(RgbStatusPacket.class.isAssignableFrom(S00PacketServerInfo.class)));
     }
 
     public static void onServerStarting(FMLServerStartingEvent event) {
