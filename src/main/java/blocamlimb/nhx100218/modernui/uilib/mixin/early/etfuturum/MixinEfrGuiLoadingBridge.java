@@ -22,11 +22,11 @@ import blocamlimb.nhx100218.modernui.enhance.menu.ModernLoadingScreen;
 @Mixin(targets = "ganymedes01.etfuturum.client.GuiLoadingBridge", remap = false, priority = 1500)
 public abstract class MixinEfrGuiLoadingBridge {
 
-    @Inject(method = "drawScreen", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
+    // EFR ships a production (SRG-named) class: the method is literally
+    // func_73863_a, not drawScreen. remap=false keeps Mixin from looking for a
+    // name that does not exist in the EFR jar.
+    @Inject(method = "func_73863_a", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void modernui$drawLoadingBridge(int mouseX, int mouseY, float partialTicks, CallbackInfo callbackInfo) {
-        if (!EfrCompat.isActive()) {
-            return;
-        }
         Minecraft minecraft = Minecraft.getMinecraft();
         if (minecraft == null) {
             return;

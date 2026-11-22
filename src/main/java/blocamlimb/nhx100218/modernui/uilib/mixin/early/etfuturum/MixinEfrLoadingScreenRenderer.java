@@ -24,9 +24,6 @@ public abstract class MixinEfrLoadingScreenRenderer {
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void modernui$renderLoadingScreen(CallbackInfo callbackInfo) {
-        if (!EfrCompat.isActive()) {
-            return;
-        }
         Minecraft minecraft = Minecraft.getMinecraft();
         if (minecraft == null) {
             return;
