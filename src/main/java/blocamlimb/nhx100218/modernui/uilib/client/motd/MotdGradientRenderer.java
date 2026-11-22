@@ -5,12 +5,11 @@ import java.util.List;
 import net.minecraft.client.gui.FontRenderer;
 
 import blocamlimb.nhx100218.modernui.uilib.font.FontService;
-import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
 
 /**
- * Draws the server-list MOTD with per-glyph colours when the active renderer
- * supports it. On Angelica's SDL GPU backend (Vulkan/D3D12) the vanilla
- * MiniMOTD fallback is kept instead.
+ * Draws the server-list MOTD with per-glyph colours when the font runtime is
+ * available. The font pipeline keeps per-call colours on both the GL and SDL
+ * GPU backends, so the gradient is no longer limited to OpenGL.
  */
 public final class MotdGradientRenderer {
 
@@ -21,7 +20,7 @@ public final class MotdGradientRenderer {
     }
 
     public static boolean canRenderGradient() {
-        return !AngelicaRendererCompat.isSdlGpuActive() && FontService.isRenderRuntimeSupportedOnThisSide();
+        return FontService.isRenderRuntimeSupportedOnThisSide();
     }
 
     public static boolean draw(FontRenderer font, String motd, int x, int y, int maxWidth, int maxLines) {
