@@ -353,6 +353,7 @@ public class FontMatcher {
         String lookupKey = normalizeFontName(assignedName);
         int firstStrictDisplayIndex = GlyphRuntimeTables.FONT_INDEX_NONE;
         int firstCanDisplayIndex = GlyphRuntimeTables.FONT_INDEX_NONE;
+        int familyFallbackIndex = GlyphRuntimeTables.FONT_INDEX_NONE;
         for (int index = 0; index < fonts.size(); index++) {
             Font font = fonts.get(index);
             if (!matchesConfiguredFontName(font, lookupKey) || !font.canDisplay(codepoint)) {
@@ -369,9 +370,14 @@ public class FontMatcher {
             }
             if (firstStrictDisplayIndex == GlyphRuntimeTables.FONT_INDEX_NONE) {
                 firstStrictDisplayIndex = index;
+                familyFallbackIndex = index;
+            } else if (fontType != null && fontType.isBold() && familyFallbackIndex >= 0
+                    && !isBoldFace(fonts.get(familyFallbackIndex)) && isBoldFace(font)) {
+                familyFallbackIndex = index;
             }
         }
-        int resolved = firstStrictDisplayIndex >= 0 ? firstStrictDisplayIndex : firstCanDisplayIndex;
+        int resolved = familyFallbackIndex >= 0 ? familyFallbackIndex
+                : (firstStrictDisplayIndex >= 0 ? firstStrictDisplayIndex : firstCanDisplayIndex);
         return resolved;
     }
 

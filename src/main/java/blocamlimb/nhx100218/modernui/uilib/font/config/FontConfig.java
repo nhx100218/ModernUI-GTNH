@@ -192,6 +192,17 @@ public final class FontConfig {
      * @return 字体指派快照
      */
     public static FontFaceAssignment getFaceAssignment() {
+        // The UI no longer exposes six-slot face assignment, but the renderer
+        // still needs an explicit italic family to distinguish a real italic
+        // face from the host-shear fallback. Derive the italic slots from the
+        // family stack; normal/bold keep using automatic family matching.
+        if (westernNormalFont.isEmpty() && westernBoldFont.isEmpty() && westernItalicFont.isEmpty()
+                && cjkNormalFont.isEmpty() && cjkBoldFont.isEmpty() && cjkItalicFont.isEmpty()
+                && fontSort != null && fontSort.length > 0) {
+            String primary = fontSort[0];
+            String fallback = fontSort.length > 1 ? fontSort[1] : primary;
+            return new FontFaceAssignment("", "", primary, "", "", fallback);
+        }
         return new FontFaceAssignment(westernNormalFont, westernBoldFont, westernItalicFont, cjkNormalFont,
                 cjkBoldFont, cjkItalicFont);
     }

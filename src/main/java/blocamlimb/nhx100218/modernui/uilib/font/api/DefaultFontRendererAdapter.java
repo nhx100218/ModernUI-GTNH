@@ -1143,18 +1143,19 @@ public class DefaultFontRendererAdapter implements FontRendererAdapter {
                 // 斜体：若该语言类别已指派真实斜体字体族，则走 ITALIC 字面并关闭渲染期斜切；
                 // 否则维持既有行为（正体字面 + 渲染期几何斜切）。
                 FontType baseType = style.getFontType();
-                // Italic is a face dimension. No six-slot assignment is needed:
-                // FontMatcher picks the real italic face from the selected
-                // family; DerivedFontCache only synthesizes one for families
-                // that do not ship an italic face.
-                FontType faceType = FontType.of(baseType.isBold(), style.isItalic());
+                // The generated face assignment carries the configured primary
+                // and fallback italic families, so this is true for the font
+                // stack while headless/test settings without an assignment keep
+                // the synthetic host-italic path.
+                boolean realItalic = style.isItalic() && settings.getFaceAssignment().hasItalic(codepoint);
+                FontType faceType = realItalic ? FontType.of(baseType.isBold(), true) : baseType;
                 int renderCodepoint = style.isRandomStyle()
                         ? resolveRandomStyleCodepoint(codepoint, style, codepointWidth, textLayoutService)
                         : resolveDisplayCodepoint(codepoint, faceType, tables);
                 renderCodepoints[glyphIndex] = renderCodepoint;
                 fontTypes[glyphIndex] = faceType;
                 italicFlags[glyphIndex] = false;
-                inheritTextItalicFlags[glyphIndex] = false;
+                inheritTextItalicFlags[glyphIndex] = !realItalic;
                 // 推进宽度经 TextLayoutService.resolveAdvance 同源（测量/trim/wrap 共用口径，
                 // 内部按 sup/sub 解析有效字号）；装饰线/高亮矩形随 advance 覆盖间隙，整体同乘 renderScale。
                 measuredWidths[glyphIndex] = (float) textLayoutService.resolveAdvance(

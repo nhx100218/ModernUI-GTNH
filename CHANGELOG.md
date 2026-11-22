@@ -1,5 +1,63 @@
 # CHANGELOG
 
+## [2.0.1] - 2026-11-22
+
+### English
+
+#### Added
+
+- A ModernUI-style font family stack: two editable rows for the primary and fallback families, accepting either a family name or a font file path. Bundled Inter and Source Han Sans are loaded directly from the mod jar; no font files are extracted to `fonts/`.
+- Automatic bold and italic face selection from the active family. A real Italic face is used when the family ships one; the synthetic slant is only a fallback for families without an italic face.
+- Alias resolution for localized and English family names (`思源黑体`, `Source Han Sans CN Medium`, `Inter Frozen Medium`), so existing configs keep working without renaming the font.
+
+#### Changed
+
+- Font selection moved from Advanced to the Interface group. The old drag-sorted font list and the six-slot face assignment UI are replaced by the two-row family stack.
+- Top sub-tabs received a tonal background and a selected-state surface, so they stay readable over the transparent page shell.
+
+#### Fixed
+
+- MiniMOTD gradients keep exact RGB on 26.3 and now also on 1.7.10 ModernUI clients. Per-glyph colours travel in a separate `modernui_rgb` status field, while the legacy description stays plain 16-colour text, so the 1.7.10 server-list ping no longer stalls.
+- Bold and italic decorations survive gradient colour changes in both the RGB component and the legacy fallback.
+- Forge's `modinfo` is preserved in the custom status JSON, so the multiplayer list reports FML/Forge instead of "Vanilla".
+- The transparent panorama now covers `GuiConnecting` (server login), `GuiDownloadTerrain`, `GuiDisconnected`, and EFR's `GuiLoadingBridge`. EFR's SRG-named bridge method is intercepted correctly and no longer draws the dirt background.
+- The Add Server screen joins the shared panorama.
+
+#### Notes
+
+- Run the same 2.0.1 jar on the server and client for exact MOTD colours and FML server-type detection.
+- Existing `modernui.yaml` files keep working; `fontSort` still accepts the old English family names.
+
+Compatibility: 2.0.1 accepts remote versions `[2.0.0,2.1.0)`.
+
+### 中文
+
+#### 新增
+
+- ModernUI 风格字体家族栈：主字体与回退字体两行可编辑文本框，支持字体家族名或字体文件路径。内置 Inter 与思源黑体直接从模组 jar 加载，不再释放到 `fonts/` 目录。
+- 自动选择粗体/斜体字面：家族有真实 Italic 时使用真实字面，没有时才合成斜体。
+- 家族别名兼容本地化与英文名称（`思源黑体`、`Source Han Sans CN Medium`、`Inter Frozen Medium`），旧配置无需手动改字体名。
+
+#### 变更
+
+- 字体选择从「高级」移到「界面」分组；删除旧的自动排序列表和六槽字面指派界面，改为两行字体家族栈。
+- 顶部子标签恢复 tonal 背景和选中态表面，透明页壳下仍清晰可读。
+
+#### 修复
+
+- MiniMOTD 渐变在 26.3 和 1.7.10 ModernUI 客户端上保持精确 RGB。逐字颜色改由独立的 `modernui_rgb` 状态字段传输，legacy description 保持纯十六色，1.7.10 服务器列表不再卡在「正在 ping」。
+- 渐变换色时粗体/斜体不再丢失，RGB 组件与 legacy 回退都保留样式。
+- 自定义 status JSON 保留 Forge 的 `modinfo`，多人列表重新显示 FML/Forge，而不是「原版服务器」。
+- 透明全景覆盖 `GuiConnecting`（服务器登录）、`GuiDownloadTerrain`、`GuiDisconnected` 和 EFR 的 `GuiLoadingBridge`；EFR 的 SRG 方法名已正确拦截，不再绘制泥土背景。
+- 添加服务器界面加入共享全景。
+
+#### 说明
+
+- 服务端与客户端建议使用同一个 2.0.1 jar，以获得精确 MOTD 颜色和 FML 服务器类型识别。
+- 现有 `modernui.yaml` 继续可用；`fontSort` 仍接受旧英文家族名。
+
+兼容性：2.0.1 接受远端版本 `[2.0.0,2.1.0)`。
+
 ## [2.0.0] - 2026-11-22
 
 ### English

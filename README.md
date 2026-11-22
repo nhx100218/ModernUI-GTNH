@@ -61,7 +61,7 @@ Rounded tooltips with adjustable corner radius, border width, and four-corner gr
 ### Font rendering
 
 - Replaces the vanilla font renderer with a glyph pipeline that supports modern font files.
-- Ships Inter Frozen and Source Han Sans for players coming from newer Minecraft versions.
+- Ships Inter and Source Han Sans and loads them directly from the mod jar. The font stack accepts family names or file paths and selects bold/italic faces automatically.
 - Glyph generation resolution and character size are adjustable. High values can freeze the game.
 
 ### Performance
@@ -79,7 +79,7 @@ The mod lowers the frame rate and volume when the Minecraft window is not focuse
 
 1. Download the latest `modernui-gtnh-*.jar` from [Releases](https://github.com/nhx100218/ModernUI-GTNH/releases).
 2. Put it in the GTNH modpack's `mods/` folder.
-3. Launch the game. The bundled fonts are released on first launch and may cause a short stutter.
+3. Launch the game. Bundled fonts are loaded directly from the jar; no font files are extracted.
 
 ## Configuration
 
