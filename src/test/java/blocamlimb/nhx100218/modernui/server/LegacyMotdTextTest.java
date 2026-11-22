@@ -71,6 +71,32 @@ public class LegacyMotdTextTest {
     }
 
     @Test
+    public void boldSurvivesColorChange() {
+        com.google.gson.JsonObject json = LegacyMotdText.renderJson(
+                "<bold><#ff0000>A<gradient:#ff0000:#0000ff>BC</gradient>", "");
+        com.google.gson.JsonArray extra = json.getAsJsonArray("extra");
+        org.junit.Assert.assertTrue(extra.size() >= 2);
+        for (com.google.gson.JsonElement element : extra) {
+            com.google.gson.JsonObject part = element.getAsJsonObject();
+            org.junit.Assert.assertTrue("bold must survive colour/gradient changes",
+                    part.has("bold") && part.get("bold").getAsBoolean());
+        }
+        String legacy = LegacyMotdText.render("<bold><#ff0000>A", false);
+        org.junit.Assert.assertTrue(legacy.contains("§l"));
+        int firstColor = -1;
+        for (int i = 0; i + 1 < legacy.length(); i++) {
+            if (legacy.charAt(i) == '§'
+                    && "0123456789abcdef".indexOf(Character.toLowerCase(legacy.charAt(i + 1))) >= 0) {
+                firstColor = i;
+                break;
+            }
+        }
+        org.junit.Assert.assertTrue(firstColor >= 0);
+        org.junit.Assert.assertTrue("bold must be re-applied after the colour code",
+                legacy.indexOf("§l", firstColor) >= 0);
+    }
+
+    @Test
     public void rainbowIsRenderedWithLegacyColors() {
         String rendered = LegacyMotdText.render("<rainbow>abcdef</rainbow>");
         assertTrue(rendered.contains("\u00a7"));

@@ -187,6 +187,11 @@ public final class LegacyMotdText {
         private final StringBuilder out = new StringBuilder();
         private final boolean hexColors;
         private char lastCode;
+        private boolean bold;
+        private boolean italic;
+        private boolean underlined;
+        private boolean strike;
+        private boolean obfuscated;
 
         LegacySink(boolean hexColors) {
             this.hexColors = hexColors;
@@ -196,17 +201,52 @@ public final class LegacyMotdText {
         public void color(int rgb) {
             if (hexColors) {
                 appendHexColor(out, rgb);
-                return;
+            } else {
+                char code = nearestCode(rgb);
+                if (code != lastCode) {
+                    out.append('\u00a7').append(code);
+                    lastCode = code;
+                }
             }
-            char code = nearestCode(rgb);
-            if (code != lastCode) {
-                out.append('\u00a7').append(code);
-                lastCode = code;
+            // Legacy colour codes reset decorations; re-apply the active ones.
+            if (bold) {
+                out.append('\u00a7').append('l');
+            }
+            if (italic) {
+                out.append('\u00a7').append('o');
+            }
+            if (underlined) {
+                out.append('\u00a7').append('n');
+            }
+            if (strike) {
+                out.append('\u00a7').append('m');
+            }
+            if (obfuscated) {
+                out.append('\u00a7').append('k');
             }
         }
 
         @Override
         public void format(char code) {
+            switch (code) {
+                case 'l':
+                    bold = true;
+                    break;
+                case 'o':
+                    italic = true;
+                    break;
+                case 'n':
+                    underlined = true;
+                    break;
+                case 'm':
+                    strike = true;
+                    break;
+                case 'k':
+                    obfuscated = true;
+                    break;
+                default:
+                    return;
+            }
             out.append('\u00a7').append(code);
         }
 
@@ -214,6 +254,11 @@ public final class LegacyMotdText {
         public void reset() {
             out.append('\u00a7').append('r');
             lastCode = 0;
+            bold = false;
+            italic = false;
+            underlined = false;
+            strike = false;
+            obfuscated = false;
         }
 
         @Override
@@ -246,11 +291,7 @@ public final class LegacyMotdText {
         @Override
         public void color(int rgb) {
             this.rgb = rgb;
-            this.bold = false;
-            this.italic = false;
-            this.underlined = false;
-            this.strike = false;
-            this.obfuscated = false;
+            // MiniMessage colour tags do not clear bold/italic/underline.
             ensureRun();
         }
 
