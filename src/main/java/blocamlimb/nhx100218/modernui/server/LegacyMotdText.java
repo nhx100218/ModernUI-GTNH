@@ -309,37 +309,131 @@ public final class LegacyMotdText {
         }
 
         JsonObject toJson() {
+            List<StyledGlyph> glyphs = flatten();
+            smoothLegacyRuns(glyphs);
             JsonObject root = new JsonObject();
             root.addProperty("text", "");
             JsonArray extra = new JsonArray();
-            for (Run run : runs) {
-                if (run.text.length() == 0) {
-                    continue;
+            StringBuilder text = null;
+            StyledGlyph currentStyle = null;
+            for (StyledGlyph glyph : glyphs) {
+                if (text == null || currentStyle == null || !currentStyle.sameStyle(glyph)) {
+                    if (text != null) {
+                        addPart(extra, text, currentStyle);
+                    }
+                    text = new StringBuilder();
+                    currentStyle = glyph;
                 }
-                JsonObject part = new JsonObject();
-                part.addProperty("text", run.text.toString());
-                if (run.rgb >= 0) {
-                    part.addProperty("color", String.format(Locale.ROOT, "#%06x", Integer.valueOf(run.rgb)));
-                }
-                if (run.bold) {
-                    part.addProperty("bold", Boolean.TRUE);
-                }
-                if (run.italic) {
-                    part.addProperty("italic", Boolean.TRUE);
-                }
-                if (run.underlined) {
-                    part.addProperty("underlined", Boolean.TRUE);
-                }
-                if (run.strike) {
-                    part.addProperty("strikethrough", Boolean.TRUE);
-                }
-                if (run.obfuscated) {
-                    part.addProperty("obfuscated", Boolean.TRUE);
-                }
-                extra.add(part);
+                text.appendCodePoint(glyph.codePoint);
+            }
+            if (text != null) {
+                addPart(extra, text, currentStyle);
             }
             root.add("extra", extra);
             return root;
+        }
+
+        private List<StyledGlyph> flatten() {
+            List<StyledGlyph> glyphs = new ArrayList<StyledGlyph>();
+            for (Run run : runs) {
+                for (int i = 0; i < run.text.length();) {
+                    int cp = run.text.codePointAt(i);
+                    glyphs.add(new StyledGlyph(cp, run.rgb, run.bold, run.italic, run.underlined, run.strike,
+                            run.obfuscated));
+                    i += Character.charCount(cp);
+                }
+            }
+            return glyphs;
+        }
+
+        /**
+         * The server config may already be 16-colour MiniMOTD fallback text.
+         * Interpolate between its colour runs exactly like the 1.7.10 client
+         * does, otherwise 26.3 can only show hard colour blocks. Exact RGB
+         * gradients (one colour per glyph) are left untouched.
+         */
+        private static void smoothLegacyRuns(List<StyledGlyph> glyphs) {
+            if (glyphs.size() < 3) {
+                return;
+            }
+            List<Integer> starts = new ArrayList<Integer>();
+            List<Integer> colors = new ArrayList<Integer>();
+            for (int i = 0; i < glyphs.size(); i++) {
+                int rgb = glyphs.get(i).rgb;
+                if (i == 0 || rgb != glyphs.get(i - 1).rgb) {
+                    starts.add(Integer.valueOf(i));
+                    colors.add(Integer.valueOf(rgb));
+                }
+            }
+            if (starts.size() <= 1 || starts.size() * 4 >= glyphs.size() * 3) {
+                return;
+            }
+            for (int run = 0; run + 1 < starts.size(); run++) {
+                int start = starts.get(run).intValue();
+                int end = starts.get(run + 1).intValue() - 1;
+                int from = colors.get(run).intValue();
+                int to = colors.get(run + 1).intValue();
+                int length = end - start + 1;
+                for (int i = start; i <= end; i++) {
+                    float t = (float) (i - start + 1) / (float) (length + 1);
+                    glyphs.get(i).rgb = lerp(from, to, t);
+                }
+            }
+        }
+
+        private static void addPart(JsonArray extra, StringBuilder text, StyledGlyph style) {
+            if (text.length() == 0 || style == null) {
+                return;
+            }
+            JsonObject part = new JsonObject();
+            part.addProperty("text", text.toString());
+            if (style.rgb >= 0) {
+                part.addProperty("color", String.format(Locale.ROOT, "#%06x", Integer.valueOf(style.rgb)));
+            }
+            if (style.bold) {
+                part.addProperty("bold", Boolean.TRUE);
+            }
+            if (style.italic) {
+                part.addProperty("italic", Boolean.TRUE);
+            }
+            if (style.underlined) {
+                part.addProperty("underlined", Boolean.TRUE);
+            }
+            if (style.strike) {
+                part.addProperty("strikethrough", Boolean.TRUE);
+            }
+            if (style.obfuscated) {
+                part.addProperty("obfuscated", Boolean.TRUE);
+            }
+            extra.add(part);
+        }
+    }
+
+    private static final class StyledGlyph {
+
+        final int codePoint;
+        int rgb;
+        final boolean bold;
+        final boolean italic;
+        final boolean underlined;
+        final boolean strike;
+        final boolean obfuscated;
+
+        StyledGlyph(int codePoint, int rgb, boolean bold, boolean italic, boolean underlined, boolean strike,
+                boolean obfuscated) {
+            this.codePoint = codePoint;
+            this.rgb = rgb;
+            this.bold = bold;
+            this.italic = italic;
+            this.underlined = underlined;
+            this.strike = strike;
+            this.obfuscated = obfuscated;
+        }
+
+        boolean sameStyle(StyledGlyph other) {
+            return rgb == other.rgb && bold == other.bold && italic == other.italic
+                    && underlined == other.underlined && strike == other.strike
+                    && obfuscated == other.obfuscated;
         }
     }
 

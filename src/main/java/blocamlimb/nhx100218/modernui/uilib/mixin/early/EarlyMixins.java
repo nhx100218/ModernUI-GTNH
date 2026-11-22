@@ -115,6 +115,7 @@ public class EarlyMixins implements IFMLLoadingPlugin {
         mixins.add("network.MixinNetHandlerHandshakeTCP");
         mixins.add("motd.MixinNetHandlerStatusServer");
         mixins.add("motd.MixinServerStatusResponseSerializer");
+        mixins.add("motd.MixinS00PacketServerInfo");
         mixins.add("motd.MixinPingResponseHandler");
         return mixins;
     }

@@ -69,6 +69,16 @@ public final class ServerMotdService {
         return response == null ? null : DESCRIPTIONS.get(response);
     }
 
+    /** Writes the exact RGB description into an already serialized status JSON. */
+    public static boolean applyDirectDescription(ServerStatusResponse response, JsonObject json) {
+        JsonObject description = directDescription(response);
+        if (description == null || json == null) {
+            return false;
+        }
+        json.add("description", description);
+        return true;
+    }
+
     public static void setEnabledOverride(Boolean enabled) {
         enabledOverride = enabled;
     }
@@ -154,6 +164,10 @@ public final class ServerMotdService {
                 Integer.valueOf(protocol), Boolean.valueOf(hexColors),
                 Boolean.valueOf(mini != null && mini.enabled),
                 Boolean.valueOf(ServerFeatureConfig.motdEnabled));
+        if (mini != null && mini.enabled && !mini.motds.isEmpty()) {
+            MiniMotdConfig.Entry entry = mini.motds.get(0);
+            MyMod.LOG.info("MOTD source[0]: line1='{}' line2='{}'", entry.line1, entry.line2);
+        }
     }
 
     private static void logLegacyDiagnostic() {
