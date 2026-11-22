@@ -125,15 +125,16 @@ public final class ServerMotdService {
             return enabledOverride.booleanValue();
         }
         MiniMotdConfig.Data mini = MiniMotdConfig.current();
-        if (mini != null) {
-            return mini.enabled;
+        if (mini != null && mini.enabled) {
+            return true;
         }
+        // A generated/disabled MiniMOTD config must not suppress the YAML MOTD.
         return ServerFeatureConfig.motdEnabled;
     }
 
     private static Selection selection(boolean hexColors) {
         MiniMotdConfig.Data mini = MiniMotdConfig.current();
-        if (mini != null && !mini.motds.isEmpty()) {
+        if (mini != null && mini.enabled && !mini.motds.isEmpty()) {
             int index = mini.motds.size() == 1 ? 0 : ThreadLocalRandom.current().nextInt(mini.motds.size());
             MiniMotdConfig.Entry entry = mini.motds.get(index);
             String raw1 = ServerMetrics.expand(entry.line1);
