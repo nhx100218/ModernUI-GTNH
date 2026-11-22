@@ -2,15 +2,14 @@ package blocamlimb.nhx100218.modernui.uilib.mixin.early.motd;
 
 import java.io.IOException;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.mojang.authlib.GameProfile;
 
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.ServerStatusResponse;
 import net.minecraft.network.status.server.S00PacketServerInfo;
 
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -25,16 +24,13 @@ import blocamlimb.nhx100218.modernui.uilib.MyMod;
 /**
  * Writes the RGB MOTD component directly into the status packet.
  *
- * <p>The Gson adapter path is avoided here on purpose: the status JSON is
- * produced normally (including Forge's extra status fields), then only the
- * {@code description} field is swapped for the 1.16+ RGB component.</p>
+ * <p>Deliberately avoids the vanilla Gson/serializer chain: the JSON is built
+ * here from the response fields and the description is the 1.16+ RGB
+ * component. This keeps the 26.3 status response independent of the legacy
+ * {@code IChatComponent} model.</p>
  */
 @Mixin(S00PacketServerInfo.class)
 public abstract class MixinS00PacketServerInfo implements RgbStatusPacket {
-
-    @Shadow
-    @Final
-    private static Gson field_149297_a;
 
     @Shadow
     private ServerStatusResponse field_149296_b;
@@ -68,16 +64,52 @@ public abstract class MixinS00PacketServerInfo implements RgbStatusPacket {
         if (custom == null) {
             return;
         }
-        JsonElement serialized = field_149297_a.toJsonTree(field_149296_b);
-        if (!(serialized instanceof JsonObject)) {
-            return;
+
+        JsonObject json = new JsonObject();
+        json.add("description", custom);
+
+        ServerStatusResponse.PlayerCountData players = field_149296_b == null
+                ? null : field_149296_b.func_151318_b();
+        if (players != null) {
+            JsonObject playerJson = new JsonObject();
+            playerJson.addProperty("max", Integer.valueOf(players.func_151332_a()));
+            playerJson.addProperty("online", Integer.valueOf(players.func_151333_b()));
+            GameProfile[] sample = players.func_151331_c();
+            if (sample != null && sample.length > 0) {
+                JsonArray sampleJson = new JsonArray();
+                for (GameProfile profile : sample) {
+                    if (profile == null) {
+                        continue;
+                    }
+                    JsonObject entry = new JsonObject();
+                    entry.addProperty("id", profile.getId() == null ? "" : profile.getId().toString());
+                    entry.addProperty("name", profile.getName() == null ? "" : profile.getName());
+                    sampleJson.add(entry);
+                }
+                playerJson.add("sample", sampleJson);
+            }
+            json.add("players", playerJson);
         }
-        ((JsonObject) serialized).add("description", custom);
+
+        ServerStatusResponse.MinecraftProtocolVersionIdentifier version = field_149296_b == null
+                ? null : field_149296_b.func_151322_c();
+        if (version != null) {
+            JsonObject versionJson = new JsonObject();
+            versionJson.addProperty("name", version.func_151303_a());
+            versionJson.addProperty("protocol", Integer.valueOf(version.func_151304_b()));
+            json.add("version", versionJson);
+        }
+
+        String favicon = field_149296_b == null ? null : field_149296_b.func_151316_d();
+        if (favicon != null) {
+            json.addProperty("favicon", favicon);
+        }
+
         callbackInfo.cancel();
-        String json = serialized.toString();
-        data.writeStringToBuffer(json);
+        String text = json.toString();
+        data.writeStringToBuffer(text);
         if (log) {
-            MyMod.LOG.info("MOTD packet: wrote RGB status component ({} chars)", Integer.valueOf(json.length()));
+            MyMod.LOG.info("MOTD packet: wrote RGB status component ({} chars)", Integer.valueOf(text.length()));
         }
     }
 }
