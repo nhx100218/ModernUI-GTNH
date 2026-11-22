@@ -83,11 +83,27 @@ public final class LegacyMotdText {
      * clients keep the normal 16-colour text.</p>
      */
     public static String exactColorPayload(String line1, String line2) {
+        JsonArray colors = exactColors(line1, line2);
+        StringBuilder payload = new StringBuilder(EXACT_MARKER);
+        for (int i = 0; i < colors.size(); i++) {
+            appendHexColor(payload, parseJsonColor(colors.get(i).getAsString()));
+        }
+        return payload.toString();
+    }
+
+    /**
+     * Exact per-glyph colours as {@code #rrggbb} strings, in display order.
+     *
+     * <p>Sent as a separate status JSON field so the legacy description stays
+     * a plain vanilla component; 1.7.10 ignores unknown fields, while
+     * ModernUI's client reads them and draws the same gradient as 1.16+.</p>
+     */
+    public static JsonArray exactColors(String line1, String line2) {
         JsonObject json = renderJson(line1, line2);
         JsonArray extra = json.getAsJsonArray("extra");
-        StringBuilder payload = new StringBuilder(EXACT_MARKER);
+        JsonArray colors = new JsonArray();
         if (extra == null) {
-            return payload.toString();
+            return colors;
         }
         for (int i = 0; i < extra.size(); i++) {
             JsonObject part = extra.get(i).getAsJsonObject();
@@ -98,11 +114,11 @@ public final class LegacyMotdText {
             }
             for (int offset = 0; offset < text.length();) {
                 int codePoint = text.codePointAt(offset);
-                appendHexColor(payload, rgb);
+                colors.add(String.format(Locale.ROOT, "#%06x", Integer.valueOf(rgb)));
                 offset += Character.charCount(codePoint);
             }
         }
-        return payload.toString();
+        return colors;
     }
 
     private static int parseJsonColor(String value) {

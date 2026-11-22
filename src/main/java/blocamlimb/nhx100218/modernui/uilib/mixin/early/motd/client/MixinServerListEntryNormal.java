@@ -3,6 +3,8 @@ package blocamlimb.nhx100218.modernui.uilib.mixin.early.motd.client;
 import java.util.Collections;
 import java.util.List;
 
+import com.google.gson.JsonArray;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ServerListEntryNormal;
@@ -18,6 +20,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import blocamlimb.nhx100218.modernui.server.LegacyMotdText;
+import blocamlimb.nhx100218.modernui.uilib.client.motd.ModernServerData;
 import blocamlimb.nhx100218.modernui.uilib.client.motd.MotdGradientRenderer;
 
 /**
@@ -41,7 +44,7 @@ public abstract class MixinServerListEntryNormal {
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/FontRenderer;listFormattedStringToWidth(Ljava/lang/String;I)Ljava/util/List;"))
     private List<String> modernui$suppressVanillaMotd(FontRenderer font, String text, int width) {
-        if (MotdGradientRenderer.shouldReplace(text)) {
+        if (MotdGradientRenderer.shouldReplace(text, modernui$exactColors())) {
             return Collections.emptyList();
         }
         return font.listFormattedStringToWidth(text, width);
@@ -51,12 +54,20 @@ public abstract class MixinServerListEntryNormal {
     private void modernui$drawGradientMotd(int id, int x, int y, int width, int height, Tessellator tessellator,
             int mouseX, int mouseY, boolean hovered, CallbackInfo callback) {
         String motd = field_148301_e == null ? null : field_148301_e.serverMOTD;
-        if (!MotdGradientRenderer.shouldReplace(motd)) {
+        JsonArray colors = modernui$exactColors();
+        if (!MotdGradientRenderer.shouldReplace(motd, colors)) {
             return;
         }
-        if (!MotdGradientRenderer.draw(field_148300_d.fontRenderer, motd, x + 32 + 3, y + 12, width - 48 - 2, 2)) {
+        if (!MotdGradientRenderer.draw(field_148300_d.fontRenderer, motd, colors,
+                x + 32 + 3, y + 12, width - 48 - 2, 2)) {
             drawPlain(field_148300_d.fontRenderer, motd, x + 32 + 3, y + 12, width - 48 - 2);
         }
+    }
+
+    private JsonArray modernui$exactColors() {
+        return field_148301_e instanceof ModernServerData
+                ? ((ModernServerData) field_148301_e).modernui$getLegacyMotdColors()
+                : null;
     }
 
     private static void drawPlain(FontRenderer font, String motd, int x, int y, int width) {

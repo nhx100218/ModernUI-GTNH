@@ -3,6 +3,8 @@ package blocamlimb.nhx100218.modernui.uilib.client.motd;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
+
 import blocamlimb.nhx100218.modernui.server.LegacyMotdText;
 
 /**
@@ -85,6 +87,40 @@ public final class MotdGradient {
             smooth(glyphs);
         }
         return glyphs;
+    }
+
+    /**
+     * Parses the legacy MOTD and overrides its colours with the exact
+     * {@code modernui_rgb} field from the status response.
+     */
+    public static List<Glyph> parse(String motd, JsonArray exactColors) {
+        List<Glyph> glyphs = parse(motd);
+        if (exactColors == null || exactColors.size() == 0) {
+            return glyphs;
+        }
+        int count = Math.min(glyphs.size(), exactColors.size());
+        for (int i = 0; i < count; i++) {
+            int rgb = parseHex(exactColors.get(i).getAsString());
+            if (rgb >= 0) {
+                glyphs.get(i).rgb = rgb;
+            }
+        }
+        return glyphs;
+    }
+
+    private static int parseHex(String value) {
+        if (value == null) {
+            return -1;
+        }
+        String text = value.startsWith("#") ? value.substring(1) : value;
+        if (text.length() != 6) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(text, 16);
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
     }
 
     /**

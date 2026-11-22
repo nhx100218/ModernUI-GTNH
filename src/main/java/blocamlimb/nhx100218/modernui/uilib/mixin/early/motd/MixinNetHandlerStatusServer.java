@@ -1,5 +1,6 @@
 package blocamlimb.nhx100218.modernui.uilib.mixin.early.motd;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.netty.util.concurrent.GenericFutureListener;
@@ -43,9 +44,15 @@ public abstract class MixinNetHandlerStatusServer {
             return;
         }
         S00PacketServerInfo info = new S00PacketServerInfo(response);
-        JsonObject custom = ServerMotdService.directDescription(response);
-        if (custom != null && info instanceof RgbStatusPacket) {
-            ((RgbStatusPacket) info).modernui$setRgbDescription(custom);
+        if (info instanceof RgbStatusPacket) {
+            JsonObject custom = ServerMotdService.directDescription(response);
+            if (custom != null) {
+                ((RgbStatusPacket) info).modernui$setRgbDescription(custom);
+            }
+            JsonArray legacyColors = ServerMotdService.legacyColors(response);
+            if (legacyColors != null) {
+                ((RgbStatusPacket) info).modernui$setLegacyColors(legacyColors);
+            }
         }
         field_147313_b.scheduleOutboundPacket(info, new GenericFutureListener[0]);
         callbackInfo.cancel();

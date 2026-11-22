@@ -90,6 +90,10 @@ public class EarlyMixins implements IFMLLoadingPlugin {
             mixins.add("enhance.MixinInventoryPlayerHotbar");
             mixins.add("enhance.MixinGuiNewChatScroll");
             mixins.add("motd.client.MixinServerListEntryNormal");
+            mixins.add("motd.client.MixinServerData");
+            mixins.add("motd.client.MixinFMLClientHandler");
+            mixins.add("motd.MixinServerStatusResponse");
+            mixins.add("motd.MixinServerStatusResponseDeserializer");
             // Menu and loading-screen takeover.
             mixins.add("enhance.menu.MixinLoadingScreenRenderer");
             mixins.add("enhance.menu.MixinGuiDownloadTerrain");

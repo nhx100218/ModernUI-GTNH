@@ -2,6 +2,8 @@ package blocamlimb.nhx100218.modernui.enhance.menu;
 
 import net.minecraft.client.gui.GuiControls;
 import net.minecraft.client.gui.GuiCreateWorld;
+import net.minecraft.client.gui.GuiDisconnected;
+import net.minecraft.client.gui.GuiDownloadTerrain;
 import net.minecraft.client.gui.GuiLanguage;
 import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.GuiOptions;
@@ -62,6 +64,8 @@ public final class ModernMenuScreens {
         }
         if (screen instanceof GuiSelectWorld
                 || screen instanceof GuiMultiplayer
+                || screen instanceof GuiDownloadTerrain
+                || screen instanceof GuiDisconnected
                 || screen instanceof GuiScreenAddServer
                 || screen instanceof GuiCreateWorld
                 || screen instanceof GuiScreenResourcePacks

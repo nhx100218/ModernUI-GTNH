@@ -2,6 +2,8 @@ package blocamlimb.nhx100218.modernui.uilib.client.motd;
 
 import java.util.List;
 
+import com.google.gson.JsonArray;
+
 import net.minecraft.client.gui.FontRenderer;
 
 import blocamlimb.nhx100218.modernui.uilib.font.FontService;
@@ -19,12 +21,24 @@ public final class MotdGradientRenderer {
         return MotdGradient.hasMarker(motd) && MotdGradient.hasVisibleText(motd) && canRenderGradient();
     }
 
+    public static boolean shouldReplace(String motd, JsonArray exactColors) {
+        return (exactColors != null && exactColors.size() > 0
+                ? MotdGradient.hasMarker(motd)
+                : MotdGradient.hasMarker(motd) && MotdGradient.hasVisibleText(motd))
+                && canRenderGradient();
+    }
+
     public static boolean canRenderGradient() {
         return FontService.isRenderRuntimeSupportedOnThisSide();
     }
 
     public static boolean draw(FontRenderer font, String motd, int x, int y, int maxWidth, int maxLines) {
-        List<MotdGradient.Glyph> glyphs = MotdGradient.parse(motd);
+        return draw(font, motd, null, x, y, maxWidth, maxLines);
+    }
+
+    public static boolean draw(FontRenderer font, String motd, JsonArray exactColors,
+            int x, int y, int maxWidth, int maxLines) {
+        List<MotdGradient.Glyph> glyphs = MotdGradient.parse(motd, exactColors);
         if (glyphs.isEmpty()) {
             return false;
         }

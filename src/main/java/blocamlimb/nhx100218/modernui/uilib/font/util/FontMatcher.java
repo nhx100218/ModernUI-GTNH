@@ -241,6 +241,8 @@ public class FontMatcher {
 
         int firstStrictDisplayIndex = GlyphRuntimeTables.FONT_INDEX_NONE;
         int firstCanDisplayIndex = GlyphRuntimeTables.FONT_INDEX_NONE;
+        int familyFallbackIndex = GlyphRuntimeTables.FONT_INDEX_NONE;
+        String selectedFamily = null;
         for (int index = 0; index < fonts.size(); index++) {
             Font font = fonts.get(index);
             if (!font.canDisplay(codepoint)) {
@@ -255,15 +257,39 @@ public class FontMatcher {
             if (!strictDisplay) {
                 continue;
             }
+            String family = FontFamilyNames.familyName(font);
+            if (firstStrictDisplayIndex == GlyphRuntimeTables.FONT_INDEX_NONE) {
+                firstStrictDisplayIndex = index;
+                familyFallbackIndex = index;
+                selectedFamily = family;
+                // Normal text should stay on the first family that can display it.
+                if (matchesWeight(font, fontType)) {
+                    rememberMatch(runtimeVersion, binding, codepoint, fontType, index);
+                    return index;
+                }
+                continue;
+            }
+            // Real bold/italic must come from the selected family, not from a
+            // later family that happens to have an exact weight. This keeps the
+            // configured stack authoritative and lets DerivedFontCache
+            // synthesize a missing italic from the selected family.
+            if (!family.equalsIgnoreCase(selectedFamily)) {
+                continue;
+            }
             if (matchesWeight(font, fontType)) {
                 rememberMatch(runtimeVersion, binding, codepoint, fontType, index);
                 return index;
             }
-            if (firstStrictDisplayIndex == GlyphRuntimeTables.FONT_INDEX_NONE) {
-                firstStrictDisplayIndex = index;
+            // For BOLD_ITALIC without a real bold-italic face, keep the real
+            // bold face and synthesize only the italic. Preferring the regular
+            // face here would turn real bold into faux bold.
+            if (fontType != null && fontType.isBold() && familyFallbackIndex >= 0
+                    && !isBoldFace(fonts.get(familyFallbackIndex)) && isBoldFace(font)) {
+                familyFallbackIndex = index;
             }
         }
-        int fallbackIndex = firstStrictDisplayIndex >= 0 ? firstStrictDisplayIndex : firstCanDisplayIndex;
+        int fallbackIndex = familyFallbackIndex >= 0 ? familyFallbackIndex
+                : (firstStrictDisplayIndex >= 0 ? firstStrictDisplayIndex : firstCanDisplayIndex);
         rememberMatch(runtimeVersion, binding, codepoint, fontType, fallbackIndex);
         return fallbackIndex;
     }
@@ -388,14 +414,22 @@ public class FontMatcher {
      * 非斜体字面，再由 {@link DerivedFontCache} 合成倾斜；因此这里只做「是否有更精确字面」的判据。</p>
      */
     private boolean matchesWeight(Font font, FontType fontType) {
-        String fontName = font.getName();
-        String lower = fontName == null ? "" : fontName.toLowerCase(Locale.ENGLISH);
-        boolean isBoldFont = font.isBold() || lower.contains("bold") || lower.contains("black")
-                || lower.contains("heavy") || lower.contains("semibold");
-        boolean isItalicFont = font.isItalic() || lower.contains("italic") || lower.contains("oblique");
         boolean wantBold = fontType != null && fontType.isBold();
         boolean wantItalic = fontType != null && fontType.isItalic();
-        return isBoldFont == wantBold && isItalicFont == wantItalic;
+        return isBoldFace(font) == wantBold && isItalicFace(font) == wantItalic;
+    }
+
+    private static boolean isBoldFace(Font font) {
+        String fontName = font == null ? null : font.getName();
+        String lower = fontName == null ? "" : fontName.toLowerCase(Locale.ENGLISH);
+        return font != null && (font.isBold() || lower.contains("bold") || lower.contains("black")
+                || lower.contains("heavy") || lower.contains("semibold"));
+    }
+
+    private static boolean isItalicFace(Font font) {
+        String fontName = font == null ? null : font.getName();
+        String lower = fontName == null ? "" : fontName.toLowerCase(Locale.ENGLISH);
+        return font != null && (font.isItalic() || lower.contains("italic") || lower.contains("oblique"));
     }
 
     private boolean matchesConfiguredFontName(Font font, String lookupKey) {

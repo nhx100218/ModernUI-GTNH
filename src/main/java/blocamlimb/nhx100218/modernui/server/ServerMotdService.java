@@ -11,6 +11,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import javax.imageio.ImageIO;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import net.minecraft.network.NetworkManager;
@@ -37,6 +38,8 @@ public final class ServerMotdService {
             Collections.synchronizedMap(new WeakHashMap<NetworkManager, Integer>());
     private static final Map<ServerStatusResponse, JsonObject> DESCRIPTIONS =
             Collections.synchronizedMap(new WeakHashMap<ServerStatusResponse, JsonObject>());
+    private static final Map<ServerStatusResponse, JsonArray> LEGACY_COLORS =
+            Collections.synchronizedMap(new WeakHashMap<ServerStatusResponse, JsonArray>());
 
     private static Boolean enabledOverride;
     private static Selection cachedFallbackLegacy;
@@ -67,6 +70,11 @@ public final class ServerMotdService {
     /** RGB component produced for a modern status response, or null. */
     public static JsonObject directDescription(ServerStatusResponse response) {
         return response == null ? null : DESCRIPTIONS.get(response);
+    }
+
+    /** Exact per-glyph colours for a legacy status response, or null. */
+    public static JsonArray legacyColors(ServerStatusResponse response) {
+        return response == null ? null : LEGACY_COLORS.get(response);
     }
 
     /** Writes the exact RGB description into an already serialized status JSON. */
@@ -129,6 +137,9 @@ public final class ServerMotdService {
         if (selection.description != null) {
             DESCRIPTIONS.put(out, selection.description);
         }
+        if (selection.legacyColors != null) {
+            LEGACY_COLORS.put(out, selection.legacyColors);
+        }
         return out;
     }
 
@@ -150,9 +161,7 @@ public final class ServerMotdService {
             return server == null ? "" : server.getMOTD();
         }
         logLegacyDiagnostic();
-        String text = selection(false).legacyText;
-        int payload = text.indexOf(LegacyMotdText.EXACT_MARKER);
-        return payload < 0 ? text : text.substring(0, payload);
+        return selection(false).legacyText;
     }
 
     private static void logDiagnostic(int protocol, boolean hexColors) {
@@ -232,13 +241,13 @@ public final class ServerMotdService {
             boolean hexColors) {
         String text = legacy2.isEmpty() ? legacy1 : legacy1 + "\n" + legacy2;
         String legacy = LegacyMotdText.MARKER + text;
-        if (!hexColors) {
-            // 1.7.10 only understands 16 colours. Append the exact per-glyph
-            // colours invisibly; ModernUI reads them, vanilla skips the codes.
-            legacy += LegacyMotdText.exactColorPayload(raw1, raw2);
-        }
         JsonObject description = hexColors ? LegacyMotdText.renderJson(raw1, raw2) : null;
-        return new Selection(legacy, description, icon);
+        // The exact colours travel in a separate status field, not inside the
+        // legacy description. Vanilla 1.7.10 ignores it, so the description
+        // stays exactly the normal 16-colour MOTD and cannot break server-list
+        // pinging; ModernUI's client reads the field and draws the gradient.
+        JsonArray legacyColors = hexColors ? null : LegacyMotdText.exactColors(raw1, raw2);
+        return new Selection(legacy, description, legacyColors, icon);
     }
 
     private static String fallbackIcon() {
@@ -316,11 +325,13 @@ public final class ServerMotdService {
 
         private final String legacyText;
         private final JsonObject description;
+        private final JsonArray legacyColors;
         private final String icon;
 
-        Selection(String legacyText, JsonObject description, String icon) {
+        Selection(String legacyText, JsonObject description, JsonArray legacyColors, String icon) {
             this.legacyText = legacyText;
             this.description = description;
+            this.legacyColors = legacyColors;
             this.icon = icon;
         }
     }

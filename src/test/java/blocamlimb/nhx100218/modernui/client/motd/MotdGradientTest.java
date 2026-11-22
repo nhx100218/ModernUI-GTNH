@@ -41,6 +41,17 @@ public class MotdGradientTest {
     }
 
     @Test
+    public void appliesExactStatusFieldColours() {
+        String line1 = "<gradient:#ff0000:#0000ff>ABC</gradient>";
+        String motd = LegacyMotdText.MARKER + LegacyMotdText.render(line1, false);
+        com.google.gson.JsonArray colors = LegacyMotdText.exactColors(line1, "");
+        List<MotdGradient.Glyph> glyphs = MotdGradient.parse(motd, colors);
+        assertEquals(3, glyphs.size());
+        assertEquals(0xFF0000, glyphs.get(0).rgb);
+        assertEquals(0x0000FF, glyphs.get(2).rgb);
+    }
+
+    @Test
     public void appliesExactPayloadAndKeepsBothLines() {
         String payload = LegacyMotdText.EXACT_MARKER
                 + "\u00a7x\u00a7f\u00a7f\u00a7f\u00a7f\u00a7f\u00a7f"
