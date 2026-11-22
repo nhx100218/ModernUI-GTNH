@@ -203,6 +203,10 @@ public final class SimpleListFieldRenderer implements FieldRenderer {
                 initial = new ArrayList<String>(prefill);
             }
         }
+        // A fixed-row field (the font stack) must never show old extra rows.
+        if (maxItems > 0 && initial.size() > maxItems) {
+            initial = new ArrayList<String>(initial.subList(0, maxItems));
+        }
 
         // D2：DraftListBridge 统一 localItems + reset 守卫（untrack 投影；局部 prefill 保护）
         final DraftListBridge<ListItem> bridge = DraftListBridge.create(
