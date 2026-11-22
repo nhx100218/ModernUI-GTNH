@@ -56,6 +56,17 @@ public class MotdGradientTest {
     }
 
     @Test
+    public void serverExactPayloadMatchesTheJsonGradient() {
+        String line1 = "<gradient:#ff0000:#0000ff>ABC</gradient>";
+        String motd = LegacyMotdText.MARKER + LegacyMotdText.render(line1, false)
+                + LegacyMotdText.exactColorPayload(line1, "");
+        List<MotdGradient.Glyph> glyphs = MotdGradient.parse(motd);
+        assertEquals(3, glyphs.size());
+        assertEquals(0xFF0000, glyphs.get(0).rgb);
+        assertEquals(0x0000FF, glyphs.get(2).rgb);
+    }
+
+    @Test
     public void parsesHexColorsWithoutSmoothing() {
         String motd = LegacyMotdText.MARKER
                 + "\u00a7x\u00a7f\u00a7f\u00a7f\u00a7f\u00a7f\u00a7fA"
