@@ -36,10 +36,7 @@ final class FontResourceSnapshot {
     private static final String[] BUNDLED_FONT_RESOURCES = {
             "/assets/modernui/fonts/bundled/inter-frozen-medium.otf",
             "/assets/modernui/fonts/bundled/inter-frozen-medium-italic.otf",
-            "/assets/modernui/fonts/bundled/inter-bold.ttf",
-            "/assets/modernui/fonts/bundled/inter-bold-italic.ttf",
             "/assets/modernui/fonts/bundled/source-han-sans-cn-medium.otf",
-            "/assets/modernui/fonts/bundled/SourceHanSansSC-Bold.otf",
     };
 
     private final List<AssetFontResource> assetFonts;

@@ -14,8 +14,8 @@ import blocamlimb.nhx100218.modernui.uilib.font.util.FontCatalog;
 import blocamlimb.nhx100218.modernui.uilib.font.util.FontMatcher;
 
 /**
- * Locks the family-stack face selection: real bold/italic faces must win, and
- * missing italic faces are synthesized only inside the selected family.
+ * Locks the family-stack face selection after bold faces were removed: bold is
+ * synthesized from the regular face, while a real italic face is still used.
  */
 public class FontSelectionProbeTest {
 
@@ -39,7 +39,7 @@ public class FontSelectionProbeTest {
     }
 
     @Test
-    public void selectsRealFacesInsideTheConfiguredFamily() throws Exception {
+    public void selectsRegularOrItalicFacesForSyntheticBold() throws Exception {
         File root = Files.createTempDirectory("modernui-font-probe").toFile();
         FontConfig.fontSort = new String[] {"Inter", "思源黑体"};
         FontConfig.fontSortConfigured = true;
@@ -53,16 +53,14 @@ public class FontSelectionProbeTest {
         catalog.replaceAll(prepared.getCatalogSnapshot().getFonts());
         FontMatcher matcher = new FontMatcher(catalog, new DerivedFontCache(catalog));
 
-        assertFace(matcher, catalog, 'A', FontType.BOLD, "Bold");
-        assertFace(matcher, catalog, 'A', FontType.ITALIC, "Italic");
-        assertFace(matcher, catalog, 'A', FontType.BOLD_ITALIC, "Bold Italic");
-        assertFace(matcher, catalog, 0x4E2D, FontType.BOLD, "Bold");
-        // Source Han has no real italic; the bold-italic fallback must keep the
-        // real bold face instead of degrading to faux bold on the regular face.
-        assertFace(matcher, catalog, 0x4E2D, FontType.BOLD_ITALIC, "Bold");
+        assertFacePart(matcher, catalog, 'A', FontType.BOLD, "Inter Frozen Medium");
+        assertFacePart(matcher, catalog, 'A', FontType.ITALIC, "Italic");
+        assertFacePart(matcher, catalog, 'A', FontType.BOLD_ITALIC, "Italic");
+        assertFacePart(matcher, catalog, 0x4E2D, FontType.BOLD, "思源黑体 CN Medium");
+        assertFacePart(matcher, catalog, 0x4E2D, FontType.BOLD_ITALIC, "思源黑体 CN Medium");
     }
 
-    private static void assertFace(FontMatcher matcher, FontCatalog catalog, int codepoint,
+    private static void assertFacePart(FontMatcher matcher, FontCatalog catalog, int codepoint,
             FontType type, String expectedPart) {
         int index = matcher.matchFontIndex(0, codepoint, type);
         Assert.assertTrue("no face selected for " + type, index >= 0);

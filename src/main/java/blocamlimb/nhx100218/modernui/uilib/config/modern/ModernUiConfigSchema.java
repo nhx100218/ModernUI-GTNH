@@ -94,6 +94,13 @@ public final class ModernUiConfigSchema {
                     .number("gameCharSize").legacyAliases("charSize").defaultValue(Double.valueOf(8.0)).range(1, 72)
                         .label(tr.apply("modernui.config.font.gameCharSize")).helper(tr.apply("modernui.config.font.gameCharSize.tooltip")).build()
                 .endSection()
+                .section("temp")
+                    .title(tr.apply("modernui.md.tab.temp"))
+                    .string("primaryColor").defaultValue("#FFB5A1")
+                        .label(tr.apply("modernui.config.temp.primaryColor")).helper(tr.apply("modernui.config.temp.primaryColor.tooltip")).build()
+                    .string("secondaryColor").defaultValue("#E7BDB2")
+                        .label(tr.apply("modernui.config.temp.secondaryColor")).helper(tr.apply("modernui.config.temp.secondaryColor.tooltip")).build()
+                .endSection()
                 .build();
     }
 }

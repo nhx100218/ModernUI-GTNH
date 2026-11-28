@@ -88,6 +88,33 @@ public final class ConfigTheme {
     public static int NAV_ITEM_PADDING_V = 4;
 
     /** Material fast Motion。 */
+    private static int sAccent = 0xFFFFB5A1;
+    private static int sSecondary = 0xFFE7BDB2;
+
+    public static int accent() {
+        return sAccent;
+    }
+
+    public static int secondary() {
+        return sSecondary;
+    }
+
+    public static void setThemeColors(int accent, int secondary) {
+        sAccent = 0xFF000000 | (accent & 0xFFFFFF);
+        sSecondary = 0xFF000000 | (secondary & 0xFFFFFF);
+    }
+
+    public static int primaryContainer() {
+        return blend(sAccent, 0xFF561F10, 0.65F);
+    }
+
+    private static int blend(int from, int to, float t) {
+        int r = Math.round(((from >> 16) & 0xFF) + t * (((to >> 16) & 0xFF) - ((from >> 16) & 0xFF)));
+        int g = Math.round(((from >> 8) & 0xFF) + t * (((to >> 8) & 0xFF) - ((from >> 8) & 0xFF)));
+        int b = Math.round((from & 0xFF) + t * ((to & 0xFF) - (from & 0xFF)));
+        return 0xFF000000 | (r << 16) | (g << 8) | b;
+    }
+
     public static final int MOTION_FAST_MS = SceneChromeTokens.MOTION_FAST_MS;
     /** Material standard Motion。 */
     public static final int MOTION_STANDARD_MS = SceneChromeTokens.MOTION_STANDARD_MS;
@@ -188,13 +215,13 @@ public final class ConfigTheme {
                 .mutedForeground(ON_SURFACE_VARIANT)
                 .disabledForeground(OUTLINE)
                 .onAccentForeground(ON_PRIMARY)
-                .accent(PRIMARY)
-                .accentHover(PRIMARY_CONTAINER)
+                .accent(sAccent)
+                .accentHover(primaryContainer())
                 .accentPressed(PRIMARY_INVERSE)
-                .selectionBackground(PRIMARY_CONTAINER)
+                .selectionBackground(primaryContainer())
                 .selectionForeground(ON_PRIMARY_CONTAINER)
                 .borderDefault(OUTLINE)
-                .borderFocus(PRIMARY)
+                .borderFocus(sAccent)
                 .borderDisabled(OUTLINE_VARIANT)
                 .danger(ERROR)
                 .errorText(ERROR)
@@ -224,7 +251,7 @@ public final class ConfigTheme {
             case BUTTON_STANDARD:
                 return solid(SURFACE_HIGH, SURFACE_HIGHEST, SURFACE_CONTAINER_TONE, OUTLINE_VARIANT, 20);
             case BUTTON_PRIMARY:
-                return solid(PRIMARY, PRIMARY_CONTAINER, PRIMARY_INVERSE, PRIMARY, 20);
+                return solid(sAccent, primaryContainer(), PRIMARY_INVERSE, sAccent, 20);
             case BUTTON_DANGER:
                 return solid(ERROR, 0xFFFFDAD6, ERROR_CONTAINER, ERROR, 20);
             default:
@@ -237,7 +264,7 @@ public final class ConfigTheme {
                 .backdrop(null)
                 .cornerRadius(SceneTheme.PILL_RADIUS)
                 .borderWidth(0)
-                .focusEdge(PRIMARY)
+                .focusEdge(sAccent)
                 .idle(new SceneSurfaceStyle.StateStyle(0xFF322825, 0, 0.0F, 0.0F))
                 .hovered(new SceneSurfaceStyle.StateStyle(0xFF3D3230, 0, 0.0F, 0.0F))
                 .pressed(new SceneSurfaceStyle.StateStyle(0xFF44312C, 0, 0.0F, 0.0F))
@@ -249,7 +276,7 @@ public final class ConfigTheme {
                 .backdrop(null)
                 .cornerRadius(radius)
                 .borderWidth(1)
-                .focusEdge(PRIMARY)
+                .focusEdge(sAccent)
                 .idle(new SceneSurfaceStyle.StateStyle(idle, edge, 0.0F, 0.0F))
                 .hovered(new SceneSurfaceStyle.StateStyle(hover, edge, 0.0F, 0.0F))
                 .pressed(new SceneSurfaceStyle.StateStyle(pressed, edge, 0.0F, 0.0F))

@@ -47,6 +47,7 @@ import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.MainAxisAlign;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.layout.SceneGeometry;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.SceneInteractionState;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.node.SceneNode;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.node.TextHorizontalAlign;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.node.Transform;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.overlay.SceneOverlayHost;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.theme.SceneSurfaceBinder;
@@ -70,14 +71,17 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private static final ReadableSignal<Boolean> ALWAYS_ENABLED = () -> Boolean.TRUE;
 
     private static SceneImageSource[] sNavIcons;
-    /** MD3 top-level pages: general, interface, advanced. */
+    /** MD3 top-level pages: preferences, developer options, temporary extras. */
     private static final String[] GROUP_TITLES = {
-            "modernui.config.group.general", "modernui.config.group.interface", "modernui.config.group.advanced"
+            "modernui.config.group.preferences",
+            "modernui.config.group.developer",
+            "modernui.config.group.temp"
     };
     private static final String[][] GROUP_SECTION_IDS = {
-            {"tooltip", "waila", "chat"},
-            {"fontSystem", "smoothscroll", "screentransition", "zoom", "ui"},
-            {"general", "textselection", "emoji", "performance", "renderer"}
+            {"tooltip", "waila", "chat", "smoothscroll", "screentransition", "zoom", "ui",
+                    "textselection", "emoji", "fontSystem", "fontSizeSetting"},
+            {"general"},
+            {"server", "performance", "renderer", "temp"}
     };
 
     /** 配置管理器，保存事务入口 */
@@ -376,7 +380,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 this.bodyRow = SceneNode.row();
                 bodyRow.setFillParentHeight(true);
                 bodyRow.setFillParentWidth(true);
-                bodyRow.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
+                bodyRow.setMaxWidth(Integer.MAX_VALUE);
                 bodyRow.setGap(ConfigTheme.dp(BODY_ROW_GAP));
                 this.navRoot = createSidebarNav(bodyRow, groups);
                 scrollContainer.setFlexGrow(1);
@@ -491,7 +495,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         SceneNode bar = SceneNode.column();
         bar.setPreferredHeight(0);
         bar.setFillParentWidth(true);
-        bar.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
+        bar.setMaxWidth(Integer.MAX_VALUE);
         bar.setGap(2);
         bar.setHitTestable(false);
         return bar;
@@ -750,7 +754,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         item.appendChild(iconPill);
 
         item.appendChild(text(ConfigText.tr(title), Computed.create(() ->
-                Integer.valueOf(selected.get() ? 0xFFFFB5A1 : 0xFFD8C2BC)),
+                Integer.valueOf(selected.get() ? ConfigTheme.accent() : 0xFFD8C2BC)),
                 ConfigTheme.FONT_SUBTITLE));
         runtime.focusable(item, ALWAYS_ENABLED);
         runtime.on(item, SceneEventType.CLICK, (event, context) -> action.run());
@@ -856,7 +860,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private SceneNode createTopTabs() {
         SceneNode host = SceneNode.column();
         host.setFillParentWidth(true);
-        host.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
+        host.setMaxWidth(Integer.MAX_VALUE);
         host.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
         for (int i = 0; i < groups.size(); i++) {
             final int groupIndex = i;
@@ -871,14 +875,14 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         SceneNode host = SceneNode.row();
         host.setFillParentWidth(true);
         host.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
-        host.setGap(ConfigTheme.dp(6));
+        host.setGap(0);
         host.setCrossAxisAlign(CrossAxisAlign.STRETCH);
         host.setMainAxisAlign(MainAxisAlign.CENTER);
-        int maxLabelWidth = ConfigTheme.dp(140);
+        int maxLabelWidth = ConfigTheme.dp(180);
         for (int i = 0; i < group.sectionIndices.size(); i++) {
             final int sectionIndex = group.sectionIndices.get(i).intValue();
             SceneNode tab = SceneNode.column();
-            tab.setWidthSizing(SceneNode.WidthSizing.SHRINK);
+            tab.setFlexGrow(1);
             tab.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
             tab.setPadding(ConfigTheme.dp(10), ConfigTheme.dp(8), ConfigTheme.dp(10), ConfigTheme.dp(8));
             tab.setGap(ConfigTheme.dp(4));
@@ -900,7 +904,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                     tab::setBackgroundColor);
             SceneNode label = text(sections.get(sectionIndex).title(),
                     Computed.create(() -> Integer.valueOf(selected.get()
-                            ? 0xFFFFB5A1 : 0xFFD8C2BC)),
+                            ? ConfigTheme.accent() : 0xFFD8C2BC)),
                     ConfigTheme.NAV_TAB_FONT_SIZE);
             label.setMaxTextWidth(maxLabelWidth);
             label.setMaxLines(1);
@@ -911,7 +915,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             indicator.setCornerRadius(ConfigTheme.dp(2));
             indicator.setPreferredWidth(labelWidth);
             runtime.bind(Computed.create(() -> Integer.valueOf(selected.get()
-                    ? 0xFFFFB5A1 : 0)), indicator::setBackgroundColor);
+                    ? ConfigTheme.accent() : 0)), indicator::setBackgroundColor);
             tab.appendChild(indicator);
             runtime.focusable(tab, ALWAYS_ENABLED);
             runtime.on(tab, SceneEventType.CLICK, (event, context) ->
@@ -921,26 +925,68 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         return host;
     }
     private SceneNode createDashboard() {
-        SceneNode root = SceneNode.row();
+        SceneNode root = SceneNode.column();
         root.setFillParentWidth(true);
         root.setFillParentHeight(true);
         root.setPadding(ConfigTheme.dp(20));
-        root.setGap(ConfigTheme.dp(16));
-        root.setCrossAxisAlign(CrossAxisAlign.START);
+        root.setGap(ConfigTheme.dp(14));
+        root.setCrossAxisAlign(CrossAxisAlign.STRETCH);
+
+        SceneNode cards = SceneNode.row();
+        cards.setFillParentWidth(true);
+        cards.setPreferredHeight(ConfigTheme.dp(420));
+        cards.setGap(ConfigTheme.dp(16));
+        cards.setCrossAxisAlign(CrossAxisAlign.START);
 
         SceneNode left = dashboardCard();
         left.setFlexGrow(1);
-        left.appendChild(dashboardTitle(ConfigText.tr("modernui.dashboard.title")));
+        left.setPreferredHeight(ConfigTheme.dp(420));
+        left.appendChild(gradientTitle("Modern UI 操作中心"));
         left.appendChild(dashboardBody(ConfigText.tr("modernui.dashboard.about")
                 .replace("%version%", MyMod.VERSION)));
 
         SceneNode right = dashboardCard();
         right.setFlexGrow(1);
-        right.appendChild(dashboardTitle(ConfigText.tr("modernui.dashboard.changelog")));
-        right.appendChild(dashboardBody(ConfigText.tr("modernui.dashboard.changes")));
+        right.setPreferredHeight(ConfigTheme.dp(420));
+        ChangelogReader.Changelog changelog = ChangelogReader.latest();
+        SceneNode changelogTitle = dashboardTitle(changelog.title);
+        changelogTitle.setMaxLines(2);
+        right.appendChild(changelogTitle);
 
-        root.appendChild(left);
-        root.appendChild(right);
+        SceneNode divider = new SceneNode();
+        divider.setPreferredHeight(1);
+        divider.setFillParentWidth(true);
+        divider.setBackgroundColor(0xFF53433F);
+        right.appendChild(divider);
+
+        SceneNode changelogBody = SceneNode.column();
+        changelogBody.setFillParentWidth(true);
+        changelogBody.setGap(ConfigTheme.dp(5));
+        int shown = Math.min(changelog.lines.size(), 10);
+        for (int i = 0; i < shown; i++) {
+            SceneNode line = new SceneNode();
+            line.setText(changelog.lines.get(i));
+            line.setFontSize(ConfigTheme.dp(13));
+            line.setTextColor(0xFFD8C2BC);
+            line.setLineHeightMultiplier(1.2D);
+            line.setMaxLines(3);
+            line.setHitTestable(false);
+            changelogBody.appendChild(line);
+        }
+        right.appendChild(changelogBody);
+
+        cards.appendChild(left);
+        cards.appendChild(right);
+        root.appendChild(cards);
+
+        SceneNode copyright = new SceneNode();
+        copyright.setText("Copyright © 2019-2026 BloCamLimb. All rights reserved.");
+        copyright.setFontSize(ConfigTheme.dp(12));
+        copyright.setTextColor(0xFF8F7B75);
+        copyright.setTextHorizontalAlign(TextHorizontalAlign.CENTER);
+        copyright.setFillParentWidth(true);
+        copyright.setHitTestable(false);
+        root.appendChild(copyright);
         return root;
     }
 
@@ -948,17 +994,54 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         SceneNode card = SceneNode.column();
         card.setFillParentWidth(true);
         card.setPadding(ConfigTheme.dp(24));
-        card.setGap(ConfigTheme.dp(12));
+        card.setGap(ConfigTheme.dp(16));
         bindGroupSurface(runtime, card);
         return card;
+    }
+
+    private SceneNode gradientTitle(String title) {
+        SceneNode row = SceneNode.row();
+        row.setGap(0);
+        row.setCrossAxisAlign(CrossAxisAlign.CENTER);
+        int[] stops = { 0xFFB8DFF4, 0xFFF8C5CE, 0xFFFEFDF0 };
+        int length = title.length();
+        for (int i = 0; i < length; i++) {
+            SceneNode character = new SceneNode();
+            character.setText(String.valueOf(title.charAt(i)));
+            character.setFontSize(ConfigTheme.dp(32));
+            character.setTextColor(gradientColor(stops, length <= 1 ? 0.0F : (float) i / (float) (length - 1)));
+            character.setHitTestable(false);
+            row.appendChild(character);
+        }
+        return row;
+    }
+
+    private static int gradientColor(int[] stops, float t) {
+        if (stops.length == 0) {
+            return 0xFFFFFFFF;
+        }
+        if (stops.length == 1) {
+            return stops[0];
+        }
+        float scaled = Math.max(0.0F, Math.min(1.0F, t)) * (stops.length - 1);
+        int index = Math.min((int) scaled, stops.length - 2);
+        float local = scaled - index;
+        int from = stops[index];
+        int to = stops[index + 1];
+        int r = Math.round(((from >> 16) & 0xFF) + local * (((to >> 16) & 0xFF) - ((from >> 16) & 0xFF)));
+        int g = Math.round(((from >> 8) & 0xFF) + local * (((to >> 8) & 0xFF) - ((from >> 8) & 0xFF)));
+        int b = Math.round((from & 0xFF) + local * ((to & 0xFF) - (from & 0xFF)));
+        return 0xFF000000 | (Math.max(0, Math.min(255, r)) << 16)
+                | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, b));
     }
 
     private SceneNode dashboardTitle(String title) {
         SceneNode node = new SceneNode();
         node.setText(title);
         node.setFontSize(ConfigTheme.FONT_TITLE);
-        node.setTextColor(0xFFFFB5A1);
+        node.setTextColor(ConfigTheme.accent());
         node.setMaxLines(2);
+        node.setHitTestable(false);
         return node;
     }
 
@@ -969,6 +1052,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         node.setTextColor(0xFFD8C2BC);
         node.setMaxLines(12);
         node.setLineHeightMultiplier(1.25D);
+        node.setHitTestable(false);
         return node;
     }
     private SceneNode createContent() {

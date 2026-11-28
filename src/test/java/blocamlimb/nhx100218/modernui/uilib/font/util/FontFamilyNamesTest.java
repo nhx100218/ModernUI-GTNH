@@ -34,7 +34,7 @@ public class FontFamilyNamesTest {
 
     @Test
     public void bundledFilesReportCanonicalFamilies() throws Exception {
-        File inter = new File("src/main/resources/assets/modernui/fonts/bundled/inter-bold.ttf");
+        File inter = new File("src/main/resources/assets/modernui/fonts/bundled/inter-frozen-medium.otf");
         File sourceHan = new File("src/main/resources/assets/modernui/fonts/bundled/source-han-sans-cn-medium.otf");
         Assert.assertTrue(inter.isFile());
         Assert.assertTrue(sourceHan.isFile());

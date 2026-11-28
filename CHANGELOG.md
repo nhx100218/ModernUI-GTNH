@@ -1,5 +1,37 @@
 # CHANGELOG
 
+## [2.0.2] - 2026-11-28
+
+### English
+
+#### Changed
+
+- Bold font files were removed. Bold is now synthesized from the regular face, matching ModernUI; italic and bold-italic still use the real italic face plus synthetic bold. The release jar is roughly half its previous size.
+- The config screen is reorganized toward ModernUI's shell: Home, Preferences, Advanced Options and a temporary Temp area. Non-ModernUI options live in Temp for now.
+- The Home dashboard now uses a per-character gradient title and reads the bundled changelog. The changelog follows the game language (Chinese or English).
+- The config shell now fills the available width and height; the top tabs distribute across the full row, and the large content card keeps its rounded outlined surface.
+- A temporary accent/secondary colour editor is available in Temp (`temp.primaryColor`, `temp.secondaryColor`).
+
+#### Fixed
+
+- Forge's synchronous startup query screens (mod conflicts, missing mods, load errors) are no longer covered by the loading screen, so the Yes/No buttons remain visible and usable. Those screens also receive the transparent/panorama background.
+- The key-binding list resets its smooth-scroll target after search filtering, so the mouse wheel keeps working on the filtered list.
+
+### 中文
+
+#### 变更
+
+- 删除全部粗体字体文件。粗体改为由常规字面合成，与 ModernUI 原版一致；斜体和粗斜体仍保留真实斜体字面，粗斜体在斜体上合成粗体。发布 jar 体积约减半。
+- 配置界面按 ModernUI 外壳重组：主页、偏好设置、高级选项，以及临时的 Temp 分区。ModernUI 没有的功能暂时集中到 Temp。
+- 主页的 Modern UI 操作中心改用逐字符渐变标题，并读取内置更新日志。更新日志按游戏语言显示中文或英文。
+- 配置页外壳改为填满可用宽高；顶部标签页横向铺满，大内容卡保留圆角轮廓。
+- Temp 分区加入临时主题主色/副色编辑（`temp.primaryColor`、`temp.secondaryColor`）。
+
+#### 修复
+
+- Forge 同步启动询问界面（模组冲突、缺少模组、加载错误）不再被加载界面覆盖，是/否按钮保持可见可点；这些界面也应用透明/全景背景。
+- 按键列表在搜索过滤后重置平滑滚动目标，过滤后的列表仍可用滚轮滚动。
+
 ## [2.0.1] - 2026-11-22
 
 ### English

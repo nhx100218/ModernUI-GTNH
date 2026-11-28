@@ -280,13 +280,7 @@ public class FontMatcher {
                 rememberMatch(runtimeVersion, binding, codepoint, fontType, index);
                 return index;
             }
-            // For BOLD_ITALIC without a real bold-italic face, keep the real
-            // bold face and synthesize only the italic. Preferring the regular
-            // face here would turn real bold into faux bold.
-            if (fontType != null && fontType.isBold() && familyFallbackIndex >= 0
-                    && !isBoldFace(fonts.get(familyFallbackIndex)) && isBoldFace(font)) {
-                familyFallbackIndex = index;
-            }
+            familyFallbackIndex = preferredFallbackFont(fonts, familyFallbackIndex, index, fontType);
         }
         int fallbackIndex = familyFallbackIndex >= 0 ? familyFallbackIndex
                 : (firstStrictDisplayIndex >= 0 ? firstStrictDisplayIndex : firstCanDisplayIndex);
@@ -371,9 +365,8 @@ public class FontMatcher {
             if (firstStrictDisplayIndex == GlyphRuntimeTables.FONT_INDEX_NONE) {
                 firstStrictDisplayIndex = index;
                 familyFallbackIndex = index;
-            } else if (fontType != null && fontType.isBold() && familyFallbackIndex >= 0
-                    && !isBoldFace(fonts.get(familyFallbackIndex)) && isBoldFace(font)) {
-                familyFallbackIndex = index;
+            } else {
+                familyFallbackIndex = preferredFallbackFont(fonts, familyFallbackIndex, index, fontType);
             }
         }
         int resolved = familyFallbackIndex >= 0 ? familyFallbackIndex
@@ -419,6 +412,23 @@ public class FontMatcher {
      * <p>斜体允许「无真斜体字面」时由 {@link #resolveFontIndex} 的 strict/fallback 分支退到
      * 非斜体字面，再由 {@link DerivedFontCache} 合成倾斜；因此这里只做「是否有更精确字面」的判据。</p>
      */
+    private static int preferredFallbackFont(List<Font> fonts, int current, int candidate, FontType fontType) {
+        if (current < 0) {
+            return candidate;
+        }
+        Font currentFont = fonts.get(current);
+        Font candidateFont = fonts.get(candidate);
+        if (fontType != null && fontType.isItalic()
+                && !isItalicFace(currentFont) && isItalicFace(candidateFont)) {
+            return candidate;
+        }
+        if (fontType != null && fontType.isBold()
+                && !isBoldFace(currentFont) && isBoldFace(candidateFont)) {
+            return candidate;
+        }
+        return current;
+    }
+
     private boolean matchesWeight(Font font, FontType fontType) {
         boolean wantBold = fontType != null && fontType.isBold();
         boolean wantItalic = fontType != null && fontType.isItalic();
