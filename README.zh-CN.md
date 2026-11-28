@@ -138,4 +138,4 @@ Minecraft 窗口失去焦点时，mod 会降低帧率和音量。部分 GTNH mod
 
 ## CI
 
-GitHub Actions 会构建 mod，并且只发布主 mod jar，避免下载错文件。发布 GitHub Release 时，工作流会附加 jar，并用面向玩家的更新日志把同一个文件上传到 CurseForge。
+GitHub Actions 会构建 mod，并且只发布主 mod jar，避免下载错文件。推送 `v2.0.2` 或 `2.0.2` 这样的发布 tag 时，工作流会自动构建、创建 GitHub Release、附加 jar，并用面向玩家的更新日志把同一个文件上传到 CurseForge。

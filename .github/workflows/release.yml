@@ -1,14 +1,16 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
+      - '[0-9]*'
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.event.release.tag_name }}
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -18,7 +20,7 @@ jobs:
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Set up JDK 25
@@ -58,13 +60,15 @@ jobs:
           awk 'BEGIN{p=0} /^## \[/{if(p){exit} p=1} p' CHANGELOG-USER.md > release/CHANGELOG.md
           printf '\n\nSee full changelog: https://github.com/nhx100218/ModernUI-GTNH/blob/main/CHANGELOG.md\n' >> release/CHANGELOG.md
 
-      - name: Attach jar and update release notes
+      - name: Create or update GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.release.tag_name }}
+          tag_name: ${{ github.ref_name }}
           name: ModernUI-GTNH ${{ steps.version.outputs.version }}
           body_path: release/CHANGELOG.md
           files: release/modernui-gtnh-${{ steps.version.outputs.version }}.jar
+          draft: false
+          prerelease: false
 
       - name: Upload to CurseForge
         uses: Kira-NT/mc-publish@v3
