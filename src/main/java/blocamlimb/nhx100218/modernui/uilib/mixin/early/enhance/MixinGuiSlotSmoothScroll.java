@@ -42,19 +42,48 @@ public abstract class MixinGuiSlotSmoothScroll {
 
     private final SmoothScrollModel modernui$model = new SmoothScrollModel();
     private boolean modernui$tracking;
+    private int modernui$lastContentHeight = -1;
+    private float modernui$lastApplied;
 
     @Inject(method = "drawScreen", at = @At("HEAD"))
     private void modernui$animate(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         if (!SmoothScrollConfig.enabled || SmoothScrollConfig.listSmoothness == 0 || !modernui$tracking) {
             return;
         }
+        int contentHeight = getContentHeight();
+        int max = Math.max(0, contentHeight - (bottom - top - 4));
+
+        // Searching/filtering rebuilds the entries and shrinks the content
+        // height. The old target can then sit beyond the new maximum, which
+        // makes the list look stuck at an empty scroll range.
+        if (modernui$lastContentHeight < 0) {
+            modernui$lastContentHeight = contentHeight;
+        } else if (contentHeight != modernui$lastContentHeight) {
+            modernui$lastContentHeight = contentHeight;
+            double clamped = Math.max(0.0D, Math.min(modernui$model.current(), max));
+            modernui$model.snap(clamped);
+            amountScrolled = (float) clamped;
+            modernui$lastApplied = amountScrolled;
+        }
+        if (modernui$model.target() < 0.0D || modernui$model.target() > max) {
+            modernui$model.setTarget(Math.max(0.0D, Math.min(modernui$model.target(), max)));
+        }
+
+        // Scroll-bar drags and search "scroll to key" write amountScrolled
+        // directly. Re-sync the model instead of overwriting that position.
+        if (initialClickY < 0.0F && Math.abs(amountScrolled - modernui$lastApplied) > 0.5F) {
+            modernui$model.snap(amountScrolled);
+        }
+
         // 拖动滚动条（initialClickY >= 0）时直接同步，避免缓动与拖动打架。
         if (initialClickY >= 0.0F) {
             modernui$model.snap(amountScrolled);
+            modernui$lastApplied = amountScrolled;
             return;
         }
         amountScrolled = (float) modernui$model.update(
                 SmoothScrollConfig.smoothness(SmoothScrollConfig.listSmoothness));
+        modernui$lastApplied = amountScrolled;
     }
 
     @Redirect(method = "drawScreen", at = @At(value = "INVOKE", remap = false,
@@ -83,9 +112,11 @@ public abstract class MixinGuiSlotSmoothScroll {
         if (!modernui$tracking) {
             modernui$model.snap(amountScrolled);
             modernui$tracking = true;
+            modernui$lastContentHeight = getContentHeight();
+            modernui$lastApplied = amountScrolled;
         }
         modernui$model.setTarget(modernui$model.target() + amount);
-        int max = getContentHeight() - (bottom - top - 4);
+        int max = Math.max(0, getContentHeight() - (bottom - top - 4));
         if (modernui$model.target() < 0.0D) {
             modernui$model.setTarget(0.0D);
         }

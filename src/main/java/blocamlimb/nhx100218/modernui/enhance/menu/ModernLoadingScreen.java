@@ -113,6 +113,13 @@ public final class ModernLoadingScreen {
         if (!MenuConfig.modernLoadingScreen || rendering) {
             return false;
         }
+        // Forge's synchronous startup queries (mod conflicts / missing mods)
+        // run while the loading screen is still active. Painting the loading
+        // screen over the confirmation makes it look frozen and hides the
+        // Yes/No buttons, so leave the query screen entirely to Forge.
+        if (ModernMenuScreens.isStartupQueryScreen(mc.currentScreen)) {
+            return false;
+        }
         rendering = true;
         try {
             int dimension = ModernBackdropRenderer.currentDimension(mc);

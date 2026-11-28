@@ -20,6 +20,11 @@ import net.minecraft.client.gui.achievement.GuiStats;
 import net.minecraft.client.gui.stream.GuiStreamOptions;
 import net.minecraft.client.multiplayer.GuiConnecting;
 
+import cpw.mods.fml.client.GuiCustomModLoadingErrorScreen;
+import cpw.mods.fml.client.GuiModsMissing;
+import cpw.mods.fml.client.GuiModsMissingForServer;
+import cpw.mods.fml.client.GuiNotification;
+
 /**
  * Screens that share ModernUI's panorama instead of drawing the vanilla dirt
  * background. Keeping the whitelist in one place lets the screen mixin and the
@@ -71,6 +76,10 @@ public final class ModernMenuScreens {
                 || screen instanceof GuiConnecting
                 || screen instanceof GuiDownloadTerrain
                 || screen instanceof GuiDisconnected
+                || screen instanceof GuiNotification
+                || screen instanceof GuiModsMissing
+                || screen instanceof GuiModsMissingForServer
+                || screen instanceof GuiCustomModLoadingErrorScreen
                 || screen instanceof GuiScreenAddServer
                 || screen instanceof GuiCreateWorld
                 || screen instanceof GuiScreenResourcePacks
@@ -103,6 +112,21 @@ public final class ModernMenuScreens {
     /** The whitelist also controls list backgrounds; mod list screens use the same panorama. */
     public static boolean usesSharedListBackdrop(GuiScreen screen) {
         return usesSharedBackdrop(screen);
+    }
+
+    /**
+     * Forge's synchronous startup query screens (mod conflicts, missing mods,
+     * mod-loading errors). The player must see and answer these; the loading
+     * screen must not paint over them.
+     *
+     * @param screen current screen
+     * @return true for a startup query/error screen
+     */
+    public static boolean isStartupQueryScreen(GuiScreen screen) {
+        return screen instanceof GuiNotification
+                || screen instanceof GuiModsMissing
+                || screen instanceof GuiModsMissingForServer
+                || screen instanceof GuiCustomModLoadingErrorScreen;
     }
 
     /**
