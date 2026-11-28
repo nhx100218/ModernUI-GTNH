@@ -89,7 +89,7 @@ public final class ChangelogReader {
                 if (line.startsWith("#### ")) {
                     continue;
                 }
-                body.add(line);
+                body.addAll(wrapLine(line, 34));
             }
         }
         if (body.isEmpty()) {
@@ -133,6 +133,27 @@ public final class ChangelogReader {
         line = line.replace("`", "");
         line = line.replace("**", "");
         return line;
+    }
+
+    private static List<String> wrapLine(String line, int width) {
+        List<String> out = new ArrayList<String>();
+        if (line.length() <= width) {
+            out.add(line);
+            return out;
+        }
+        String indent = line.startsWith("• ") ? "  " : "";
+        String body = line;
+        boolean first = true;
+        while (body.length() > width) {
+            int cut = width;
+            out.add((first ? "" : indent) + body.substring(0, cut));
+            body = body.substring(cut);
+            first = false;
+        }
+        if (!body.isEmpty()) {
+            out.add((first ? "" : indent) + body);
+        }
+        return out;
     }
 
     private static Changelog fallback(boolean chinese) {

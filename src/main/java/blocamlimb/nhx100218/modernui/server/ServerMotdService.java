@@ -148,11 +148,7 @@ public final class ServerMotdService {
             return enabledOverride.booleanValue();
         }
         MiniMotdConfig.Data mini = MiniMotdConfig.current();
-        if (mini != null && mini.enabled) {
-            return true;
-        }
-        // A generated/disabled MiniMOTD config must not suppress the YAML MOTD.
-        return ServerFeatureConfig.motdEnabled;
+        return mini != null && mini.enabled;
     }
 
     /** Legacy (0xFE) ping text, including the same MiniMOTD/YAML content. */
@@ -171,10 +167,9 @@ public final class ServerMotdService {
         }
         lastDiagnosticMs = now;
         MiniMotdConfig.Data mini = MiniMotdConfig.current();
-        MyMod.LOG.info("MOTD ping: protocol={} rgb={} mini={} yaml={}",
+        MyMod.LOG.info("MOTD ping: protocol={} rgb={} mini={}",
                 Integer.valueOf(protocol), Boolean.valueOf(hexColors),
-                Boolean.valueOf(mini != null && mini.enabled),
-                Boolean.valueOf(ServerFeatureConfig.motdEnabled));
+                Boolean.valueOf(mini != null && mini.enabled));
         if (mini != null && mini.enabled && !mini.motds.isEmpty()) {
             MiniMotdConfig.Entry entry = mini.motds.get(0);
             MyMod.LOG.info("MOTD source[0]: line1='{}' line2='{}'", entry.line1, entry.line2);
@@ -200,12 +195,8 @@ public final class ServerMotdService {
             String legacy1 = LegacyMotdText.render(raw1, false);
             String legacy2 = LegacyMotdText.render(raw2, false);
             if (!LegacyMotdText.hasVisibleText(legacy1) && !LegacyMotdText.hasVisibleText(legacy2)) {
-                MyMod.LOG.warn("MiniMOTD 配置渲染结果为空，回退到 modernui.yaml MOTD: line1={}, line2={}",
+                MyMod.LOG.warn("MiniMOTD 配置渲染结果为空，使用默认 MOTD: line1={}, line2={}",
                         entry.line1, entry.line2);
-                raw1 = ServerMetrics.expand(ServerFeatureConfig.motdLine1);
-                raw2 = ServerMetrics.expand(ServerFeatureConfig.motdLine2);
-                legacy1 = LegacyMotdText.render(raw1, false);
-                legacy2 = LegacyMotdText.render(raw2, false);
             }
             if (!LegacyMotdText.hasVisibleText(legacy1) && !LegacyMotdText.hasVisibleText(legacy2)) {
                 raw1 = "ModernUI-GTNH";
@@ -224,11 +215,11 @@ public final class ServerMotdService {
         if (cached != null) {
             return cached;
         }
-        String raw1 = ServerMetrics.expand(ServerFeatureConfig.motdLine1);
-        String raw2 = ServerMetrics.expand(ServerFeatureConfig.motdLine2);
+        String raw1 = "&bModernUI-GTNH";
+        String raw2 = "";
         String legacy1 = LegacyMotdText.render(raw1, false);
         String legacy2 = LegacyMotdText.render(raw2, false);
-        Selection selection = build(raw1, raw2, legacy1, legacy2, fallbackIcon(), hexColors);
+        Selection selection = build(raw1, raw2, legacy1, legacy2, null, hexColors);
         if (hexColors) {
             cachedFallbackHex = selection;
         } else {
@@ -259,18 +250,6 @@ public final class ServerMotdService {
         return new Selection(legacy, description, legacyColors, icon);
     }
 
-    private static String fallbackIcon() {
-        String configured = ServerFeatureConfig.motdIcon;
-        if (configured == null || configured.trim().isEmpty()) {
-            return null;
-        }
-        File configDir = ServerFeatureConfig.configFile() == null
-                ? new File("config")
-                : ServerFeatureConfig.configFile().getParentFile();
-        File file = resolveIconFile(configDir, configured.trim());
-        return file == null ? null : dataUri(file);
-    }
-
     private static String miniIcon(String configured) {
         File icons = MiniMotdConfig.iconsDirectory();
         if (icons == null || !icons.isDirectory()) {
@@ -288,20 +267,6 @@ public final class ServerMotdService {
                 ? configured
                 : configured + ".png";
         return dataUri(new File(icons, name));
-    }
-
-    private static File resolveIconFile(File configDir, String configured) {
-        if (configured.indexOf('/') >= 0 || configured.indexOf('\\') >= 0) {
-            return new File(configured);
-        }
-        String name = configured.toLowerCase(Locale.ROOT).endsWith(".png")
-                ? configured
-                : configured + ".png";
-        File direct = new File(configDir, name);
-        if (direct.isFile()) {
-            return direct;
-        }
-        return new File(new File(configDir, "motd"), name);
     }
 
     private static String dataUri(File file) {

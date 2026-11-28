@@ -423,9 +423,9 @@ public class HeadlessPageLinkageTest {
      */
     @Test
     public void scrollStatementMovesContent() throws Exception {
-        String before = renderQuery("linkage-scroll-before", "--page=config", "--nodes",
+        String before = renderQuery("linkage-scroll-before", "--page=config", "--page-index=1", "--nodes",
                 "--actions=move 700 350; frame; wait 11");
-        String after = renderQuery("linkage-scroll-after", "--page=config", "--nodes",
+        String after = renderQuery("linkage-scroll-after", "--page=config", "--page-index=1", "--nodes",
                 "--actions=move 700 350; frame; scroll -5; wait 10");
         Map<String, Integer> beforeYs = nodeYs(before);
         Map<String, Integer> afterYs = nodeYs(after);

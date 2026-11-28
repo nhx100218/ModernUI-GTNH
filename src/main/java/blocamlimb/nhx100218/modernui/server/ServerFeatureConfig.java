@@ -19,17 +19,8 @@ import blocamlimb.nhx100218.modernui.uilib.config.modern.ModernUiConfigSchema;
 public final class ServerFeatureConfig {
 
     public static final String TAB_ENABLED = "server.tab.enabled";
-    public static final String MOTD_ENABLED = "server.motd.enabled";
-    public static final String MOTD_LINE1 = "server.motd.line1";
-    public static final String MOTD_LINE2 = "server.motd.line2";
-    public static final String MOTD_ICON = "server.motd.icon";
 
     public static boolean tabEnabled;
-
-    public static boolean motdEnabled;
-    public static String motdLine1 = "";
-    public static String motdLine2 = "";
-    public static String motdIcon = "";
 
     private static volatile File configFile;
 
@@ -40,11 +31,6 @@ public final class ServerFeatureConfig {
             return;
         }
         tabEnabled = authority.getBool(TAB_ENABLED);
-
-        motdEnabled = authority.getBool(MOTD_ENABLED);
-        motdLine1 = nullToEmpty(authority.getString(MOTD_LINE1));
-        motdLine2 = nullToEmpty(authority.getString(MOTD_LINE2));
-        motdIcon = nullToEmpty(authority.getString(MOTD_ICON));
     }
 
     public static void attach(File file) {

@@ -237,13 +237,13 @@ public final class ConfigTheme {
     private static SceneSurfaceStyle solidSurface(SceneTheme.Role role) {
         switch (role) {
             case PANEL:
-                return solid(SURFACE, SURFACE_LOW, SURFACE_LOWEST, OUTLINE_VARIANT, 12);
+                return solid(SURFACE, SURFACE_LOW, SURFACE_LOWEST, OUTLINE_VARIANT, 0);
             case TOOLBAR:
-                return solid(SURFACE_LOW, SURFACE_CONTAINER_TONE, SURFACE, OUTLINE_VARIANT, 12);
+                return solid(SURFACE_LOW, SURFACE_CONTAINER_TONE, SURFACE, OUTLINE_VARIANT, 0);
             case INPUT:
                 return solid(SURFACE_LOWEST, SURFACE_LOW, SURFACE, OUTLINE, 8);
             case GROUP:
-                return solid(SURFACE_CONTAINER_TONE, SURFACE_HIGH, SURFACE_LOW, OUTLINE_VARIANT, 12);
+                return solid(SURFACE_CONTAINER_TONE, SURFACE_HIGH, SURFACE_LOW, OUTLINE_VARIANT, 16);
             case OVERLAY:
                 return solid(SURFACE_HIGH, SURFACE_HIGHEST, SURFACE_CONTAINER_TONE, OUTLINE, 16);
             case INDICATOR:

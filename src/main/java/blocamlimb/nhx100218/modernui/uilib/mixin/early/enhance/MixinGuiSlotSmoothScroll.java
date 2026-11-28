@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import blocamlimb.nhx100218.modernui.enhance.vanilla.SmoothScrollConfig;
 import blocamlimb.nhx100218.modernui.enhance.vanilla.SmoothScrollModel;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiSlot;
 
 /**
@@ -44,11 +45,17 @@ public abstract class MixinGuiSlotSmoothScroll {
     private boolean modernui$tracking;
     private int modernui$lastContentHeight = -1;
     private float modernui$lastApplied;
+    private long modernui$lastWheelTime;
+    private float modernui$wheelMomentum;
 
     @Inject(method = "drawScreen", at = @At("HEAD"))
     private void modernui$animate(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         if (!SmoothScrollConfig.enabled || SmoothScrollConfig.listSmoothness == 0 || !modernui$tracking) {
             return;
+        }
+        long now = Minecraft.getSystemTime();
+        if (now - modernui$lastWheelTime > 180L && modernui$wheelMomentum > 0.0F) {
+            modernui$wheelMomentum = Math.max(0.0F, modernui$wheelMomentum - 0.35F);
         }
         int contentHeight = getContentHeight();
         int max = Math.max(0, contentHeight - (bottom - top - 4));
@@ -94,7 +101,19 @@ public abstract class MixinGuiSlotSmoothScroll {
             return delta;
         }
         int step = delta > 0 ? -1 : 1;
-        int amount = SmoothScrollConfig.listAmount > 0 ? SmoothScrollConfig.listAmount : 40;
+        int base = SmoothScrollConfig.listAmount > 0 ? SmoothScrollConfig.listAmount : 40;
+        long now = Minecraft.getSystemTime();
+        long elapsed = modernui$lastWheelTime == 0L ? 1000L : now - modernui$lastWheelTime;
+        modernui$lastWheelTime = now;
+        // Fast repeated wheel events build momentum; one large OS wheel delta
+        // also scrolls farther. This makes the wheel speed actually matter.
+        float burst = elapsed < 90L ? 1.6F : 1.0F;
+        if (elapsed < 35L) {
+            burst = 2.4F;
+        }
+        float deltaScale = Math.max(1.0F, Math.min(3.0F, Math.abs(delta) / 120.0F));
+        modernui$wheelMomentum = Math.min(4.0F, modernui$wheelMomentum + burst);
+        int amount = Math.round(base * deltaScale * Math.min(3.0F, 1.0F + modernui$wheelMomentum * 0.25F));
         modernui$addTarget(step * amount);
         return 0;
     }

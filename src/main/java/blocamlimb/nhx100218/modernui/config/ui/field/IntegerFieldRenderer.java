@@ -45,11 +45,12 @@ public final class IntegerFieldRenderer implements FieldRenderer {
     @Override
     public SceneNode render(SceneRuntime rt, FieldSpec spec, DraftSignalAdapter adapter) {
         WidgetSpec w = spec.widget();
-        if (w instanceof SliderSpec) {
+        if (w instanceof SliderSpec || spec.constraints() != null) {
+            SliderSpec s = w instanceof SliderSpec ? (SliderSpec) w : null;
             FieldConstraints c = spec.constraints();
             double min = c != null ? c.min() : Double.NEGATIVE_INFINITY;
             double max = c != null ? c.max() : Double.POSITIVE_INFINITY;
-            return renderSlider(rt, spec, adapter, min, max, ((SliderSpec) w).step());
+            return renderSlider(rt, spec, adapter, min, max, s == null ? 0.0D : s.step());
         }
         // w == null 或 InputSpec → input；ColorSpec 只对 NUMBER 声明（FieldSpec.Builder#color 在 INTEGER 上已拒绝）
         return renderTextInput(rt, spec, adapter);
@@ -83,18 +84,38 @@ public final class IntegerFieldRenderer implements FieldRenderer {
 
         Supplier<SceneNode> control = () -> {
             SceneNode row = SceneNode.row();
-            // 间距为布局常量（契约：主题不接管布局），与 NUMBER slider 同口径
+            row.setFillParentWidth(true);
             row.setGap(ConfigTheme.FIELD_GAP);
             row.setCrossAxisAlign(CrossAxisAlign.CENTER);
             SceneNode sliderRoot = SceneSlider.create(rt, props).get();
+            sliderRoot.setFlexGrow(1);
             row.appendChild(sliderRoot);
-            SceneNode readout = new SceneNode();
-            rt.bind(SceneThemes.foreground(rt), readout::setTextColor);
-            readout.setFontSize(ConfigTheme.FONT_READOUT);
-            readout.setHitTestable(false);
-            // 读数取草稿值而非 slider 的 double 派生：整数显示不丢 64 位精度
-            rt.bindComputed(() -> FieldRenderSupport.integerTextOf(draftSig.get()), readout::setText);
-            row.appendChild(readout);
+
+            ReadableSignal<String> display = Computed.create(() ->
+                    String.format(java.util.Locale.ROOT, "%.1f", numValue.get()));
+            SceneTextInput.Props inputProps = new SceneTextInput.Props(
+                    display,
+                    Signal.create(Boolean.TRUE),
+                    Signal.create(Boolean.FALSE),
+                    "",
+                    24,
+                    SceneInputType.NUMBER,
+                    next -> {
+                        Long parsed = IntegerCodec.parse(next);
+                        if (parsed == null) {
+                            try {
+                                parsed = Long.valueOf(Math.round(Double.parseDouble(next)));
+                            } catch (NumberFormatException ignored) {
+                                // keep the raw text for the draft validator
+                            }
+                        }
+                        adapter.onFieldEdit(path, parsed != null ? (Object) parsed : next);
+                    });
+            SceneNode input = SceneTextInput.create(rt, inputProps).get();
+            input.setPreferredWidth(ConfigTheme.dp(88));
+            input.setBorderColor(0xFFFFFFFF);
+            input.setBorderWidth(1);
+            row.appendChild(input);
             return row;
         };
 

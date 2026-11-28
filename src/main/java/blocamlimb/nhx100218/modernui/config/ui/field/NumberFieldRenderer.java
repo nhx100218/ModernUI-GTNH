@@ -1,5 +1,6 @@
 package blocamlimb.nhx100218.modernui.config.ui.field;
 
+import java.util.Locale;
 import java.util.function.Supplier;
 
 import blocamlimb.nhx100218.modernui.config.schema.ColorSpec;
@@ -79,12 +80,12 @@ public final class NumberFieldRenderer implements FieldRenderer {
             // 颜色字段：写回 / 校验 / 脏标 / 保存全部沿用 NUMBER 通道，只有控件形态不同
             return COLOR.render(rt, spec, adapter);
         }
-        if (w instanceof SliderSpec) {
-            SliderSpec s = (SliderSpec) w;
+        if (w instanceof SliderSpec || spec.constraints() != null) {
+            SliderSpec s = w instanceof SliderSpec ? (SliderSpec) w : null;
             FieldConstraints c = spec.constraints();
             double min = c != null ? c.min() : Double.NEGATIVE_INFINITY;
             double max = c != null ? c.max() : Double.POSITIVE_INFINITY;
-            return renderSlider(rt, spec, adapter, min, max, s.step());
+            return renderSlider(rt, spec, adapter, min, max, s == null ? 0.0D : s.step());
         }
         // w == null 或 InputSpec → input
         return renderTextInput(rt, spec, adapter);
@@ -119,26 +120,34 @@ public final class NumberFieldRenderer implements FieldRenderer {
         // M1：slider + 读数文本 ROW 包装
         Supplier<SceneNode> control = () -> {
             SceneNode row = SceneNode.row();
-            // 间距为布局常量（契约 §4：主题不接管布局），非外观写入点，保留 ConfigTheme 取值
+            row.setFillParentWidth(true);
             row.setGap(ConfigTheme.FIELD_GAP);
             row.setCrossAxisAlign(CrossAxisAlign.CENTER);
-            // slider 子树（mount 后由 SceneSlider.create 产出）
             SceneNode sliderRoot = SceneSlider.create(rt, props).get();
+            sliderRoot.setFlexGrow(1);
             row.appendChild(sliderRoot);
-            // 读数文本：bind 到 numValue，显示当前值（整数显示去 .0）
-            SceneNode readout = new SceneNode();
-            // 前景取来源主题 foreground 信号（契约 §4 textColor 唯一写入者 = 主题前景绑定；
-            // 构建期捕获信号、effect 内应用，无构造期 .get() 快照，替换旧静态 TEXT_COLOR）
-            rt.bind(SceneThemes.foreground(rt), readout::setTextColor);
-            // 字号是排版/布局常量（契约 §4：尺寸/布局属性归控件自身，主题不接管布局），保留 ConfigTheme 取值
-            readout.setFontSize(ConfigTheme.FONT_READOUT);
-        readout.setMaxTextWidth(ConfigTheme.dp(160));
-        readout.setMaxLines(1);
-        readout.setEllipsis(true);
-            readout.setHitTestable(false);
-            rt.bindComputed(() -> FieldRenderSupport.formatReadout(numValue.get()),
-                    readout::setText);
-            row.appendChild(readout);
+
+            ReadableSignal<String> display = Computed.create(() ->
+                    String.format(Locale.ROOT, "%.1f", numValue.get()));
+            SceneTextInput.Props inputProps = new SceneTextInput.Props(
+                    display,
+                    Signal.create(Boolean.TRUE),
+                    Signal.create(Boolean.FALSE),
+                    "",
+                    24,
+                    SceneInputType.NUMBER,
+                    next -> {
+                        try {
+                            adapter.onFieldEdit(path, Double.valueOf(Double.parseDouble(next)));
+                        } catch (NumberFormatException e) {
+                            adapter.onFieldEdit(path, next);
+                        }
+                    });
+            SceneNode input = SceneTextInput.create(rt, inputProps).get();
+            input.setPreferredWidth(ConfigTheme.dp(88));
+            input.setBorderColor(0xFFFFFFFF);
+            input.setBorderWidth(1);
+            row.appendChild(input);
             return row;
         };
 

@@ -9,7 +9,6 @@ import blocamlimb.nhx100218.modernui.config.ui.ConfigUI;
 import blocamlimb.nhx100218.modernui.config.ui.FieldRestorePolicy;
 import blocamlimb.nhx100218.modernui.config.ui.field.FieldRendererRegistry;
 import blocamlimb.nhx100218.modernui.config.ui.field.FontSortOrderModel;
-import blocamlimb.nhx100218.modernui.config.ui.field.SimpleListFieldRenderer;
 import blocamlimb.nhx100218.modernui.uilib.font.config.FontConfig;
 import blocamlimb.nhx100218.modernui.uilib.ui.env.UiEnvironment;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.input.PlatformInputSource;
@@ -105,9 +104,9 @@ public final class ModernConfigAssembly {
     static void configureFieldRenderers(FieldRendererRegistry registry, List<String> discoveredSnapshot) {
         // 字体家族栈：两行文本框（第 1 行主字体，第 2 行回退字体），可填家族名或字体文件路径。
         // 不再展示旧的“发现字体排序/六槽字面指派”；bold/italic 由家族自动选择。
-        registry.registerPath("fontSystem.fontSort",
-                new SimpleListFieldRenderer(false,
-                        () -> Arrays.asList("Inter", "思源黑体"), 2, 2));
+        registry.registerPath("fontSystem.fontSort", new FontStackTextFieldRenderer());
+        registry.registerPath("temp.primaryColor", new ThemeColorFieldRenderer());
+        registry.registerPath("temp.secondaryColor", new ThemeColorFieldRenderer());
         registry.registerPath("fontSystem.characterFontRules", new CharacterRuleFieldRenderer());
     }
 

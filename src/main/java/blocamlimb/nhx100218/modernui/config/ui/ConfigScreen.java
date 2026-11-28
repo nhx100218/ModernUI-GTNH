@@ -6,8 +6,11 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
@@ -78,10 +81,9 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             "modernui.config.group.temp"
     };
     private static final String[][] GROUP_SECTION_IDS = {
-            {"tooltip", "waila", "chat", "smoothscroll", "screentransition", "zoom", "ui",
-                    "textselection", "emoji", "fontSystem", "fontSizeSetting"},
-            {"general"},
-            {"server", "performance", "renderer", "temp"}
+            {"screen", "view", "font", "extension", "text"},
+            {"developer"},
+            {"temp"}
     };
 
     /** 配置管理器，保存事务入口 */
@@ -321,8 +323,8 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             // 绘制顺序先于玻璃 BACKDROP，只负责遮罩、不遮挡玻璃采样（G15 验证条款）。
             FormPageShell.Parts parts = FormPageShell.build(runtime,
                     schema.title(), null,
-                    ConfigTheme.TITLE_BAR_HEIGHT, ConfigTheme.ROOT_PADDING, ConfigTheme.ROOT_GAP,
-                    14, 14,
+                    ConfigTheme.TITLE_BAR_HEIGHT, 0, 0,
+                    0, 0,
                     false, false);
             this.pageRoot = parts.root();
             this.viewport = parts.viewport();
@@ -334,6 +336,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             root.setFillParentWidth(true);
             root.setFillParentHeight(true);
             pageRoot.setFillParentWidth(true);
+            pageRoot.setFillParentHeight(true);
             root.appendChild(pageRoot);
             pageRoot.setCrossAxisAlign(CrossAxisAlign.CENTER);
             viewport.setCrossAxisAlign(CrossAxisAlign.CENTER);
@@ -350,7 +353,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             // 操作条固定在页面底部，保存始终位于视觉终点且不随内容滚动。
 
 
-            this.sections = schema.sections();
+            this.sections = buildDisplaySections(schema.sections());
             this.groups = createGroups(this.sections);
             int initialSection = groups.isEmpty() ? 0
                     : groups.get(0).sectionIndices.get(0).intValue();
@@ -380,9 +383,23 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 this.bodyRow = SceneNode.row();
                 bodyRow.setFillParentHeight(true);
                 bodyRow.setFillParentWidth(true);
+                bodyRow.setFlexGrow(1);
                 bodyRow.setMaxWidth(Integer.MAX_VALUE);
                 bodyRow.setGap(ConfigTheme.dp(BODY_ROW_GAP));
                 this.navRoot = createSidebarNav(bodyRow, groups);
+                // bodyRow is a row inside the page column; some host layouts
+                // measure it from its children. Pin the rail to the viewport
+                // height so it reaches the top and bottom edges like ModernUI.
+                runtime.bind(runtime.layoutDoneSignal(), ignored -> {
+                    Object box = root.getCachedLayout();
+                    if (box instanceof LayoutBox) {
+                        int target = Math.max(0, ((LayoutBox) box).getHeight()
+                                - ConfigTheme.BUTTON_HEIGHT - ConfigTheme.dp(8));
+                        if (target > 0 && navRoot.getPreferredHeight() != target) {
+                            navRoot.setPreferredHeight(target);
+                        }
+                    }
+                });
                 scrollContainer.setFlexGrow(1);
                 bodyRow.appendChild(scrollContainer);
                 pageRoot.appendChild(bodyRow);
@@ -788,6 +805,71 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         }
         return sNavIcons;
     }
+    /**
+     * Rebuilds the UI categories from the flat schema. Field paths stay
+     * untouched, so every existing key remains compatible; only the visible
+     * grouping follows ModernUI's five preference tabs.
+     */
+    private List<SectionSpec> buildDisplaySections(List<SectionSpec> source) {
+        Map<String, FieldSpec> byPath = new LinkedHashMap<String, FieldSpec>();
+        Map<String, List<FieldSpec>> original = new HashMap<String, List<FieldSpec>>();
+        for (SectionSpec section : source) {
+            List<FieldSpec> fields = new ArrayList<FieldSpec>();
+            for (FieldSpec field : section.fields()) {
+                byPath.put(field.path(), field);
+                fields.add(field);
+            }
+            original.put(section.name(), fields);
+        }
+        Set<String> used = new HashSet<String>();
+        List<SectionSpec> result = new ArrayList<SectionSpec>();
+        result.add(category("screen", "modernui.md.tab.screen", byPath, used,
+                "general.backdropQuality", "general.pickerDensity",
+                "performance.unfocusedFramerate", "performance.unfocusedFramerateLimit",
+                "performance.unfocusedVolume", "performance.unfocusedVolumeFactor",
+                "performance.preload", "ui.pauseContainers"));
+        result.add(category("view", "modernui.md.tab.view", byPath, used,
+                "smoothscroll.", "screentransition.", "zoom.", "textselection.", "ui.textUndo"));
+        result.add(category("font", "modernui.md.tab.font", byPath, used,
+                "fontSystem.", "fontSizeSetting."));
+        result.add(category("extension", "modernui.md.tab.extension", byPath, used,
+                "tooltip.", "waila.", "emoji."));
+        result.add(category("text", "modernui.md.tab.text", byPath, used, "chat."));
+        result.add(category("developer", "modernui.md.tab.developer", byPath, used,
+                "general.useDebug", "general.uiDebug", "general.fontRuntimeDebug", "general.netTransport"));
+        List<FieldSpec> leftovers = new ArrayList<FieldSpec>();
+        for (SectionSpec section : source) {
+            for (FieldSpec field : section.fields()) {
+                if (!used.contains(field.path()) && !field.path().startsWith("server.")) {
+                    leftovers.add(field);
+                    used.add(field.path());
+                }
+            }
+        }
+        result.add(new SectionSpec("temp", ConfigText.tr("modernui.md.tab.temp"), leftovers));
+        return result;
+    }
+
+    private static SectionSpec category(String name, String titleKey, Map<String, FieldSpec> byPath,
+            Set<String> used, String... selectors) {
+        List<FieldSpec> fields = new ArrayList<FieldSpec>();
+        for (String selector : selectors) {
+            if (selector.endsWith(".")) {
+                for (Map.Entry<String, FieldSpec> entry : byPath.entrySet()) {
+                    if (entry.getKey().startsWith(selector) && used.add(entry.getKey())) {
+                        fields.add(entry.getValue());
+                    }
+                }
+            } else {
+                FieldSpec field = byPath.get(selector);
+                if (field != null && used.add(selector)) {
+                    fields.add(field);
+                }
+            }
+        }
+        return new SectionSpec(name, ConfigText.tr(titleKey), fields);
+    }
+
     private List<GroupSpec> createGroups(List<SectionSpec> sections) {
         List<GroupSpec> result = new ArrayList<GroupSpec>();
         for (String title : GROUP_TITLES) {
@@ -943,7 +1025,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         left.setPreferredHeight(ConfigTheme.dp(420));
         left.appendChild(gradientTitle("Modern UI 操作中心"));
         left.appendChild(dashboardBody(ConfigText.tr("modernui.dashboard.about")
-                .replace("%version%", MyMod.VERSION)));
+                .replace("{version}", MyMod.VERSION)));
 
         SceneNode right = dashboardCard();
         right.setFlexGrow(1);
@@ -969,6 +1051,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             line.setFontSize(ConfigTheme.dp(13));
             line.setTextColor(0xFFD8C2BC);
             line.setLineHeightMultiplier(1.2D);
+            line.setMaxTextWidth(ConfigTheme.dp(470));
             line.setMaxLines(3);
             line.setHitTestable(false);
             changelogBody.appendChild(line);
@@ -1050,6 +1133,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         node.setText(body.replace("\\n", "\n"));
         node.setFontSize(ConfigTheme.FONT_LABEL);
         node.setTextColor(0xFFD8C2BC);
+        node.setMaxTextWidth(ConfigTheme.dp(470));
         node.setMaxLines(12);
         node.setLineHeightMultiplier(1.25D);
         node.setHitTestable(false);
@@ -1059,7 +1143,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         SceneNode node = SceneNode.column();
         node.setGap(ConfigTheme.dp(14));
         node.setFillParentWidth(true);
-        node.setMaxWidth(ConfigTheme.CONTENT_MAX_WIDTH);
+        node.setMaxWidth(Integer.MAX_VALUE);
         return node;
     }
 
@@ -1334,7 +1418,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
      * @throws IllegalArgumentException 下标越界
      */
     public void showSection(int index) {
-        final int count = schema.sections().size();
+        final int count = sections == null ? schema.sections().size() : sections.size();
         if (index < 0 || index >= count) {
             throw new IllegalArgumentException(
                     "section 下标越界：" + index + "（有效范围 0.." + (count - 1) + "）");

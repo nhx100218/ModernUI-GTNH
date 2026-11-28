@@ -96,40 +96,20 @@ public final class MugCommand extends CommandBase {
 
     private void motd(ICommandSender sender, String[] args) {
         if (args.length < 2) {
-            throw new WrongUsageException("/mug motd <on|off|line1|line2|icon> [值]");
+            throw new WrongUsageException("/mug motd <on|off>");
         }
         String action = args[1].toLowerCase(Locale.ROOT);
-        switch (action) {
-            case "on":
-            case "off":
-                boolean enable = "on".equals(action);
-                if (MiniMotdConfig.isPresent()) {
-                    ServerMotdService.setEnabledOverride(Boolean.valueOf(enable));
-                    success(sender, "已设置 MOTD 运行时" + onOff(enable)
-                            + "；重启后以 config/MiniMOTD/main.conf 为准");
-                } else if (persist(sender, ServerFeatureConfig.MOTD_ENABLED,
-                        Boolean.valueOf(enable), "motd.enabled")) {
-                    ServerMotdService.invalidate();
-                }
-                break;
-            case "line1":
-                if (persist(sender, ServerFeatureConfig.MOTD_LINE1, join(args, 2), "motd.line1")) {
-                    ServerMotdService.invalidate();
-                }
-                break;
-            case "line2":
-                if (persist(sender, ServerFeatureConfig.MOTD_LINE2, join(args, 2), "motd.line2")) {
-                    ServerMotdService.invalidate();
-                }
-                break;
-            case "icon":
-                if (persist(sender, ServerFeatureConfig.MOTD_ICON, join(args, 2), "motd.icon")) {
-                    ServerMotdService.invalidate();
-                }
-                break;
-            default:
-                throw new WrongUsageException("/mug motd <on|off|line1|line2|icon> [值]");
+        if (!"on".equals(action) && !"off".equals(action)) {
+            throw new WrongUsageException("/mug motd <on|off>");
         }
+        if (!MiniMotdConfig.isPresent()) {
+            error(sender, "未找到 config/MiniMOTD/main.conf");
+            return;
+        }
+        boolean enable = "on".equals(action);
+        ServerMotdService.setEnabledOverride(Boolean.valueOf(enable));
+        success(sender, "已设置 MOTD 运行时" + onOff(enable)
+                + "；重启后以 config/MiniMOTD/main.conf 为准");
     }
 
     private boolean persist(ICommandSender sender, String path, Object value, String label) {
@@ -180,7 +160,7 @@ public final class MugCommand extends CommandBase {
             return getListOfStringsMatchingLastWord(args, "on", "off");
         }
         if (args.length == 2 && "motd".equalsIgnoreCase(args[0])) {
-            return getListOfStringsMatchingLastWord(args, "on", "off", "line1", "line2", "icon");
+            return getListOfStringsMatchingLastWord(args, "on", "off");
         }
         return null;
     }
