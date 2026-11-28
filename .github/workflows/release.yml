@@ -51,18 +51,12 @@ jobs:
         run: ./gradlew build --no-daemon --no-configuration-cache
 
       - name: Prepare release files and notes
-        id: notes
         shell: bash
         run: |
           mkdir -p release
           cp "build/libs/modernui-gtnh-${{ steps.version.outputs.version }}.jar" release/
           awk 'BEGIN{p=0} /^## \[/{if(p){exit} p=1} p' CHANGELOG-USER.md > release/CHANGELOG.md
           printf '\n\nSee full changelog: https://github.com/nhx100218/ModernUI-GTNH/blob/main/CHANGELOG.md\n' >> release/CHANGELOG.md
-          {
-            echo 'text<<__NOTES_EOF__'
-            cat release/CHANGELOG.md
-            echo '__NOTES_EOF__'
-          } >> "$GITHUB_OUTPUT"
 
       - name: Attach jar and update release notes
         uses: softprops/action-gh-release@v2
@@ -73,14 +67,16 @@ jobs:
           files: release/modernui-gtnh-${{ steps.version.outputs.version }}.jar
 
       - name: Upload to CurseForge
-        uses: itsmeow/curseforge-upload@v3
+        uses: Kira-NT/mc-publish@v3
         with:
-          token: ${{ secrets.CurseForge }}
-          project_id: '1835100'
-          game_endpoint: minecraft
-          file_path: release/modernui-gtnh-${{ steps.version.outputs.version }}.jar
-          game_versions: 'Minecraft 1.7.10,Forge'
-          release_type: release
-          changelog: ${{ steps.notes.outputs.text }}
-          changelog_type: markdown
-          display_name: ModernUI-GTNH ${{ steps.version.outputs.version }}
+          curseforge-id: '1835100'
+          curseforge-token: ${{ secrets.CurseForge }}
+          files: release/modernui-gtnh-${{ steps.version.outputs.version }}.jar
+          name: ModernUI-GTNH ${{ steps.version.outputs.version }}
+          version: ${{ steps.version.outputs.version }}
+          version-type: release
+          changelog-file: release/CHANGELOG.md
+          loaders: forge
+          game-versions: 1.7.10
+          game-version-filter: releases
+          fail-mode: fail
