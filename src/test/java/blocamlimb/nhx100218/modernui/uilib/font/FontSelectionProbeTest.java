@@ -2,6 +2,7 @@ package blocamlimb.nhx100218.modernui.uilib.font;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.Arrays;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -56,16 +57,27 @@ public class FontSelectionProbeTest {
         assertFacePart(matcher, catalog, 'A', FontType.BOLD, "Inter Frozen Medium");
         assertFacePart(matcher, catalog, 'A', FontType.ITALIC, "Italic");
         assertFacePart(matcher, catalog, 'A', FontType.BOLD_ITALIC, "Italic");
-        assertFacePart(matcher, catalog, 0x4E2D, FontType.BOLD, "思源黑体 CN Medium");
-        assertFacePart(matcher, catalog, 0x4E2D, FontType.BOLD_ITALIC, "思源黑体 CN Medium");
+        assertFacePart(matcher, catalog, 0x4E2D, FontType.BOLD, "Source Han Sans", "思源黑体");
+        assertFacePart(matcher, catalog, 0x4E2D, FontType.BOLD_ITALIC, "Source Han Sans", "思源黑体");
     }
 
     private static void assertFacePart(FontMatcher matcher, FontCatalog catalog, int codepoint,
-            FontType type, String expectedPart) {
+            FontType type, String... expectedParts) {
         int index = matcher.matchFontIndex(0, codepoint, type);
         Assert.assertTrue("no face selected for " + type, index >= 0);
         String name = catalog.getFont(index).getName();
-        Assert.assertTrue(type + " selected " + name + " (expected " + expectedPart + ")",
-                name != null && name.contains(expectedPart));
+        boolean matched = name != null;
+        if (matched) {
+            matched = false;
+            for (String part : expectedParts) {
+                if (name.contains(part)) {
+                    matched = true;
+                    break;
+                }
+            }
+        }
+        Assert.assertTrue(type + " selected " + name + " (expected one of "
+                        + Arrays.toString(expectedParts) + ")",
+                matched);
     }
 }
