@@ -80,12 +80,16 @@ public final class NumberFieldRenderer implements FieldRenderer {
             // 颜色字段：写回 / 校验 / 脏标 / 保存全部沿用 NUMBER 通道，只有控件形态不同
             return COLOR.render(rt, spec, adapter);
         }
-        if (w instanceof SliderSpec || spec.constraints() != null) {
-            SliderSpec s = w instanceof SliderSpec ? (SliderSpec) w : null;
+        if (w instanceof SliderSpec) {
+            SliderSpec s = (SliderSpec) w;
             FieldConstraints c = spec.constraints();
             double min = c != null ? c.min() : Double.NEGATIVE_INFINITY;
             double max = c != null ? c.max() : Double.POSITIVE_INFINITY;
-            return renderSlider(rt, spec, adapter, min, max, s == null ? 0.0D : s.step());
+            return renderSlider(rt, spec, adapter, min, max, s.step());
+        }
+        if (w == null && spec.constraints() != null) {
+            FieldConstraints c = spec.constraints();
+            return renderSlider(rt, spec, adapter, c.min(), c.max(), 0.0D);
         }
         // w == null 或 InputSpec → input
         return renderTextInput(rt, spec, adapter);
@@ -111,19 +115,17 @@ public final class NumberFieldRenderer implements FieldRenderer {
         final ReadableSignal<Object> draftSig = adapter.draftSignal(path);
 
         ReadableSignal<Double> numValue = FieldRenderSupport.toDoubleSignal(draftSig);
-        // step 由 SliderSpec 透传，<=0 表示连续不量化
-        SceneSlider.Props props = SceneSlider.Props.builder(numValue)
-                .min(min).max(max).step(step)
-                .onChange((value, committing) -> adapter.onFieldEdit(path, Double.valueOf(value)))
-                .build();
+        // step <= 0 表示连续不量化；控件外观由 ConfigSlider 统一为 ModernUI 风格。
+        ReadableSignal<Boolean> enabled = Signal.create(Boolean.TRUE);
 
-        // M1：slider + 读数文本 ROW 包装
+        // M1：slider + 右侧数值输入 ROW 包装
         Supplier<SceneNode> control = () -> {
             SceneNode row = SceneNode.row();
             row.setFillParentWidth(true);
             row.setGap(ConfigTheme.FIELD_GAP);
             row.setCrossAxisAlign(CrossAxisAlign.CENTER);
-            SceneNode sliderRoot = SceneSlider.create(rt, props).get();
+            SceneNode sliderRoot = ConfigSlider.create(rt, numValue, enabled, min, max, step,
+                    (value, committing) -> adapter.onFieldEdit(path, Double.valueOf(value)));
             sliderRoot.setFlexGrow(1);
             row.appendChild(sliderRoot);
 
@@ -145,8 +147,6 @@ public final class NumberFieldRenderer implements FieldRenderer {
                     });
             SceneNode input = SceneTextInput.create(rt, inputProps).get();
             input.setPreferredWidth(ConfigTheme.dp(88));
-            input.setBorderColor(0xFFFFFFFF);
-            input.setBorderWidth(1);
             row.appendChild(input);
             return row;
         };

@@ -129,6 +129,7 @@ public final class ModernConfigEntry {
 
         int guiScale = new ScaledResolution(minecraft, minecraft.displayWidth, minecraft.displayHeight)
                 .getScaleFactor();
+        ConfigTheme.setContentScale(resolutionScale(minecraft));
         ConfigTheme.setDensity(Math.max(0.5F, guiScale * 0.5F));
         final PlatformInputSource input = new LwjglInputSource(new LwjglStateReader());
         // fontSort 字段语义为字体优先级排序，行序即配置值；专用 renderer 只展示已发现字体名，
@@ -146,6 +147,21 @@ public final class ModernConfigEntry {
         final ConfigScreen screen = ModernConfigAssembly.buildScreen(manager, input,
                 SceneHostAssembly.defaultEnvironment(), discoveredSnapshot);
         return new ModernConfigScreen(parent, screen);
+    }
+
+    /**
+     * Resolution adaptation for the config page.
+     *
+     * <p>The current layout was authored at 2420x1668 physical pixels. Scaling
+     * by the smaller of the width and height ratios keeps the page inside any
+     * aspect ratio, and is exactly {@code 1.0} at the reference resolution so
+     * that layout is untouched there.</p>
+     */
+    private static float resolutionScale(Minecraft minecraft) {
+        int width = Math.max(1, minecraft.displayWidth);
+        int height = Math.max(1, minecraft.displayHeight);
+        float factor = Math.min(width / 2420.0F, height / 1668.0F);
+        return Math.max(0.6F, Math.min(2.0F, factor));
     }
 
     /**

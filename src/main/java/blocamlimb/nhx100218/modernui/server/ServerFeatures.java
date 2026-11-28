@@ -31,6 +31,9 @@ public final class ServerFeatures {
         initialized = true;
         FMLCommonHandler.instance().bus().register(ServerMetrics.INSTANCE);
         FMLCommonHandler.instance().bus().register(INSTANCE);
+        // No config key owns this switch anymore; enable it only when the
+        // optional ServerUtilities integration is actually installed.
+        ServerFeatureConfig.tabEnabled = ServerTabService.available();
         if (ServerFeatureConfig.configFile() != null) {
             MiniMotdConfig.initialize(ServerFeatureConfig.configFile().getParentFile());
         }

@@ -96,7 +96,6 @@ public final class ConfigValueBridge {
         applyGeneral(authority);
         applyFontSystem(authority);
         applyFontSizeSetting(authority);
-        applyTemp(authority);
 
         // characterRuleSet 是 private，Bridge 喂完 characterFontRules 后委托 FontConfig 刷新派生态
         FontConfig.refreshDerivedRuleSet();
@@ -136,31 +135,7 @@ public final class ConfigValueBridge {
      *
      * @param authority 权威源
      */
-    /** Temporary theme-colour controls (will be moved out of temp later). */
-    private static void applyTemp(Authority authority) {
-        int accent = parseHexColor(authority.getString("temp.primaryColor"), 0xFFFFB5A1);
-        int secondary = parseHexColor(authority.getString("temp.secondaryColor"), 0xFFE7BDB2);
-        blocamlimb.nhx100218.modernui.config.ui.theme.ConfigTheme.setThemeColors(accent, secondary);
-    }
-
-    private static int parseHexColor(String value, int fallback) {
-        if (value == null) {
-            return fallback;
-        }
-        String hex = value.trim();
-        if (hex.startsWith("#")) {
-            hex = hex.substring(1);
-        }
-        if (hex.length() != 6 && hex.length() != 8) {
-            return fallback;
-        }
-        try {
-            int parsed = (int) Long.parseLong(hex, 16);
-            return hex.length() == 6 ? 0xFF000000 | parsed : parsed;
-        } catch (NumberFormatException ignored) {
-            return fallback;
-        }
-    }
+    /** 回灌 fontSystem section（FontConfig 字体系统字段）。 */
 
     private static void applyFontSystem(Authority authority) {
         // int 字段：Authority.getNumber 返回 double 原始类型，Math.round 避免 2.9999→2 浮点截断

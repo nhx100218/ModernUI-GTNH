@@ -1,16 +1,15 @@
 package blocamlimb.nhx100218.modernui.config.ui;
 
+import java.awt.Desktop;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
@@ -38,6 +37,7 @@ import blocamlimb.nhx100218.modernui.uilib.ui.reactive.ReadableSignal;
 import blocamlimb.nhx100218.modernui.uilib.ui.reactive.Signal;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.MountHandle;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.SceneRuntime;
+import blocamlimb.nhx100218.modernui.uilib.ui.scene.runtime.SceneScrolls;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.control.SceneScrollbar;
 import blocamlimb.nhx100218.modernui.uilib.ui.scene.image.SceneImageSource;
 import blocamlimb.nhx100218.modernui.uilib.util.AngelicaRendererCompat;
@@ -74,16 +74,14 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private static final ReadableSignal<Boolean> ALWAYS_ENABLED = () -> Boolean.TRUE;
 
     private static SceneImageSource[] sNavIcons;
-    /** MD3 top-level pages: preferences, developer options, temporary extras. */
+    /** MD3 top-level pages: general, interface, advanced. */
     private static final String[] GROUP_TITLES = {
-            "modernui.config.group.preferences",
-            "modernui.config.group.developer",
-            "modernui.config.group.temp"
+            "modernui.config.group.general", "modernui.config.group.interface", "modernui.config.group.advanced"
     };
     private static final String[][] GROUP_SECTION_IDS = {
-            {"screen", "view", "font", "extension", "text"},
-            {"developer"},
-            {"temp"}
+            {"tooltip", "waila", "chat"},
+            {"fontSystem", "smoothscroll", "screentransition", "zoom", "ui"},
+            {"general", "textselection", "emoji", "performance", "renderer"}
     };
 
     /** 配置管理器，保存事务入口 */
@@ -323,8 +321,8 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             // 绘制顺序先于玻璃 BACKDROP，只负责遮罩、不遮挡玻璃采样（G15 验证条款）。
             FormPageShell.Parts parts = FormPageShell.build(runtime,
                     schema.title(), null,
-                    ConfigTheme.TITLE_BAR_HEIGHT, 0, 0,
-                    0, 0,
+                    ConfigTheme.TITLE_BAR_HEIGHT, ConfigTheme.ROOT_PADDING, ConfigTheme.ROOT_GAP,
+                    ConfigTheme.dp(14), ConfigTheme.dp(14),
                     false, false);
             this.pageRoot = parts.root();
             this.viewport = parts.viewport();
@@ -336,7 +334,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             root.setFillParentWidth(true);
             root.setFillParentHeight(true);
             pageRoot.setFillParentWidth(true);
-            pageRoot.setFillParentHeight(true);
             root.appendChild(pageRoot);
             pageRoot.setCrossAxisAlign(CrossAxisAlign.CENTER);
             viewport.setCrossAxisAlign(CrossAxisAlign.CENTER);
@@ -353,7 +350,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             // 操作条固定在页面底部，保存始终位于视觉终点且不随内容滚动。
 
 
-            this.sections = buildDisplaySections(schema.sections());
+            this.sections = schema.sections();
             this.groups = createGroups(this.sections);
             int initialSection = groups.isEmpty() ? 0
                     : groups.get(0).sectionIndices.get(0).intValue();
@@ -383,23 +380,9 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                 this.bodyRow = SceneNode.row();
                 bodyRow.setFillParentHeight(true);
                 bodyRow.setFillParentWidth(true);
-                bodyRow.setFlexGrow(1);
-                bodyRow.setMaxWidth(Integer.MAX_VALUE);
+                bodyRow.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
                 bodyRow.setGap(ConfigTheme.dp(BODY_ROW_GAP));
                 this.navRoot = createSidebarNav(bodyRow, groups);
-                // bodyRow is a row inside the page column; some host layouts
-                // measure it from its children. Pin the rail to the viewport
-                // height so it reaches the top and bottom edges like ModernUI.
-                runtime.bind(runtime.layoutDoneSignal(), ignored -> {
-                    Object box = root.getCachedLayout();
-                    if (box instanceof LayoutBox) {
-                        int target = Math.max(0, ((LayoutBox) box).getHeight()
-                                - ConfigTheme.BUTTON_HEIGHT - ConfigTheme.dp(8));
-                        if (target > 0 && navRoot.getPreferredHeight() != target) {
-                            navRoot.setPreferredHeight(target);
-                        }
-                    }
-                });
                 scrollContainer.setFlexGrow(1);
                 bodyRow.appendChild(scrollContainer);
                 pageRoot.appendChild(bodyRow);
@@ -512,7 +495,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         SceneNode bar = SceneNode.column();
         bar.setPreferredHeight(0);
         bar.setFillParentWidth(true);
-        bar.setMaxWidth(Integer.MAX_VALUE);
+        bar.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
         bar.setGap(2);
         bar.setHitTestable(false);
         return bar;
@@ -771,7 +754,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         item.appendChild(iconPill);
 
         item.appendChild(text(ConfigText.tr(title), Computed.create(() ->
-                Integer.valueOf(selected.get() ? ConfigTheme.accent() : 0xFFD8C2BC)),
+                Integer.valueOf(selected.get() ? 0xFFFFB5A1 : 0xFFD8C2BC)),
                 ConfigTheme.FONT_SUBTITLE));
         runtime.focusable(item, ALWAYS_ENABLED);
         runtime.on(item, SceneEventType.CLICK, (event, context) -> action.run());
@@ -805,71 +788,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         }
         return sNavIcons;
     }
-    /**
-     * Rebuilds the UI categories from the flat schema. Field paths stay
-     * untouched, so every existing key remains compatible; only the visible
-     * grouping follows ModernUI's five preference tabs.
-     */
-    private List<SectionSpec> buildDisplaySections(List<SectionSpec> source) {
-        Map<String, FieldSpec> byPath = new LinkedHashMap<String, FieldSpec>();
-        Map<String, List<FieldSpec>> original = new HashMap<String, List<FieldSpec>>();
-        for (SectionSpec section : source) {
-            List<FieldSpec> fields = new ArrayList<FieldSpec>();
-            for (FieldSpec field : section.fields()) {
-                byPath.put(field.path(), field);
-                fields.add(field);
-            }
-            original.put(section.name(), fields);
-        }
-        Set<String> used = new HashSet<String>();
-        List<SectionSpec> result = new ArrayList<SectionSpec>();
-        result.add(category("screen", "modernui.md.tab.screen", byPath, used,
-                "general.backdropQuality", "general.pickerDensity",
-                "performance.unfocusedFramerate", "performance.unfocusedFramerateLimit",
-                "performance.unfocusedVolume", "performance.unfocusedVolumeFactor",
-                "performance.preload", "ui.pauseContainers"));
-        result.add(category("view", "modernui.md.tab.view", byPath, used,
-                "smoothscroll.", "screentransition.", "zoom.", "textselection.", "ui.textUndo"));
-        result.add(category("font", "modernui.md.tab.font", byPath, used,
-                "fontSystem.", "fontSizeSetting."));
-        result.add(category("extension", "modernui.md.tab.extension", byPath, used,
-                "tooltip.", "waila.", "emoji."));
-        result.add(category("text", "modernui.md.tab.text", byPath, used, "chat."));
-        result.add(category("developer", "modernui.md.tab.developer", byPath, used,
-                "general.useDebug", "general.uiDebug", "general.fontRuntimeDebug", "general.netTransport"));
-        List<FieldSpec> leftovers = new ArrayList<FieldSpec>();
-        for (SectionSpec section : source) {
-            for (FieldSpec field : section.fields()) {
-                if (!used.contains(field.path()) && !field.path().startsWith("server.")) {
-                    leftovers.add(field);
-                    used.add(field.path());
-                }
-            }
-        }
-        result.add(new SectionSpec("temp", ConfigText.tr("modernui.md.tab.temp"), leftovers));
-        return result;
-    }
-
-    private static SectionSpec category(String name, String titleKey, Map<String, FieldSpec> byPath,
-            Set<String> used, String... selectors) {
-        List<FieldSpec> fields = new ArrayList<FieldSpec>();
-        for (String selector : selectors) {
-            if (selector.endsWith(".")) {
-                for (Map.Entry<String, FieldSpec> entry : byPath.entrySet()) {
-                    if (entry.getKey().startsWith(selector) && used.add(entry.getKey())) {
-                        fields.add(entry.getValue());
-                    }
-                }
-            } else {
-                FieldSpec field = byPath.get(selector);
-                if (field != null && used.add(selector)) {
-                    fields.add(field);
-                }
-            }
-        }
-        return new SectionSpec(name, ConfigText.tr(titleKey), fields);
-    }
-
     private List<GroupSpec> createGroups(List<SectionSpec> sections) {
         List<GroupSpec> result = new ArrayList<GroupSpec>();
         for (String title : GROUP_TITLES) {
@@ -942,7 +860,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private SceneNode createTopTabs() {
         SceneNode host = SceneNode.column();
         host.setFillParentWidth(true);
-        host.setMaxWidth(Integer.MAX_VALUE);
+        host.setMaxWidth(ConfigTheme.PAGE_MAX_WIDTH);
         host.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
         for (int i = 0; i < groups.size(); i++) {
             final int groupIndex = i;
@@ -957,14 +875,14 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         SceneNode host = SceneNode.row();
         host.setFillParentWidth(true);
         host.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
-        host.setGap(0);
+        host.setGap(ConfigTheme.dp(6));
         host.setCrossAxisAlign(CrossAxisAlign.STRETCH);
         host.setMainAxisAlign(MainAxisAlign.CENTER);
-        int maxLabelWidth = ConfigTheme.dp(180);
+        int maxLabelWidth = ConfigTheme.dp(140);
         for (int i = 0; i < group.sectionIndices.size(); i++) {
             final int sectionIndex = group.sectionIndices.get(i).intValue();
             SceneNode tab = SceneNode.column();
-            tab.setFlexGrow(1);
+            tab.setWidthSizing(SceneNode.WidthSizing.SHRINK);
             tab.setPreferredHeight(ConfigTheme.BUTTON_HEIGHT);
             tab.setPadding(ConfigTheme.dp(10), ConfigTheme.dp(8), ConfigTheme.dp(10), ConfigTheme.dp(8));
             tab.setGap(ConfigTheme.dp(4));
@@ -986,7 +904,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
                     tab::setBackgroundColor);
             SceneNode label = text(sections.get(sectionIndex).title(),
                     Computed.create(() -> Integer.valueOf(selected.get()
-                            ? ConfigTheme.accent() : 0xFFD8C2BC)),
+                            ? 0xFFFFB5A1 : 0xFFD8C2BC)),
                     ConfigTheme.NAV_TAB_FONT_SIZE);
             label.setMaxTextWidth(maxLabelWidth);
             label.setMaxLines(1);
@@ -997,7 +915,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             indicator.setCornerRadius(ConfigTheme.dp(2));
             indicator.setPreferredWidth(labelWidth);
             runtime.bind(Computed.create(() -> Integer.valueOf(selected.get()
-                    ? ConfigTheme.accent() : 0)), indicator::setBackgroundColor);
+                    ? 0xFFFFB5A1 : 0)), indicator::setBackgroundColor);
             tab.appendChild(indicator);
             runtime.focusable(tab, ALWAYS_ENABLED);
             runtime.on(tab, SceneEventType.CLICK, (event, context) ->
@@ -1009,61 +927,84 @@ public class ConfigScreen extends AbstractSceneHostWidget {
     private SceneNode createDashboard() {
         SceneNode root = SceneNode.column();
         root.setFillParentWidth(true);
-        root.setFillParentHeight(true);
         root.setPadding(ConfigTheme.dp(20));
         root.setGap(ConfigTheme.dp(14));
         root.setCrossAxisAlign(CrossAxisAlign.STRETCH);
 
         SceneNode cards = SceneNode.row();
         cards.setFillParentWidth(true);
-        cards.setPreferredHeight(ConfigTheme.dp(420));
         cards.setGap(ConfigTheme.dp(16));
-        cards.setCrossAxisAlign(CrossAxisAlign.START);
+        cards.setCrossAxisAlign(CrossAxisAlign.STRETCH);
+        // The config viewport is content-sized (the section panels scroll
+        // through their own state). Pin the dashboard to the real content
+        // height so the copyright really sits at the bottom edge. The cards
+        // row gets the remaining height explicitly: flexGrow inside a
+        // scrollable column resolves against the viewport, not this root.
+        runtime.bind(runtime.layoutDoneSignal(), done -> {
+            Object cached = bodyRow == null ? null : bodyRow.getCachedLayout();
+            if (!(cached instanceof LayoutBox)) {
+                return;
+            }
+            int target = Math.max(ConfigTheme.dp(240),
+                    ((LayoutBox) cached).getHeight() - ConfigTheme.dp(28));
+            if (root.getPreferredHeight() != target) {
+                root.setPreferredHeight(target);
+            }
+            int copyrightHeight = runtime.lineHeight(ConfigTheme.dp(12));
+            int cardsHeight = Math.max(ConfigTheme.dp(180),
+                    target - ConfigTheme.dp(40) - ConfigTheme.dp(14) - copyrightHeight);
+            if (cards.getPreferredHeight() != cardsHeight) {
+                cards.setPreferredHeight(cardsHeight);
+            }
+        });
 
         SceneNode left = dashboardCard();
         left.setFlexGrow(1);
-        left.setPreferredHeight(ConfigTheme.dp(420));
-        left.appendChild(gradientTitle("Modern UI 操作中心"));
-        left.appendChild(dashboardBody(ConfigText.tr("modernui.dashboard.about")
-                .replace("{version}", MyMod.VERSION)));
+        left.appendChild(gradientTitle(ConfigText.tr("modernui.dashboard.title")));
+        SceneNode about = dashboardBody(ConfigText.tr("modernui.dashboard.about")
+                .replace("{version}", MyMod.VERSION));
+        left.appendChild(about);
+        left.appendChild(dashboardLinks());
+        runtime.bind(runtime.layoutDoneSignal(), done -> {
+            Object cached = left.getCachedLayout();
+            if (!(cached instanceof LayoutBox)) {
+                return;
+            }
+            int wrap = Math.max(ConfigTheme.dp(80),
+                    ((LayoutBox) cached).getWidth() - ConfigTheme.dp(48));
+            if (about.getMaxTextWidth() != wrap) {
+                about.setMaxTextWidth(wrap);
+            }
+        });
+        SceneNode spacer = new SceneNode();
+        spacer.setFlexGrow(1);
+        spacer.setHitTestable(false);
+        left.appendChild(spacer);
+        SceneNode version = new SceneNode();
+        version.setText(ConfigText.tr("modernui.dashboard.version")
+                .replace("{version}", MyMod.VERSION));
+        version.setFontSize(ConfigTheme.FONT_SUBTITLE);
+        version.setTextColor(0xFF8F7B75);
+        version.setHitTestable(false);
+        left.appendChild(version);
 
         SceneNode right = dashboardCard();
         right.setFlexGrow(1);
-        right.setPreferredHeight(ConfigTheme.dp(420));
         ChangelogReader.Changelog changelog = ChangelogReader.latest();
-        SceneNode changelogTitle = dashboardTitle(changelog.title);
-        changelogTitle.setMaxLines(2);
-        right.appendChild(changelogTitle);
-
+        right.appendChild(dashboardTitle(changelog.title));
         SceneNode divider = new SceneNode();
-        divider.setPreferredHeight(1);
+        divider.setPreferredHeight(Math.max(1, ConfigTheme.dp(1)));
         divider.setFillParentWidth(true);
         divider.setBackgroundColor(0xFF53433F);
         right.appendChild(divider);
-
-        SceneNode changelogBody = SceneNode.column();
-        changelogBody.setFillParentWidth(true);
-        changelogBody.setGap(ConfigTheme.dp(5));
-        int shown = Math.min(changelog.lines.size(), 10);
-        for (int i = 0; i < shown; i++) {
-            SceneNode line = new SceneNode();
-            line.setText(changelog.lines.get(i));
-            line.setFontSize(ConfigTheme.dp(13));
-            line.setTextColor(0xFFD8C2BC);
-            line.setLineHeightMultiplier(1.2D);
-            line.setMaxTextWidth(ConfigTheme.dp(470));
-            line.setMaxLines(3);
-            line.setHitTestable(false);
-            changelogBody.appendChild(line);
-        }
-        right.appendChild(changelogBody);
+        right.appendChild(dashboardChangelog(changelog));
 
         cards.appendChild(left);
         cards.appendChild(right);
         root.appendChild(cards);
 
         SceneNode copyright = new SceneNode();
-        copyright.setText("Copyright © 2019-2026 BloCamLimb. All rights reserved.");
+        copyright.setText("Copyright \u00a9 2019-2026 BloCamLimb. All rights reserved.");
         copyright.setFontSize(ConfigTheme.dp(12));
         copyright.setTextColor(0xFF8F7B75);
         copyright.setTextHorizontalAlign(TextHorizontalAlign.CENTER);
@@ -1077,15 +1018,124 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         SceneNode card = SceneNode.column();
         card.setFillParentWidth(true);
         card.setPadding(ConfigTheme.dp(24));
-        card.setGap(ConfigTheme.dp(16));
+        card.setGap(ConfigTheme.dp(12));
         bindGroupSurface(runtime, card);
         return card;
+    }
+
+    private SceneNode dashboardLinks() {
+        SceneNode column = SceneNode.column();
+        column.setFillParentWidth(true);
+        column.setGap(ConfigTheme.dp(6));
+        column.appendChild(dashboardLink("modernui.dashboard.link.source",
+                "https://github.com/nhx100218/ModernUI-GTNH"));
+        column.appendChild(dashboardLink("modernui.dashboard.link.modernui",
+                "https://github.com/BloCamLimb/ModernUI"));
+        column.appendChild(dashboardLink("modernui.dashboard.link.modernuiMc",
+                "https://github.com/BloCamLimb/ModernUI-MC"));
+        column.appendChild(dashboardLink("modernui.dashboard.link.releases",
+                "https://github.com/nhx100218/ModernUI-GTNH/releases"));
+        column.appendChild(dashboardLink("modernui.dashboard.link.curseforge",
+                "https://www.curseforge.com/minecraft/mc-mods/modern-ui"));
+        column.appendChild(dashboardLink("modernui.dashboard.link.modrinth",
+                "https://modrinth.com/mod/modern-ui"));
+        column.appendChild(dashboardLink("modernui.dashboard.link.discord",
+                "https://discord.gg/kmyGKt2"));
+        return column;
+    }
+
+    private SceneNode dashboardLink(String labelKey, String url) {
+        SceneNode node = new SceneNode();
+        node.setText(ConfigText.tr(labelKey));
+        node.setFontSize(ConfigTheme.FONT_LABEL);
+        node.setCursor(SceneCursor.POINTER);
+        SceneInteractionState interaction = runtime.interactionState(node);
+        interaction.hovered();
+        interaction.pressed();
+        runtime.bindComputed(() -> {
+            if (Boolean.TRUE.equals(interaction.pressed().get())) {
+                return Integer.valueOf(0xFFFFF1EC);
+            }
+            if (Boolean.TRUE.equals(interaction.hovered().get())) {
+                return Integer.valueOf(0xFFFFD9CF);
+            }
+            return Integer.valueOf(0xFFFFB5A1);
+        }, node::setTextColor);
+        runtime.on(node, SceneEventType.CLICK, (event, context) -> openUrl(url));
+        return node;
+    }
+
+    private static void openUrl(String url) {
+        try {
+            Desktop.getDesktop().browse(new URI(url));
+        } catch (Throwable failure) {
+            MyMod.LOG.warn("打开配置页链接失败: {}", failure.toString());
+        }
+    }
+
+    private SceneNode dashboardChangelog(ChangelogReader.Changelog changelog) {
+        SceneNode row = SceneNode.row();
+        row.setFillParentWidth(true);
+        row.setFlexGrow(1);
+        row.setGap(ConfigTheme.dp(6));
+        row.setCrossAxisAlign(CrossAxisAlign.STRETCH);
+
+        SceneNode viewport = SceneNode.column();
+        viewport.setFillParentHeight(true);
+        viewport.setFlexGrow(1);
+        viewport.setScrollable(true);
+        viewport.setClipChildren(true);
+        viewport.setGap(ConfigTheme.dp(6));
+
+        SceneNode body = SceneNode.column();
+        body.setFillParentWidth(true);
+        body.setGap(ConfigTheme.dp(6));
+        int initialWrap = Math.max(ConfigTheme.dp(120), ConfigTheme.dp(470));
+        List<SceneNode> lines = new ArrayList<SceneNode>();
+        for (int i = 0; i < changelog.lines.size(); i++) {
+            SceneNode line = new SceneNode();
+            line.setText(changelog.lines.get(i));
+            line.setFontSize(ConfigTheme.dp(13));
+            line.setTextColor(0xFFD8C2BC);
+            line.setLineHeightMultiplier(1.25D);
+            line.setMaxTextWidth(initialWrap);
+            line.setHitTestable(false);
+            body.appendChild(line);
+            lines.add(line);
+        }
+        viewport.appendChild(body);
+
+        // Wrap against the real card width, not a fixed pixel budget: at
+        // smaller resolutions a fixed wrap width pushed text past the card
+        // edge. Re-applying an unchanged width is skipped to avoid a layout
+        // feedback loop.
+        runtime.bind(runtime.layoutDoneSignal(), done -> {
+            Object cached = viewport.getCachedLayout();
+            if (!(cached instanceof LayoutBox)) {
+                return;
+            }
+            int wrap = Math.max(ConfigTheme.dp(80),
+                    ((LayoutBox) cached).getWidth() - ConfigTheme.dp(10));
+            for (int i = 0; i < lines.size(); i++) {
+                SceneNode line = lines.get(i);
+                if (line.getMaxTextWidth() != wrap) {
+                    line.setMaxTextWidth(wrap);
+                }
+            }
+        });
+
+        Signal<Integer> scroll = SceneScrolls.attach(runtime, viewport);
+        SceneScrollbar.Result scrollbar = SceneScrollbar.createDefault(runtime, viewport, scroll);
+        row.appendChild(viewport);
+        row.appendChild(scrollbar.column());
+        return row;
     }
 
     private SceneNode gradientTitle(String title) {
         SceneNode row = SceneNode.row();
         row.setGap(0);
         row.setCrossAxisAlign(CrossAxisAlign.CENTER);
+        row.setHitTestable(false);
         int[] stops = { 0xFFB8DFF4, 0xFFF8C5CE, 0xFFFEFDF0 };
         int length = title.length();
         for (int i = 0; i < length; i++) {
@@ -1122,7 +1172,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         SceneNode node = new SceneNode();
         node.setText(title);
         node.setFontSize(ConfigTheme.FONT_TITLE);
-        node.setTextColor(ConfigTheme.accent());
+        node.setTextColor(0xFFFFB5A1);
         node.setMaxLines(2);
         node.setHitTestable(false);
         return node;
@@ -1134,7 +1184,6 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         node.setFontSize(ConfigTheme.FONT_LABEL);
         node.setTextColor(0xFFD8C2BC);
         node.setMaxTextWidth(ConfigTheme.dp(470));
-        node.setMaxLines(12);
         node.setLineHeightMultiplier(1.25D);
         node.setHitTestable(false);
         return node;
@@ -1143,7 +1192,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         SceneNode node = SceneNode.column();
         node.setGap(ConfigTheme.dp(14));
         node.setFillParentWidth(true);
-        node.setMaxWidth(Integer.MAX_VALUE);
+        node.setMaxWidth(ConfigTheme.CONTENT_MAX_WIDTH);
         return node;
     }
 
@@ -1208,7 +1257,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
             card.appendChild(presentation);
             if (i + 1 < fields.size()) {
                 SceneNode divider = new SceneNode();
-                divider.setPreferredHeight(1);
+                divider.setPreferredHeight(Math.max(1, ConfigTheme.dp(1)));
                 divider.setFillParentWidth(true);
                 divider.setMargin(0, ConfigTheme.dp(12), 0, ConfigTheme.dp(12));
                 divider.setBackgroundColor(0xFF322825);
@@ -1418,7 +1467,7 @@ public class ConfigScreen extends AbstractSceneHostWidget {
      * @throws IllegalArgumentException 下标越界
      */
     public void showSection(int index) {
-        final int count = sections == null ? schema.sections().size() : sections.size();
+        final int count = schema.sections().size();
         if (index < 0 || index >= count) {
             throw new IllegalArgumentException(
                     "section 下标越界：" + index + "（有效范围 0.." + (count - 1) + "）");

@@ -88,33 +88,6 @@ public final class ConfigTheme {
     public static int NAV_ITEM_PADDING_V = 4;
 
     /** Material fast Motion。 */
-    private static int sAccent = 0xFFFFB5A1;
-    private static int sSecondary = 0xFFE7BDB2;
-
-    public static int accent() {
-        return sAccent;
-    }
-
-    public static int secondary() {
-        return sSecondary;
-    }
-
-    public static void setThemeColors(int accent, int secondary) {
-        sAccent = 0xFF000000 | (accent & 0xFFFFFF);
-        sSecondary = 0xFF000000 | (secondary & 0xFFFFFF);
-    }
-
-    public static int primaryContainer() {
-        return blend(sAccent, 0xFF561F10, 0.65F);
-    }
-
-    private static int blend(int from, int to, float t) {
-        int r = Math.round(((from >> 16) & 0xFF) + t * (((to >> 16) & 0xFF) - ((from >> 16) & 0xFF)));
-        int g = Math.round(((from >> 8) & 0xFF) + t * (((to >> 8) & 0xFF) - ((from >> 8) & 0xFF)));
-        int b = Math.round((from & 0xFF) + t * ((to & 0xFF) - (from & 0xFF)));
-        return 0xFF000000 | (r << 16) | (g << 8) | b;
-    }
-
     public static final int MOTION_FAST_MS = SceneChromeTokens.MOTION_FAST_MS;
     /** Material standard Motion。 */
     public static final int MOTION_STANDARD_MS = SceneChromeTokens.MOTION_STANDARD_MS;
@@ -143,6 +116,23 @@ public final class ConfigTheme {
 
     /** 桥接 FormTheme 缓存实例：字段卡片相关通用 token 与 {@link FormTheme#defaultDark()} 对齐 */
     private static float sDensity = 1.0F;
+    /** GUI-scale part of the density (1.0 = 100%). */
+    private static float sBaseDensity = 1.0F;
+    /**
+     * Resolution adaptation: the current layout is authored for 2420x1668.
+     * At that resolution the factor is exactly 1.0, so nothing changes there;
+     * every other resolution scales all config dimensions proportionally.
+     */
+    private static float sContentScale = 1.0F;
+
+    public static void setContentScale(float scale) {
+        sContentScale = Math.max(0.5F, Math.min(3.0F, scale));
+        applyDensity();
+    }
+
+    public static float contentScale() {
+        return sContentScale;
+    }
 
     /**
      * 桥接获取 uilib.form 通用主题 token，供 4 个 FieldRenderer 调
@@ -215,13 +205,13 @@ public final class ConfigTheme {
                 .mutedForeground(ON_SURFACE_VARIANT)
                 .disabledForeground(OUTLINE)
                 .onAccentForeground(ON_PRIMARY)
-                .accent(sAccent)
-                .accentHover(primaryContainer())
+                .accent(PRIMARY)
+                .accentHover(PRIMARY_CONTAINER)
                 .accentPressed(PRIMARY_INVERSE)
-                .selectionBackground(primaryContainer())
+                .selectionBackground(PRIMARY_CONTAINER)
                 .selectionForeground(ON_PRIMARY_CONTAINER)
                 .borderDefault(OUTLINE)
-                .borderFocus(sAccent)
+                .borderFocus(PRIMARY)
                 .borderDisabled(OUTLINE_VARIANT)
                 .danger(ERROR)
                 .errorText(ERROR)
@@ -237,25 +227,25 @@ public final class ConfigTheme {
     private static SceneSurfaceStyle solidSurface(SceneTheme.Role role) {
         switch (role) {
             case PANEL:
-                return solid(SURFACE, SURFACE_LOW, SURFACE_LOWEST, OUTLINE_VARIANT, 0);
+                return solid(SURFACE, SURFACE_LOW, SURFACE_LOWEST, OUTLINE_VARIANT, dp(12));
             case TOOLBAR:
-                return solid(SURFACE_LOW, SURFACE_CONTAINER_TONE, SURFACE, OUTLINE_VARIANT, 0);
+                return solid(SURFACE_LOW, SURFACE_CONTAINER_TONE, SURFACE, OUTLINE_VARIANT, dp(12));
             case INPUT:
-                return solid(SURFACE_LOWEST, SURFACE_LOW, SURFACE, OUTLINE, 8);
+                return solid(SURFACE_LOWEST, SURFACE_LOW, SURFACE, 0xFFC9B6B0, dp(6));
             case GROUP:
-                return solid(SURFACE_CONTAINER_TONE, SURFACE_HIGH, SURFACE_LOW, OUTLINE_VARIANT, 16);
+                return solid(SURFACE_CONTAINER_TONE, SURFACE_HIGH, SURFACE_LOW, OUTLINE_VARIANT, dp(12));
             case OVERLAY:
-                return solid(SURFACE_HIGH, SURFACE_HIGHEST, SURFACE_CONTAINER_TONE, OUTLINE, 16);
+                return solid(SURFACE_HIGH, SURFACE_HIGHEST, SURFACE_CONTAINER_TONE, OUTLINE, dp(16));
             case INDICATOR:
                 return indicatorSolid();
             case BUTTON_STANDARD:
-                return solid(SURFACE_HIGH, SURFACE_HIGHEST, SURFACE_CONTAINER_TONE, OUTLINE_VARIANT, 20);
+                return solid(SURFACE_HIGH, SURFACE_HIGHEST, SURFACE_CONTAINER_TONE, OUTLINE_VARIANT, dp(20));
             case BUTTON_PRIMARY:
-                return solid(sAccent, primaryContainer(), PRIMARY_INVERSE, sAccent, 20);
+                return solid(PRIMARY, PRIMARY_CONTAINER, PRIMARY_INVERSE, PRIMARY, dp(20));
             case BUTTON_DANGER:
-                return solid(ERROR, 0xFFFFDAD6, ERROR_CONTAINER, ERROR, 20);
+                return solid(ERROR, 0xFFFFDAD6, ERROR_CONTAINER, ERROR, dp(20));
             default:
-                return solid(SURFACE_CONTAINER_TONE, SURFACE_HIGH, SURFACE_LOW, OUTLINE_VARIANT, 12);
+                return solid(SURFACE_CONTAINER_TONE, SURFACE_HIGH, SURFACE_LOW, OUTLINE_VARIANT, dp(12));
         }
     }
 
@@ -264,7 +254,7 @@ public final class ConfigTheme {
                 .backdrop(null)
                 .cornerRadius(SceneTheme.PILL_RADIUS)
                 .borderWidth(0)
-                .focusEdge(sAccent)
+                .focusEdge(PRIMARY)
                 .idle(new SceneSurfaceStyle.StateStyle(0xFF322825, 0, 0.0F, 0.0F))
                 .hovered(new SceneSurfaceStyle.StateStyle(0xFF3D3230, 0, 0.0F, 0.0F))
                 .pressed(new SceneSurfaceStyle.StateStyle(0xFF44312C, 0, 0.0F, 0.0F))
@@ -276,7 +266,7 @@ public final class ConfigTheme {
                 .backdrop(null)
                 .cornerRadius(radius)
                 .borderWidth(1)
-                .focusEdge(sAccent)
+                .focusEdge(PRIMARY)
                 .idle(new SceneSurfaceStyle.StateStyle(idle, edge, 0.0F, 0.0F))
                 .hovered(new SceneSurfaceStyle.StateStyle(hover, edge, 0.0F, 0.0F))
                 .pressed(new SceneSurfaceStyle.StateStyle(pressed, edge, 0.0F, 0.0F))
@@ -289,9 +279,14 @@ public final class ConfigTheme {
         return sDensity;
     }
 
-    /** Applies GUI-scale density to all config dimensions and typography. */
+    /** Applies the GUI-scale part of the density; resolution scale is applied on top. */
     public static void setDensity(float density) {
-        sDensity = Math.max(0.5F, Math.min(4.0F, density));
+        sBaseDensity = Math.max(0.5F, Math.min(4.0F, density));
+        applyDensity();
+    }
+
+    private static void applyDensity() {
+        sDensity = Math.max(0.5F, Math.min(4.0F, sBaseDensity * sContentScale));
         FIELD_GAP = dp(SceneChromeTokens.GAP_MD);
         INPUT_HEIGHT = dp(SceneChromeTokens.INPUT_HEIGHT);
         BUTTON_HEIGHT = dp(SceneChromeTokens.BUTTON_HEIGHT);

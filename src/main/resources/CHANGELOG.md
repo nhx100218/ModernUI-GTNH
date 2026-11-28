@@ -7,15 +7,19 @@
 #### Changed
 
 - Bold font files were removed. Bold is now synthesized from the regular face, matching ModernUI; italic and bold-italic still use the real italic face plus synthetic bold. The release jar is roughly half its previous size.
-- The config screen is reorganized toward ModernUI's shell: Home, Preferences, Advanced Options and a temporary Temp area. Preferences uses the five ModernUI categories (Screen, View, Font, Extension, Text); other keys are collected in Temp.
-- The Home dashboard now uses a per-character gradient title and reads the bundled changelog. The changelog follows the game language (Chinese or English).
-- The config shell now fills the available width and height; the top tabs distribute across the full row, and the large content card keeps its rounded outlined surface.
-- Font selection is now two real text boxes (primary and fallback) accepting a family name or file path, with no discovered-font list.
-- Range fields render as a left slider and a right white numeric input. Slider values show one decimal place.
-- A temporary accent/secondary colour editor is available in Temp (`temp.primaryColor`, `temp.secondaryColor`), with preset swatches and hex entry.
-- Server-only settings are no longer shown in the client config screen.
+- The 2.0.2 experimental config layout was rolled back to the 2.0.1 three-tab shell (General / Interface / Advanced). The Home dashboard keeps the per-character gradient title.
+- The Home dashboard entries (source, original projects, preview builds, CurseForge, Modrinth and Discord) are now clickable links.
+- The changelog panel reads the bundled CHANGELOG.md, follows the game language, wraps against the real card width and scrolls independently.
+- The copyright line is pinned to the bottom of the Home dashboard instead of floating below the cards.
+- Config dimensions are adapted from the 2420x1668 reference resolution; that reference layout itself is unchanged.
+- Range fields use the ModernUI seek-bar style: an outlined groove, a filled track, a vertical capsule thumb and a one-decimal editable value box on the right.
+- Server-only MOTD/TPS settings were removed from the shared client config file. `config/MiniMOTD/main.conf` is the only MOTD source.
 
 #### Fixed
+
+- Smooth scrolling keeps real momentum, so faster wheel movement scrolls farther.
+- Changelog text no longer overflows or gets clipped, and the panel can be scrolled with the wheel.
+- Slider value boxes use the rounded outlined style instead of a flat rectangle.
 
 - Forge's synchronous startup query screens (mod conflicts, missing mods, load errors) are no longer covered by the loading screen, so the Yes/No buttons remain visible and usable. Those screens also receive the transparent/panorama background.
 - The key-binding list resets its smooth-scroll target after search filtering, so the mouse wheel keeps working on the filtered list.
@@ -25,15 +29,19 @@
 #### 变更
 
 - 删除全部粗体字体文件。粗体改为由常规字面合成，与 ModernUI 原版一致；斜体和粗斜体仍保留真实斜体字面，粗斜体在斜体上合成粗体。发布 jar 体积约减半。
-- 配置界面按 ModernUI 外壳重组：主页、偏好设置、高级选项，以及临时的 Temp 分区。偏好设置使用 ModernUI 的五个分类（屏幕、视图、字体、扩展、文本）；其余配置集中到 Temp。
-- 主页的 Modern UI 操作中心改用逐字符渐变标题，并读取内置更新日志。更新日志按游戏语言显示中文或英文。
-- 配置页外壳改为填满可用宽高；顶部标签页横向铺满，大内容卡保留圆角轮廓。
-- 字体选择改为两个真正的文本框（主字体、备用字体），可直接输入家族名或字体文件路径，不再显示发现字体列表。
-- 带范围的数值字段改为左侧滑条 + 右侧白色数字输入框；滑条数值保留一位小数。
-- Temp 分区加入临时主题主色/副色编辑（`temp.primaryColor`、`temp.secondaryColor`），提供预设色块和 HEX 输入。
-- 服务端专属设置不再显示在客户端配置界面。
+- 2.0.2 的实验性配置界面已回滚到 2.0.1 的三标签外壳（常规 / 界面 / 高级）；主页保留逐字符渐变标题。
+- 主页的操作中心条目（源码、原项目、预览版、CurseForge、Modrinth、Discord）现在都是可点击链接。
+- 更新日志读取内置 CHANGELOG.md，跟随游戏语言，按卡片实际宽度换行，并可以独立滚动。
+- 版权行固定在主页底部，不再浮在卡片下方。
+- 配置界面按 2420x1668 的参考分辨率等比适配；该分辨率下的原始布局不变。
+- 带范围的字段使用 ModernUI 滑条样式：带描边的凹槽、填充轨道、竖直胶囊滑块，右侧为保留一位小数的可编辑数值框。
+- 从客户端共用的配置文件中删除服务端 MOTD/TPS 设置；MOTD 只以 `config/MiniMOTD/main.conf` 为准。
 
 #### 修复
+
+- 平滑滚动保留真实惯性，滚轮滚得越快，滚动距离越远。
+- 更新日志不再溢出或被裁切，并支持滚轮滚动。
+- 滑条数值框改为圆角描边样式，不再是平面矩形。
 
 - Forge 同步启动询问界面（模组冲突、缺少模组、加载错误）不再被加载界面覆盖，是/否按钮保持可见可点；这些界面也应用透明/全景背景。
 - 按键列表在搜索过滤后重置平滑滚动目标，过滤后的列表仍可用滚轮滚动。

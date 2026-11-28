@@ -23,7 +23,7 @@ import blocamlimb.nhx100218.modernui.uilib.MyMod;
 
 /**
  * Builds the server-list response from {@code config/MiniMOTD/main.conf} when
- * present, otherwise from the {@code server.motd} section of modernui.yaml.
+ * present, otherwise from a built-in ModernUI-GTNH fallback.
  *
  * <p>1.7.10 clients receive the legacy (16-colour) MOTD plus ModernUI's marker.
  * 1.16+ clients receive a component with exact RGB colours, so MiniMOTD
@@ -151,7 +151,7 @@ public final class ServerMotdService {
         return mini != null && mini.enabled;
     }
 
-    /** Legacy (0xFE) ping text, including the same MiniMOTD/YAML content. */
+    /** Legacy (0xFE) ping text, including the same MiniMOTD content. */
     public static String legacyMotd(MinecraftServer server) {
         if (!isEnabled()) {
             return server == null ? "" : server.getMOTD();

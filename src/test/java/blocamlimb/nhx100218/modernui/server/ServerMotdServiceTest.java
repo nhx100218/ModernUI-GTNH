@@ -81,7 +81,7 @@ public class ServerMotdServiceTest {
     }
 
     @Test
-    public void disabledMiniMotdDoesNotEnableYamlFallback() throws Exception {
+    public void disabledMiniMotdStaysDisabled() throws Exception {
         File mini = new File(configRoot, "MiniMOTD");
         Files.write(new File(mini, "main.conf").toPath(),
                 ("motd-enabled = false\nmotds = [{ line1 = \"&bX\", line2 = \"\" }]\n")

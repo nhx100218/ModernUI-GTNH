@@ -14,8 +14,8 @@ import blocamlimb.nhx100218.modernui.uilib.MyMod;
  * Reads a real MiniMOTD {@code config/MiniMOTD/main.conf} so existing MiniMOTD
  * configs and {@code icons/} can be dropped in unchanged.
  *
- * <p>Typesafe Config (bundled with Forge) is used reflectively; if parsing
- * fails we fall back to the {@code server.motd} section of modernui.yaml.</p>
+ * <p>Typesafe Config (bundled with Forge) is used reflectively. This file is
+ * the only MOTD source; {@code modernui.yaml} no longer carries MOTD fields.</p>
  */
 public final class MiniMotdConfig {
 
@@ -139,7 +139,7 @@ public final class MiniMotdConfig {
         } catch (Throwable t) {
             if (!warnedParseFailure) {
                 warnedParseFailure = true;
-                MyMod.LOG.warn("解析 MiniMOTD 配置失败，回退到 modernui.yaml: {}", file, t);
+                MyMod.LOG.warn("解析 MiniMOTD 配置失败，使用内置 MOTD: {}", file, t);
             }
             return null;
         }

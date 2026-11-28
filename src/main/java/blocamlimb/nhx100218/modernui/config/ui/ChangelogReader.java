@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import net.minecraft.client.Minecraft;
+
 /**
  * Reads the latest changelog section from the bundled {@code CHANGELOG.md}.
  *
@@ -23,6 +25,15 @@ public final class ChangelogReader {
     }
 
     public static boolean isChineseClient() {
+        try {
+            Minecraft minecraft = Minecraft.getMinecraft();
+            if (minecraft != null && minecraft.gameSettings != null
+                    && minecraft.gameSettings.language != null) {
+                return minecraft.gameSettings.language.toLowerCase(Locale.ROOT).startsWith("zh");
+            }
+        } catch (Throwable ignored) {
+            // headless or early boot: fall back to the JVM locale
+        }
         return Locale.getDefault().getLanguage().toLowerCase(Locale.ENGLISH).startsWith("zh");
     }
 
@@ -79,17 +90,21 @@ public final class ChangelogReader {
         List<String> body = new ArrayList<String>();
         if (languageStart >= 0) {
             for (int i = languageStart; i < sectionEnd; i++) {
+                String rawLine = lines[i].trim();
+                if (rawLine.startsWith("### ")) {
+                    // The next language section starts here; do not leak the
+                    // other language's notes into this one.
+                    break;
+                }
                 String line = clean(lines[i]);
                 if (line.isEmpty()) {
                     continue;
                 }
-                if (line.startsWith("### ")) {
-                    continue;
-                }
                 if (line.startsWith("#### ")) {
+                    body.add(line.substring(5));
                     continue;
                 }
-                body.addAll(wrapLine(line, 34));
+                body.add(line);
             }
         }
         if (body.isEmpty()) {
@@ -133,27 +148,6 @@ public final class ChangelogReader {
         line = line.replace("`", "");
         line = line.replace("**", "");
         return line;
-    }
-
-    private static List<String> wrapLine(String line, int width) {
-        List<String> out = new ArrayList<String>();
-        if (line.length() <= width) {
-            out.add(line);
-            return out;
-        }
-        String indent = line.startsWith("• ") ? "  " : "";
-        String body = line;
-        boolean first = true;
-        while (body.length() > width) {
-            int cut = width;
-            out.add((first ? "" : indent) + body.substring(0, cut));
-            body = body.substring(cut);
-            first = false;
-        }
-        if (!body.isEmpty()) {
-            out.add((first ? "" : indent) + body);
-        }
-        return out;
     }
 
     private static Changelog fallback(boolean chinese) {

@@ -45,12 +45,15 @@ public final class IntegerFieldRenderer implements FieldRenderer {
     @Override
     public SceneNode render(SceneRuntime rt, FieldSpec spec, DraftSignalAdapter adapter) {
         WidgetSpec w = spec.widget();
-        if (w instanceof SliderSpec || spec.constraints() != null) {
-            SliderSpec s = w instanceof SliderSpec ? (SliderSpec) w : null;
+        if (w instanceof SliderSpec) {
             FieldConstraints c = spec.constraints();
             double min = c != null ? c.min() : Double.NEGATIVE_INFINITY;
             double max = c != null ? c.max() : Double.POSITIVE_INFINITY;
-            return renderSlider(rt, spec, adapter, min, max, s == null ? 0.0D : s.step());
+            return renderSlider(rt, spec, adapter, min, max, ((SliderSpec) w).step());
+        }
+        if (w == null && spec.constraints() != null) {
+            FieldConstraints c = spec.constraints();
+            return renderSlider(rt, spec, adapter, c.min(), c.max(), 0.0D);
         }
         // w == null 或 InputSpec → input；ColorSpec 只对 NUMBER 声明（FieldSpec.Builder#color 在 INTEGER 上已拒绝）
         return renderTextInput(rt, spec, adapter);
@@ -77,17 +80,15 @@ public final class IntegerFieldRenderer implements FieldRenderer {
         final ReadableSignal<Object> draftSig = adapter.draftSignal(path);
 
         ReadableSignal<Double> numValue = FieldRenderSupport.toDoubleSignal(draftSig);
-        SceneSlider.Props props = SceneSlider.Props.builder(numValue)
-                .min(min).max(max).step(step)
-                .onChange((value, committing) -> adapter.onFieldEdit(path, Long.valueOf(Math.round(value))))
-                .build();
+        ReadableSignal<Boolean> enabled = Signal.create(Boolean.TRUE);
 
         Supplier<SceneNode> control = () -> {
             SceneNode row = SceneNode.row();
             row.setFillParentWidth(true);
             row.setGap(ConfigTheme.FIELD_GAP);
             row.setCrossAxisAlign(CrossAxisAlign.CENTER);
-            SceneNode sliderRoot = SceneSlider.create(rt, props).get();
+            SceneNode sliderRoot = ConfigSlider.create(rt, numValue, enabled, min, max, step,
+                    (value, committing) -> adapter.onFieldEdit(path, Long.valueOf(Math.round(value))));
             sliderRoot.setFlexGrow(1);
             row.appendChild(sliderRoot);
 
@@ -113,8 +114,6 @@ public final class IntegerFieldRenderer implements FieldRenderer {
                     });
             SceneNode input = SceneTextInput.create(rt, inputProps).get();
             input.setPreferredWidth(ConfigTheme.dp(88));
-            input.setBorderColor(0xFFFFFFFF);
-            input.setBorderWidth(1);
             row.appendChild(input);
             return row;
         };

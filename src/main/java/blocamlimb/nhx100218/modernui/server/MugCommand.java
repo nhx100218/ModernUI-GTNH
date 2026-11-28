@@ -89,9 +89,9 @@ public final class MugCommand extends CommandBase {
             error(sender, "未安装 ServerUtilities，不能启用 tab 显示");
             return;
         }
-        if (persist(sender, ServerFeatureConfig.TAB_ENABLED, Boolean.valueOf(enable), "tab.enabled")) {
-            ServerTabService.forceUpdate();
-        }
+        ServerFeatureConfig.tabEnabled = enable;
+        ServerTabService.forceUpdate();
+        success(sender, "已设置 tab 显示" + onOff(enable));
     }
 
     private void motd(ICommandSender sender, String[] args) {
@@ -110,29 +110,6 @@ public final class MugCommand extends CommandBase {
         ServerMotdService.setEnabledOverride(Boolean.valueOf(enable));
         success(sender, "已设置 MOTD 运行时" + onOff(enable)
                 + "；重启后以 config/MiniMOTD/main.conf 为准");
-    }
-
-    private boolean persist(ICommandSender sender, String path, Object value, String label) {
-        if (ServerFeatureConfig.persist(path, value)) {
-            success(sender, "已更新 " + label + " = " + value);
-            return true;
-        }
-        error(sender, "保存 " + label + " 失败，请查看日志");
-        return false;
-    }
-
-    private static String join(String[] args, int from) {
-        if (from >= args.length) {
-            return "";
-        }
-        StringBuilder builder = new StringBuilder();
-        for (int i = from; i < args.length; i++) {
-            if (builder.length() > 0) {
-                builder.append(' ');
-            }
-            builder.append(args[i]);
-        }
-        return builder.toString();
     }
 
     private static String onOff(boolean value) {
