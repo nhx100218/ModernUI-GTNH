@@ -79,7 +79,7 @@ jobs:
           project_id: '1835100'
           game_endpoint: minecraft
           file_path: release/modernui-gtnh-${{ steps.version.outputs.version }}.jar
-          game_versions: '1.7.10,Forge'
+          game_versions: 'Minecraft 1.7.10,Forge'
           release_type: release
           changelog: ${{ steps.notes.outputs.text }}
           changelog_type: markdown
