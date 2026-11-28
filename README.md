@@ -138,4 +138,4 @@ This project is open-sourced under [LGPL-3.0](LICENSE). Forks must stay open sou
 
 ## CI
 
-GitHub Actions builds the mod and publishes only the main mod jar, so nobody grabs the wrong file. Pushing a release tag such as `v2.0.2` or `2.0.2` builds the mod, creates the GitHub Release, attaches the jar, and uploads the same file to CurseForge with the player-facing changelog.
+GitHub Actions builds the mod and publishes only the main mod jar, so nobody grabs the wrong file. Pushing a release tag such as `v2.0.2` or `2.0.2`, or publishing a GitHub Release, builds the mod, creates/updates the release, attaches the jar, and uploads the same file to CurseForge with the player-facing changelog.

@@ -5,6 +5,8 @@ on:
     tags:
       - 'v*'
       - '[0-9]*'
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -15,6 +17,7 @@ concurrency:
 
 jobs:
   release:
+    if: github.event_name == 'push' || !contains(github.event.release.body, 'ModernUI-GTNH auto release')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout release tag
@@ -59,13 +62,15 @@ jobs:
           cp "build/libs/modernui-gtnh-${{ steps.version.outputs.version }}.jar" release/
           awk 'BEGIN{p=0} /^## \[/{if(p){exit} p=1} p' CHANGELOG-USER.md > release/CHANGELOG.md
           printf '\n\nSee full changelog: https://github.com/nhx100218/ModernUI-GTNH/blob/main/CHANGELOG.md\n' >> release/CHANGELOG.md
+          cp release/CHANGELOG.md release/GITHUB_RELEASE.md
+          printf '\n\n<!-- ModernUI-GTNH auto release -->\n' >> release/GITHUB_RELEASE.md
 
       - name: Create or update GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: ModernUI-GTNH ${{ steps.version.outputs.version }}
-          body_path: release/CHANGELOG.md
+          body_path: release/GITHUB_RELEASE.md
           files: release/modernui-gtnh-${{ steps.version.outputs.version }}.jar
           draft: false
           prerelease: false
