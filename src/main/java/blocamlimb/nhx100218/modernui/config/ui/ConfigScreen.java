@@ -998,6 +998,8 @@ public class ConfigScreen extends AbstractSceneHostWidget {
         divider.setBackgroundColor(0xFF53433F);
         right.appendChild(divider);
         right.appendChild(dashboardChangelog(changelog));
+        right.appendChild(dashboardLink("modernui.dashboard.fullChangelog",
+                "https://github.com/nhx100218/ModernUI-GTNH/blob/main/CHANGELOG.md"));
 
         cards.appendChild(left);
         cards.appendChild(right);

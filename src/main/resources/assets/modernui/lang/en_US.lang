@@ -185,6 +185,7 @@ modernui.dashboard.link.releases=Preview builds: GitHub Releases
 modernui.dashboard.link.curseforge=Downloads: CurseForge
 modernui.dashboard.link.modrinth=Downloads: Modrinth
 modernui.dashboard.link.discord=Community: Discord (BloCamLimb)
+modernui.dashboard.fullChangelog=See full changelog
 modernui.dashboard.changes=• Modern UI style config layout\n• Changes apply immediately\n• GUI scale aware controls\n• Hover tooltips for descriptions\n• Navigation and tabs aligned with Modern UI
 
 modernui.config.general.useDebug=Debug Output

@@ -185,6 +185,7 @@ modernui.dashboard.link.releases=预览版：GitHub Releases
 modernui.dashboard.link.curseforge=模组发布：CurseForge
 modernui.dashboard.link.modrinth=模组发布：Modrinth
 modernui.dashboard.link.discord=社区：Discord（BloCamLimb）
+modernui.dashboard.fullChangelog=查看完整更新日志
 modernui.dashboard.changes=• 配置页改为 MD3 大圆角面板\n• 修改立即生效并自动保存\n• 控件跟随 GUI Scale 缩放\n• 描述改为悬停 Tooltip\n• 导航栏和 Tab 对齐 ModernUI
 
 modernui.config.general.useDebug=调试输出

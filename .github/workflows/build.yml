@@ -3,7 +3,6 @@ name: Build
 on:
   push:
     branches: [ main, master ]
-    tags: [ '*' ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
@@ -54,31 +53,3 @@ jobs:
           name: modernui-gtnh
           path: release/*.jar
           if-no-files-found: error
-
-      - name: Compute release metadata
-        if: startsWith(github.ref, 'refs/tags/')
-        id: meta
-        shell: bash
-        run: |
-          msg=$(git log -1 --pretty=%B)
-          subject=$(printf '%s\n' "$msg" | head -n 1)
-          {
-            echo "subject<<__EOF__"
-            echo "$subject"
-            echo "__EOF__"
-            echo "body<<__EOF__"
-            echo "$msg"
-            echo "__EOF__"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ steps.meta.outputs.subject }}
-          body: ${{ steps.meta.outputs.body }}
-          files: release/*.jar
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

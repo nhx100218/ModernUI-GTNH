@@ -11,15 +11,17 @@ import java.util.Locale;
 import net.minecraft.client.Minecraft;
 
 /**
- * Reads the latest changelog section from the bundled {@code CHANGELOG.md}.
+ * Reads the latest player-facing section from the bundled
+ * {@code CHANGELOG-USER.md}.
  *
  * <p>The config dashboard shows the current version's notes. Chinese clients
  * get the {@code ### 中文} section; every other locale gets
- * {@code ### English}.</p>
+ * {@code ### English}. The detailed development history stays in
+ * {@code CHANGELOG.md}.</p>
  */
 public final class ChangelogReader {
 
-    private static final String RESOURCE = "/CHANGELOG.md";
+    private static final String RESOURCE = "/CHANGELOG-USER.md";
 
     private ChangelogReader() {
     }
